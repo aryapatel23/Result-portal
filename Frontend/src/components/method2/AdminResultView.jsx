@@ -37,7 +37,7 @@ const AdminResultView = () => {
     }
 
     try {
-      await axios.delete(`http://localhost:5000/api/results/${selectedId}`);
+      await axios.delete(`https://result-portal-tkom.onrender.com/api/results/${selectedId}`);
       setResults(results.filter((result) => result._id !== selectedId));
       setShowModal(false);
     } catch (error) {

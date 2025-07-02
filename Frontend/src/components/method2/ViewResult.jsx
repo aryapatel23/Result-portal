@@ -270,7 +270,7 @@ const StudentPanel = () => {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/results?grNumber=${searchParams.grNumber}&dateOfBirth=${searchParams.dateOfBirth}`
+        `https://result-portal-tkom.onrender.com/api/results?grNumber=${searchParams.grNumber}&dateOfBirth=${searchParams.dateOfBirth}`
       );
       const data = await response.json();
 

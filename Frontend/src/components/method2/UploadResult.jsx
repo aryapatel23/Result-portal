@@ -151,7 +151,7 @@ const TeacherPanel = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/results', {
+      const response = await fetch('https://result-portal-tkom.onrender.com/api/results', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
