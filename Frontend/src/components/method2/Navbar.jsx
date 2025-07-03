@@ -13,8 +13,8 @@ const Navbar = () => {
     <nav className="bg-white shadow-sm sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
         {/* Logo */}
-        <Link to="/" className="text-2xl font-bold text-indigo-600">
-          🎓 KAMLI ANUPAM PRIMARY SCHOOL
+        <Link to="/" className="text-1xl font-bold text-indigo-600 flex align-middle">
+         <img className="size-10 shrink-0" src="https://res.cloudinary.com/dzsvjyg2c/image/upload/gyzoxsk22n0z1kkkh3di.png" alt="" />KAMLI ANUPAM PRIMARY SCHOOL, Ta.-UNJHA,Dis.-MAHESANA
         </Link>
 
         {/* Hamburger menu (mobile) */}

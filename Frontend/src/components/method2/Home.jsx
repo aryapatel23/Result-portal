@@ -28,24 +28,6 @@ const Home = () => {
 
       {/* Portal Cards */}
       <div className="grid md:grid-cols-2 gap-8 mb-16">
-        {/* Teacher Portal */}
-        <Link
-          to="/admin/login"
-          className="bg-white rounded-lg shadow-md hover:shadow-lg transition p-8 group"
-        >
-          <div className="flex flex-col items-center">
-            <div className="bg-blue-100 p-4 rounded-full mb-4 group-hover:bg-blue-200 transition">
-              <UserCheck className="h-10 w-10 text-blue-600" />
-            </div>
-            <h2 className="text-2xl font-semibold text-gray-800 mb-2">Teacher Portal</h2>
-            <p className="text-gray-600 text-center mb-4">
-              Upload and manage student results with an easy-to-use interface.
-            </p>
-            <span className="flex items-center text-blue-600 font-medium group-hover:translate-x-1 transition-transform">
-              Enter Portal <ArrowRight className="ml-1 h-4 w-4" />
-            </span>
-          </div>
-        </Link>
 
         {/* Student Portal */}
         <Link
@@ -61,6 +43,25 @@ const Home = () => {
               View your academic results by entering your GR No and Date of Birth.
             </p>
             <span className="flex items-center text-green-600 font-medium group-hover:translate-x-1 transition-transform">
+              Enter Portal <ArrowRight className="ml-1 h-4 w-4" />
+            </span>
+          </div>
+        </Link>
+        
+        {/* Teacher Portal */}
+        <Link
+          to="/admin/login"
+          className="bg-white rounded-lg shadow-md hover:shadow-lg transition p-8 group"
+        >
+          <div className="flex flex-col items-center">
+            <div className="bg-blue-100 p-4 rounded-full mb-4 group-hover:bg-blue-200 transition">
+              <UserCheck className="h-10 w-10 text-blue-600" />
+            </div>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-2">Teacher Portal</h2>
+            <p className="text-gray-600 text-center mb-4">
+              Upload and manage student results with an easy-to-use interface.
+            </p>
+            <span className="flex items-center text-blue-600 font-medium group-hover:translate-x-1 transition-transform">
               Enter Portal <ArrowRight className="ml-1 h-4 w-4" />
             </span>
           </div>
