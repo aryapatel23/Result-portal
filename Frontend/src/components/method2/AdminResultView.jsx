@@ -11,7 +11,7 @@ const AdminResultView = () => {
   useEffect(() => {
     const fetchResults = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/results/admin');
+        const res = await axios.get('https://result-portal-tkom.onrender.com/api/results/admin');
         setResults(res.data);
       } catch (error) {
         console.error('Error fetching results:', error);

@@ -354,9 +354,8 @@ const StudentPanel = () => {
             <button
               type="submit"
               disabled={isSearching}
-              className={`flex items-center px-6 py-2 rounded-md bg-green-600 text-white font-medium ${
-                isSearching ? 'opacity-70 cursor-not-allowed' : 'hover:bg-green-700'
-              }`}
+              className={`flex items-center px-6 py-2 rounded-md bg-green-600 text-white font-medium ${isSearching ? 'opacity-70 cursor-not-allowed' : 'hover:bg-green-700'
+                }`}
             >
               {isSearching ? (
                 <>
@@ -379,83 +378,126 @@ const StudentPanel = () => {
       {searched && (
         <>
           {result ? (
-            <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 animate-fadeIn">
-              <div className="border-b pb-4 mb-6">
-                <div className="flex flex-col sm:flex-row justify-between sm:items-center">
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-800 flex items-center mb-2">
-                      <User className="mr-2 h-6 w-6 text-blue-600" />
-                      {result.studentName}
-                    </h2>
-                    <div className="flex flex-col sm:flex-row sm:space-x-8">
-                      <p className="text-gray-600"><span className="font-medium">GR Number:</span> {result.grNumber}</p>
-                      <p className="text-gray-600"><span className="font-medium">Standard:</span> {result.standard}</p>
+            <div
+              className="rounded-lg shadow-md p-4 sm:p-6 "
+            >
+              <div
+                className="bg-white bg-opacity-90 rounded-lg p-4 sm:p-6 bg-no-repeat bg-center bg-contain"
+              >
+                <div className="border-b pb-4 mb-6">
+                  <div className="flex flex-col sm:flex-row justify-between sm:items-center">
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-800 flex items-center mb-2">
+                        <User className="mr-2 h-6 w-6 text-blue-600" />
+                        {result.studentName}
+                      </h2>
+                      <div className="flex flex-col sm:flex-row sm:space-x-8">
+                        <p className="text-gray-600">
+                          <span className="font-medium">GR Number:</span> {result.grNumber}
+                        </p>
+                        <p className="text-gray-600">
+                          <span className="font-medium">Standard:</span> {result.standard}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex flex-col items-center mt-4 sm:mt-0">
-                    <div className="bg-blue-50 rounded-full p-3 mb-2">
-                      <Award className="h-8 w-8 text-blue-600" />
+                    <div className="flex flex-col items-center mt-4 sm:mt-0">
+                      <div className="bg-blue-50 rounded-full p-3 mb-2">
+                        <Award className="h-8 w-8 text-blue-600" />
+                      </div>
+                      <p className="text-lg font-bold text-blue-600">
+                        {getGrade(result.percentage)}
+                      </p>
                     </div>
-                    <p className="text-lg font-bold text-blue-600">{getGrade(result.percentage)}</p>
                   </div>
                 </div>
-              </div>
 
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                  <BookOpen className="mr-2 h-5 w-5 text-green-600" />
-                  Subject-wise Performance
-                </h3>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full border-collapse">
-                    <thead className="bg-gray-100">
-                      <tr>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase">Subject</th>
-                        <th className="px-4 py-2 text-center text-xs font-medium text-gray-600 uppercase">Marks</th>
-                        <th className="px-4 py-2 text-center text-xs font-medium text-gray-600 uppercase">Max</th>
-                        <th className="px-4 py-2 text-center text-xs font-medium text-gray-600 uppercase">%</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {result.subjects.map((subject, index) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm font-medium text-gray-800">{subject.name}</td>
-                          <td className={`px-4 py-3 text-sm text-center ${getStatusColor(subject.marks, subject.maxMarks)}`}>{subject.marks}</td>
-                          <td className="px-4 py-3 text-sm text-center">{subject.maxMarks}</td>
-                          <td className={`px-4 py-3 text-sm text-center font-medium ${getStatusColor(subject.marks, subject.maxMarks)}`}>
-                            {((subject.marks / subject.maxMarks) * 100).toFixed(1)}%
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <BookOpen className="mr-2 h-5 w-5 text-green-600" />
+                    Subject-wise Performance
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full border-collapse">
+                      <thead className="bg-gray-100">
+                        <tr>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase">
+                            Subject
+                          </th>
+                          <th className="px-4 py-2 text-center text-xs font-medium text-gray-600 uppercase">
+                            Marks
+                          </th>
+                          <th className="px-4 py-2 text-center text-xs font-medium text-gray-600 uppercase">
+                            Max
+                          </th>
+                          <th className="px-4 py-2 text-center text-xs font-medium text-gray-600 uppercase">
+                            %
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {result.subjects.map((subject, index) => (
+                          <tr key={index} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 text-sm font-medium text-gray-800">
+                              {subject.name}
+                            </td>
+                            <td
+                              className={`px-4 py-3 text-sm text-center ${getStatusColor(
+                                subject.marks,
+                                subject.maxMarks
+                              )}`}
+                            >
+                              {subject.marks}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-center">{subject.maxMarks}</td>
+                            <td
+                              className={`px-4 py-3 text-sm text-center font-medium ${getStatusColor(
+                                subject.marks,
+                                subject.maxMarks
+                              )}`}
+                            >
+                              {((subject.marks / subject.maxMarks) * 100).toFixed(1)}%
+                            </td>
+                          </tr>
+                        ))}
+                        <tr className="bg-gray-50 font-semibold">
+                          <td className="px-4 py-3">Total</td>
+                          <td className="px-4 py-3 text-center">{result.totalMarks}</td>
+                          <td className="px-4 py-3 text-center">{result.totalMaxMarks}</td>
+                          <td className="px-4 py-3 text-center">
+                            {Number(result.percentage).toFixed(1)}%
                           </td>
                         </tr>
-                      ))}
-                      <tr className="bg-gray-50 font-semibold">
-                        <td className="px-4 py-3">Total</td>
-                        <td className="px-4 py-3 text-center">{result.totalMarks}</td>
-                        <td className="px-4 py-3 text-center">{result.totalMaxMarks}</td>
-                        <td className="px-4 py-3 text-center">{Number(result.percentage).toFixed(1)}%</td>
-                      </tr>
-                    </tbody>
-                  </table>
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
+
+                {result.remarks && (
+                  <div className="bg-blue-50 rounded-lg p-4 text-gray-700">
+                    <h4 className="font-semibold text-gray-800 mb-1">Remarks:</h4>
+                    <p>{result.remarks}</p>
+                  </div>
+                )}
               </div>
 
-              {result.remarks && (
-                <div className="bg-blue-50 rounded-lg p-4 text-gray-700">
-                  <h4 className="font-semibold text-gray-800 mb-1">Remarks:</h4>
-                  <p>{result.remarks}</p>
-                </div>
-              )}
             </div>
           ) : (
             <div className="bg-white rounded-lg shadow-md p-6 text-center animate-fadeIn">
               <div className="inline-block p-4 rounded-full bg-yellow-100 mb-4">
                 <Search className="h-8 w-8 text-yellow-600" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">No Results Found</h3>
-              <p className="text-gray-600">Please verify your GR Number and Date of Birth and try again.</p>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                No Results Found
+              </h3>
+              <p className="text-gray-600">
+                Please verify your GR Number and Date of Birth and try again.
+              </p>
             </div>
           )}
         </>
       )}
+
+
     </div>
   );
 };
