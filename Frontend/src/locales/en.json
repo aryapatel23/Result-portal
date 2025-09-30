@@ -1,0 +1,40 @@
+{
+  "schoolName": "KAMLI ANUPAM PRIMARY SCHOOL",
+  "schoolTagline": "Shaping Future, Nurturing Excellence",
+  "welcomeTitle": "Welcome to the Student Result Portal",
+  "welcomeDesc": "Enter your GR Number and Date of Birth to view your academic result.",
+  "studentPortal": "Student Portal",
+  "studentPortalDesc": "View your academic results by entering your GR No and Date of Birth.",
+  "teacherPortal": "Teacher Portal",
+  "teacherPortalDesc": "Upload and manage student results with an easy-to-use interface.",
+  "enterPortal": "Enter Portal",
+  "schoolActivities": "School Activities",
+  "seeAllActivities": "See All Activities",
+  "aboutTitle": "About the Portal",
+  "aboutDesc1": "Our Student Result Portal is designed to streamline the process of managing and accessing academic results. Teachers can easily upload student performance data, while students and parents can securely view results using GR number and date of birth.",
+  "aboutDesc2": "The system ensures privacy, simplicity, and quick access to academic performance.",
+  "studentPanel": {
+    "title": "Student Result Portal",
+    "subtitle": "Enter your GR Number and Date of Birth to view your result.",
+    "grNumber": "GR Number",
+    "dob": "Date of Birth",
+    "grPlaceholder": "Enter your GR number",
+    "viewResult": "View Result",
+    "searching": "Searching...",
+    "standard": "Standard",
+    "subjectPerformance": "Subject-wise Performance",
+    "subject": "Subject",
+    "marks": "Marks",
+    "max": "Max",
+    "total": "Total",
+    "remarks": "Remarks",
+    "noResults": "No Results Found",
+    "noResultsDesc": "Please verify your GR Number and Date of Birth and try again."
+  },
+  "errors": {
+    "grNumberRequired": "GR Number is required",
+    "dobRequired": "Date of Birth is required",
+    "noResults": "No results found. Please check your GR Number and Date of Birth.",
+    "general": "Something went wrong. Please try again later."
+  }
+}
