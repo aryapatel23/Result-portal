@@ -19,7 +19,7 @@ const EditResult = () => {
 
     const fetchResult = async () => {
         try {
-            const res = await fetch(`http://localhost:5000/api/results/${id}`);
+            const res = await fetch(`https://result-portal-tkom.onrender.com/api/results/${id}`);
             if (!res.ok) throw new Error("Failed to fetch result");
             const data = await res.json();
             setFormData({
@@ -80,7 +80,7 @@ const EditResult = () => {
         setIsSubmitting(true);
 
         try {
-            const res = await fetch(`http://localhost:5000/api/results/${id}`, {
+            const res = await fetch(`https://result-portal-tkom.onrender.com/api/results/${id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData),
