@@ -28,7 +28,7 @@ const Navbar = () => {
           <span className="text-sm sm:text-base md:text-lg font-bold text-indigo-600 truncate">
             KAMLI ANUPAM PRIMARY SCHOOL,
           </span>
-          <div className='text-1xl 1xl:text-base md:text-1xl font-medium truncate'> Ta.-UNJHA, Dis.-MAHESANA</div>
+          <div className='text-[13px] 1xl:text-base md:text-1xl font-medium truncate'> Ta.-UNJHA, Dis.-MAHESANA</div>
           </div>
         </Link>
 
