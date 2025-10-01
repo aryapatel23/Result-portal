@@ -13,6 +13,7 @@
   "aboutTitle": "About the Portal",
   "aboutDesc1": "Our Student Result Portal is designed to streamline the process of managing and accessing academic results. Teachers can easily upload student performance data, while students and parents can securely view results using GR number and date of birth.",
   "aboutDesc2": "The system ensures privacy, simplicity, and quick access to academic performance.",
+
   "studentPanel": {
     "title": "Student Result Portal",
     "subtitle": "Enter your GR Number and Date of Birth to view your result.",
@@ -23,14 +24,37 @@
     "searching": "Searching...",
     "standard": "Standard",
     "subjectPerformance": "Subject-wise Performance",
-    "subject": "Subject",
-    "marks": "Marks",
-    "max": "Max",
-    "total": "Total",
+        "total": "Total",
     "remarks": "Remarks",
+    
+    "table": {
+      "subject": "Subject",
+      "marks": "Marks Obtained",
+      "max": "Maximum Marks",
+      "percentage": "Percentage"
+    },
+
+    "subjects": {
+      "Gujarati": "Gujarati",
+      "Maths": "Maths",
+      "Science": "Science",
+      "Hindi": "Hindi",
+      "English": "English",
+      "Social Science": "Social Science",
+      "Sanskrit": "Sanskrit",
+      "Personality development": "Personality Development"
+    },
+
+    "summary": {
+      "totalMarks": "Total Marks",
+      "percentage": "Overall Percentage",
+      "grade": "Grade",
+      "remarks": "Remarks"
+    },
     "noResults": "No Results Found",
     "noResultsDesc": "Please verify your GR Number and Date of Birth and try again."
   },
+
   "errors": {
     "grNumberRequired": "GR Number is required",
     "dobRequired": "Date of Birth is required",

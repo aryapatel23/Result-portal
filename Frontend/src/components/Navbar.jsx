@@ -77,16 +77,15 @@
 // export default Navbar;
 
 
-
-
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 const Navbar = () => {
   const { pathname } = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+  const [langOpen, setLangOpen] = useState(false); // dropdown state
   const { i18n, t } = useTranslation();
 
   const isActive = (path) =>
@@ -96,7 +95,8 @@ const Navbar = () => {
 
   const changeLanguage = (lang) => {
     i18n.changeLanguage(lang);
-    setIsOpen(false); // close mobile menu after selecting
+    setLangOpen(false); // close dropdown
+    setIsOpen(false); // close mobile menu if open
   };
 
   return (
@@ -131,28 +131,35 @@ const Navbar = () => {
             {t("teacherPortal")}
           </Link>
 
-          {/* Language Switcher */}
-          <div className="flex gap-2">
+          {/* Language Dropdown */}
+          <div className="relative">
             <button
-              onClick={() => changeLanguage("en")}
-              className={`px-2 py-1 rounded ${
-                i18n.language === "en"
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-200 text-gray-700"
-              }`}
+              onClick={() => setLangOpen(!langOpen)}
+              className="flex items-center px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
             >
-              EN
+              {i18n.language.toUpperCase()} <ChevronDown className="ml-1 h-4 w-4" />
             </button>
-            <button
-              onClick={() => changeLanguage("gu")}
-              className={`px-2 py-1 rounded ${
-                i18n.language === "gu"
-                  ? "bg-orange-500 text-white"
-                  : "bg-gray-200 text-gray-700"
-              }`}
-            >
-              GU
-            </button>
+
+            {langOpen && (
+              <div className="absolute right-0 mt-2 w-28 bg-white border rounded shadow-md">
+                <button
+                  onClick={() => changeLanguage("en")}
+                  className={`block w-full text-left px-3 py-2 hover:bg-gray-100 ${
+                    i18n.language === "en" ? "bg-blue-500 text-white" : ""
+                  }`}
+                >
+                  English
+                </button>
+                <button
+                  onClick={() => changeLanguage("gu")}
+                  className={`block w-full text-left px-3 py-2 hover:bg-gray-100 ${
+                    i18n.language === "gu" ? "bg-orange-500 text-white" : ""
+                  }`}
+                >
+                  ગુજરાતી
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -186,28 +193,35 @@ const Navbar = () => {
               {t("teacherPortal")}
             </Link>
 
-            {/* Language Switcher (Mobile) */}
-            <div className="flex gap-2 pt-2">
+            {/* Language Dropdown (Mobile) */}
+            <div className="relative mt-2">
               <button
-                onClick={() => changeLanguage("en")}
-                className={`px-2 py-1 rounded ${
-                  i18n.language === "en"
-                    ? "bg-blue-500 text-white"
-                    : "bg-gray-200 text-gray-700"
-                }`}
+                onClick={() => setLangOpen(!langOpen)}
+                className="flex items-center px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
               >
-                EN
+                {i18n.language.toUpperCase()} <ChevronDown className="ml-1 h-4 w-4" />
               </button>
-              <button
-                onClick={() => changeLanguage("gu")}
-                className={`px-2 py-1 rounded ${
-                  i18n.language === "gu"
-                    ? "bg-orange-500 text-white"
-                    : "bg-gray-200 text-gray-700"
-                }`}
-              >
-                GU
-              </button>
+
+              {langOpen && (
+                <div className="absolute left-0 mt-2 w-32 bg-white border rounded shadow-md">
+                  <button
+                    onClick={() => changeLanguage("en")}
+                    className={`block w-full text-left px-3 py-2 hover:bg-gray-100 ${
+                      i18n.language === "en" ? "bg-blue-500 text-white" : ""
+                    }`}
+                  >
+                    English
+                  </button>
+                  <button
+                    onClick={() => changeLanguage("gu")}
+                    className={`block w-full text-left px-3 py-2 hover:bg-gray-100 ${
+                      i18n.language === "gu" ? "bg-orange-500 text-white" : ""
+                    }`}
+                  >
+                    ગુજરાતી
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -511,8 +511,6 @@
 
 
 
-
-
 import React, { useState } from 'react';
 import { Search, FileText, Award, User, BookOpen } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -693,16 +691,16 @@ const StudentPanel = () => {
                       <thead className="bg-gray-100">
                         <tr>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase">
-                            {t("studentPanel.subject")}
+                            {t("studentPanel.table.subject")}
                           </th>
                           <th className="px-4 py-2 text-center text-xs font-medium text-gray-600 uppercase">
-                            {t("studentPanel.marks")}
+                            {t("studentPanel.table.marks")}
                           </th>
                           <th className="px-4 py-2 text-center text-xs font-medium text-gray-600 uppercase">
-                            {t("studentPanel.max")}
+                            {t("studentPanel.table.max")}
                           </th>
                           <th className="px-4 py-2 text-center text-xs font-medium text-gray-600 uppercase">
-                            %
+                            {t("studentPanel.table.percentage")}
                           </th>
                         </tr>
                       </thead>
@@ -710,7 +708,7 @@ const StudentPanel = () => {
                         {result.subjects.map((subject, index) => (
                           <tr key={index} className="hover:bg-gray-50">
                             <td className="px-4 py-3 text-sm font-medium text-gray-800">
-                              {subject.name}
+                              {t(`studentPanel.subjects.${subject.name}`, subject.name)}
                             </td>
                             <td className={`px-4 py-3 text-sm text-center ${getStatusColor(subject.marks, subject.maxMarks)}`}>
                               {subject.marks}
