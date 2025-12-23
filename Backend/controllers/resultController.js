@@ -64,10 +64,15 @@ const Result = require('../models/Result');
 
 const uploadResult = async (req, res) => {
   try {
-    const { studentName, grNumber, dateOfBirth, standard, subjects, remarks } = req.body;
+    const { studentName, grNumber, dateOfBirth, standard, subjects, remarks, academicYear, term } = req.body;
 
     if (!studentName || !grNumber || !dateOfBirth || !standard || !subjects || !subjects.length) {
       return res.status(400).json({ message: 'Please fill all required fields' });
+    }
+
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: 'User not authenticated' });
     }
 
     const existingResult = await Result.findOne({ grNumber });
@@ -75,13 +80,26 @@ const uploadResult = async (req, res) => {
       return res.status(400).json({ message: 'Result for this GR Number already exists' });
     }
 
-    const newResult = new Result({ studentName, grNumber, dateOfBirth, standard, subjects, remarks });
+    const newResult = new Result({ 
+      studentName, 
+      grNumber, 
+      dateOfBirth, 
+      standard, 
+      subjects, 
+      remarks,
+      uploadedBy: req.user.id,
+      uploadedByRole: req.user.role || 'teacher',
+      academicYear: academicYear || '2024-25',
+      term: term || 'Term-1'
+    });
+    
     await newResult.save();
 
     return res.status(201).json({ message: 'Result uploaded successfully' });
   } catch (error) {
     console.error('Error uploading result:', error);
-    return res.status(500).json({ message: 'Server error' });
+    console.error('Error details:', error.message);
+    return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
@@ -90,7 +108,7 @@ const getAllResultsForAdmin = async (req, res) => {
     const { standard } = req.query;
     const query = standard ? { standard } : {};
 
-    const results = await Result.find(query);
+    const results = await Result.find(query).populate('uploadedBy', 'name employeeId email');
 
     res.status(200).json(results); // ✅ returns array
   } catch (error) {
