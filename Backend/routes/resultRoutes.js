@@ -10,23 +10,23 @@ const {
 } = require('../controllers/resultController');
 
 const { getStudentResult } = require('../controllers/fetchResultController');
+const { protectTeacher, protectAdmin } = require('../middleware/authMiddleware');
 
-// Route to upload result
-router.post('/', uploadResult);
+// Route to upload result (Teacher or Admin only)
+router.post('/', protectTeacher, uploadResult);
 
-// Route for student to fetch their result by GR number and DOB
+// Route for student to fetch their result by GR number and DOB (public)
 router.get('/', getStudentResult);
 
 // Route for admin to get results filtered by standard
-router.get('/admin', getAllResultsForAdmin);
+router.get('/admin', protectTeacher, getAllResultsForAdmin);
 
-router.get('/:id', getResultById);
-
+router.get('/:id', protectTeacher, getResultById);
 
 // Route for admin to update result by ID
-router.put('/:id', updateResult);
+router.put('/:id', protectTeacher, updateResult);
 
 // Route for admin to delete result
-router.delete('/:id', deleteResult);
+router.delete('/:id', protectTeacher, deleteResult);
 
 module.exports = router;
