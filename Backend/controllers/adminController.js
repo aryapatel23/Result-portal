@@ -1,4 +1,5 @@
 const Result = require("../models/Result");
+const User = require("../models/User");
 const ExcelJS = require("exceljs");
 
 exports.uploadResult = async (req, res) => {
@@ -78,5 +79,59 @@ exports.exportResults = async (req, res) => {
     res.end();
   } catch (err) {
     res.status(500).json({ message: "Failed to export results", error: err.message });
+  }
+};
+
+// Get results upload activity by teachers
+exports.getResultsActivity = async (req, res) => {
+  try {
+    // Aggregate results by teacher
+    const activity = await Result.aggregate([
+      {
+        $match: {
+          uploadedBy: { $exists: true, $ne: null }
+        }
+      },
+      {
+        $group: {
+          _id: "$uploadedBy",
+          totalUploads: { $sum: 1 },
+          lastUploadDate: { $max: "$createdAt" },
+          standards: { $addToSet: "$standard" },
+          terms: { $addToSet: "$term" }
+        }
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "teacher"
+        }
+      },
+      {
+        $unwind: "$teacher"
+      },
+      {
+        $project: {
+          teacherId: "$_id",
+          teacherName: "$teacher.name",
+          employeeId: "$teacher.employeeId",
+          email: "$teacher.email",
+          totalUploads: 1,
+          lastUploadDate: 1,
+          standardsCount: { $size: "$standards" },
+          termsCount: { $size: "$terms" }
+        }
+      },
+      {
+        $sort: { totalUploads: -1 }
+      }
+    ]);
+
+    res.json({ activity });
+  } catch (error) {
+    console.error('Error fetching results activity:', error);
+    res.status(500).json({ message: 'Failed to fetch results activity', error: error.message });
   }
 };
