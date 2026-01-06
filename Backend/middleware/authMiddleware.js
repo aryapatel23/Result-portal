@@ -35,16 +35,22 @@ const protectAdmin = (req, res, next) => {
 // Teacher and Admin access
 const protectTeacher = (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
-  if (!token) return res.status(401).json({ message: 'Unauthorized' });
+  if (!token) {
+    console.log('❌ protectTeacher: No token provided');
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('🔐 protectTeacher: Decoded role:', decoded.role);
     if (decoded.role !== 'teacher' && decoded.role !== 'admin') {
+      console.log('❌ protectTeacher: Forbidden role:', decoded.role);
       return res.status(403).json({ message: 'Teacher or Admin access required' });
     }
     req.user = decoded;
     next();
   } catch (error) {
+    console.log('❌ protectTeacher: Token error:', error.message);
     return res.status(401).json({ message: 'Token is invalid or expired' });
   }
 };
@@ -72,20 +78,20 @@ const authorize = (...roles) => {
     if (!req.user) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
-    
+
     if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ 
-        message: `Access denied. Required roles: ${roles.join(', ')}` 
+      return res.status(403).json({
+        message: `Access denied. Required roles: ${roles.join(', ')}`
       });
     }
     next();
   };
 };
 
-module.exports = { 
-  protect, 
-  protectAdmin, 
-  protectTeacher, 
+module.exports = {
+  protect,
+  protectAdmin,
+  protectTeacher,
   protectStudent,
-  authorize 
+  authorize
 };

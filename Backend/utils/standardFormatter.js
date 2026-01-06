@@ -1,6 +1,6 @@
 /**
  * Utility function to format standard display consistently across the application
- * Converts various formats (9, Grade-9, STD-9, Standard 9, etc.) to STD-{number} format
+ * Converts various formats (9, Grade-9, STD-9, Standard 9, etc.) to Std-{number} format
  * Handles special case for Balvatika
  */
 const formatStandard = (standard) => {

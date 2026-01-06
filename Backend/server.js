@@ -24,7 +24,10 @@ app.use("/api/bulk-students", require("./routes/bulkStudentRoutes"));
 app.use("/api/student-promotion", require("./routes/studentPromotionRoutes"));
 app.use("/api/bulk-results", require("./routes/bulkResultRoutes"));
 app.use("/api/student-management", require("./routes/studentManagementRoutes"));
-app.use("/api/pdf", require("./routes/pdfRoutes")); 
+app.use("/api/pdf", require("./routes/pdfRoutes"));
+app.use("/api/teacher-attendance", require("./routes/teacherAttendanceRoutes"));
+app.use("/api/admin/attendance", require("./routes/adminAttendanceRoutes")); 
+app.use("/api/face", require("./routes/faceRegistrationRoutes"));
 
 console.log('✅ All routes registered including timetable routes'); 
 

@@ -52,6 +52,19 @@ const userSchema = new mongoose.Schema({
   isActive: { 
     type: Boolean, 
     default: true 
+  },
+  // Face recognition data (for teachers)
+  faceDescriptor: {
+    type: [Number], // Array of facial feature numbers from face-api.js
+    default: null
+  },
+  referenceFaceImage: {
+    type: String, // Base64 encoded reference photo
+    default: null
+  },
+  faceRegistered: {
+    type: Boolean,
+    default: false
   }
 }, { timestamps: true });
 
