@@ -176,108 +176,204 @@ The **School Management System** is an end-to-end web application designed to st
 
 ### High-Level Architecture Diagram
 
+```mermaid
+graph TB
+    subgraph "Client Layer - Browser"
+        A[Admin Portal<br/>React] 
+        B[Teacher Portal<br/>React]
+        C[Student Portal<br/>React]
+        A & B & C --> D[React Router]
+        D --> E[Redux Store]
+        E --> F[Axios HTTP Client]
+        F --> G[Face-API.js<br/>AI Models]
+    end
+    
+    G -->|HTTPS/REST API| H[Express.js Server<br/>Node.js]
+    
+    subgraph "Application Layer"
+        H --> I[API Routes Layer]
+        
+        I --> J1[/api/auth<br/>Authentication]
+        I --> J2[/api/admin<br/>Admin Ops]
+        I --> J3[/api/teacher<br/>Teacher Ops]
+        I --> J4[/api/student<br/>Student Ops]
+        I --> J5[/api/results<br/>Results]
+        I --> J6[/api/face<br/>Face Verification]
+        I --> J7[/api/teacher-attendance<br/>Attendance]
+        I --> J8[/api/bulk-*<br/>Bulk Upload]
+        I --> J9[/api/pdf<br/>PDF Generation]
+        
+        J1 & J2 & J3 & J4 & J5 & J6 & J7 & J8 & J9 --> K[Controller Layer]
+        
+        K --> L[authController]
+        K --> M[adminController]
+        K --> N[teacherController]
+        K --> O[resultController]
+        K --> P[faceController]
+        K --> Q[attendanceController]
+        
+        L & M & N & O & P & Q --> R[Middleware Layer]
+        
+        R --> S1[JWT Auth]
+        R --> S2[RBAC]
+        R --> S3[Validators]
+        R --> S4[Error Handler]
+        R --> S5[CORS]
+        R --> S6[Multer]
+        
+        S1 & S2 & S3 & S4 & S5 & S6 --> T[Service Layer]
+        
+        T --> U1[Email Service<br/>Nodemailer]
+        T --> U2[PDF Service<br/>PDFKit]
+        T --> U3[Excel Service<br/>ExcelJS]
+        T --> U4[Face Verification<br/>Euclidean Distance]
+        T --> U5[GPS Validation<br/>Geofencing]
+    end
+    
+    T -->|Mongoose ODM| V[(MongoDB Database)]
+    
+    subgraph "Data Layer"
+        V --> W1[(Users Collection)]
+        V --> W2[(Students Collection)]
+        V --> W3[(Results Collection)]
+        V --> W4[(Teachers Collection)]
+        V --> W5[(Timetables Collection)]
+        V --> W6[(Attendance Collection)]
+    end
+    
+    style A fill:#e1f5ff
+    style B fill:#e1f5ff
+    style C fill:#e1f5ff
+    style G fill:#ffe1e1
+    style H fill:#fff4e1
+    style V fill:#e1ffe1
+```
 
+### Teacher Attendance Flow with AI Face Verification
 
-┌─────────────────────────────────────────────────────────────────────────┐
-│ CLIENT LAYER (Browser) │
-├─────────────────────────────────────────────────────────────────────────┤
-│ │
-│ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ │
-│ │ Admin Panel │ │Teacher Portal│ │Student Portal│ │
-│ │ (React) │ │ (React) │ │ (React) │ │
-│ └──────┬───────┘ └──────┬───────┘ └──────┬───────┘ │
-│ │ │ │ │
-│ └──────────────────┴──────────────────┘ │
-│ │ │
-│ ┌────────▼────────┐ │
-│ │ React Router │ │
-│ │ Redux Store │ │
-│ │ Axios Client │ │
-│ └────────┬────────┘ │
-│ │ │
-│ ┌─────────────────────────┴──────────────────────────┐ │
-│ │ Face-API.js (Client-Side) │ │
-│ │ • Face Detection • Descriptor Extraction │ │
-│ │ • Live Camera • Quality Validation │ │
-│ └────────────────────────────────────────────────────┘ │
-│ │
-└────────────────────────────┬─────────────────────────────────────────────┘
-│ HTTPS/REST API
-│
-┌────────────────────────────▼─────────────────────────────────────────────┐
-│ APPLICATION LAYER │
-├──────────────────────────────────────────────────────────────────────────┤
-│ Express.js Server │
-│ (Node.js) │
-│ │
-│ ┌────────────────────────────────────────────────────────────────┐ │
-│ │ API Routes Layer │ │
-│ ├────────────────────────────────────────────────────────────────┤ │
-│ │ /api/auth │ Authentication & Authorization │ │
-│ │ /api/admin │ Admin operations │ │
-│ │ /api/teacher │ Teacher operations │ │
-│ │ /api/student │ Student operations │ │
-│ │ /api/results │ Result management │ │
-│ │ /api/face │ Face registration & verification │ │
-│ │ /api/teacher-attendance │ Attendance marking │ │
-│ │ /api/bulk-students │ Bulk student upload │ │
-│ │ /api/bulk-results │ Bulk result upload │ │
-│ │ /api/pdf │ PDF generation │ │
-│ │ /api/timetable │ Timetable management │ │
-│ └────────────────────────────────────────────────────────────────┘ │
-│ │
-│ ┌────────────────────────────────────────────────────────────────┐ │
-│ │ Controller Layer │ │
-│ ├────────────────────────────────────────────────────────────────┤ │
-│ │ • authController • resultController │ │
-│ │ • adminController • studentController │ │
-│ │ • teacherController • faceRegistrationController │ │
-│ │ • teacherAttendanceController • pdfController │ │
-│ │ • bulkUploadController • timetableController │ │
-│ └────────────────────────────────────────────────────────────────┘ │
-│ │
-│ ┌────────────────────────────────────────────────────────────────┐ │
-│ │ Middleware Layer │ │
-│ ├────────────────────────────────────────────────────────────────┤ │
-│ │ • JWT Authentication • Role-based Authorization │ │
-│ │ • Request Validation • Error Handling │ │
-│ │ • CORS • Body Parser │ │
-│ │ • Multer (File Upload) • Rate Limiting │ │
-│ └────────────────────────────────────────────────────────────────┘ │
-│ │
-│ ┌────────────────────────────────────────────────────────────────┐ │
-│ │ Service Layer │ │
-│ ├────────────────────────────────────────────────────────────────┤ │
-│ │ • Email Service (Nodemailer) │ │
-│ │ • PDF Generation (PDFKit) │ │
-│ │ • Excel Processing (ExcelJS, XLSX) │ │
-│ │ • Face Verification (Euclidean Distance) │ │
-│ │ • Geolocation Validation │ │
-│ └────────────────────────────────────────────────────────────────┘ │
-│ │
-└────────────────────────────┬─────────────────────────────────────────────┘
-│ MongoDB Driver (Mongoose)
-│
-┌────────────────────────────▼─────────────────────────────────────────────┐
-│ DATA LAYER │
-├──────────────────────────────────────────────────────────────────────────┤
-│ MongoDB Database │
-│ │
-│ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ │
-│ │ Users │ │ Students │ │ Results │ │
-│ │ Collection │ │ Collection │ │ Collection │ │
-│ └──────────────┘ └──────────────┘ └──────────────┘ │
-│ │
-│ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ │
-│ │ Teachers │ │ Timetables │ │ Attendance │ │
-│ │ Collection │ │ Collection │ │ Collection │ │
-│ └──────────────┘ └──────────────┘ └──────────────┘ │
-│ │
-└──────────────────────────────────────────────────────────────────────────┘
+```mermaid
+sequenceDiagram
+    participant T as Teacher Browser
+    participant F as Face-API.js
+    participant A as Auth Middleware
+    participant B as Backend Server
+    participant D as MongoDB Database
+    participant G as GPS Service
+    
+    Note over T,D: Authentication Phase
+    T->>B: POST /api/auth/login<br/>{email, password}
+    B->>D: Query User (User.findOne)
+    D-->>B: User Data
+    B->>B: Verify Password (bcrypt)
+    B->>B: Generate JWT Token
+    B-->>T: JWT Token + User Info
+    T->>T: Store Token in localStorage
+    
+    Note over T,D: Face Registration Check
+    T->>B: GET /api/face/status<br/>Header: JWT Token
+    A->>A: Validate JWT
+    B->>D: Check Face Registration
+    D-->>B: {faceRegistered: true}
+    B-->>T: Registration Status
+    
+    Note over T,D: Attendance Marking Process
+    T->>F: Load AI Models<br/>(face-api.js)
+    F-->>T: Models Loaded
+    
+    T->>G: Get GPS Location<br/>(navigator.geolocation)
+    G-->>T: {latitude, longitude, accuracy}
+    
+    T->>T: Open Camera<br/>(getUserMedia)
+    T->>F: Capture Photo
+    F->>F: Detect Face
+    F->>F: Extract 128D Descriptor
+    F-->>T: Face Descriptor Array
+    
+    T->>B: POST /api/teacher-attendance/mark<br/>{status, location, faceDescriptor}
+    A->>A: Validate JWT Token
+    
+    B->>B: Verify GPS Location<br/>(Calculate Distance from School)
+    alt Distance > 3km
+        B-->>T: Error: Too far from school
+    else Distance ≤ 3km
+        B->>D: Fetch Stored Face Descriptor
+        D-->>B: Registered Face Data
+        B->>B: Compare Face Descriptors<br/>(Euclidean Distance)
+        B->>B: Calculate Match %<br/>Match = (1 - distance) × 100
+        
+        alt Match < 60%
+            B-->>T: Error: Face verification failed<br/>Match: 45%
+        else Match ≥ 60%
+            B->>D: Create Attendance Record<br/>Attendance.create()
+            D-->>B: Attendance Saved
+            B-->>T: Success: Attendance Marked<br/>Match: 87.5%
+            T->>T: Show Success Toast ✅
+        end
+    end
+```
 
+### Student Result Management Flow
 
+```mermaid
+sequenceDiagram
+    participant TA as Teacher/Admin
+    participant A as Auth Middleware
+    participant B as Backend Server
+    participant E as Excel Parser
+    participant D as MongoDB Database
+    participant P as PDF Service
+    participant S as Student
+    
+    Note over TA,D: Single Result Upload
+    TA->>B: POST /api/results/upload<br/>{studentName, grNumber, subjects[], term}
+    A->>A: Validate JWT Token
+    A->>A: Check Role (teacher/admin)
+    B->>B: Calculate Total Marks<br/>Calculate Percentage
+    B->>B: Validate Data<br/>(GR Number, Marks Range)
+    B->>D: Result.create()
+    D-->>B: Result Saved Successfully
+    B-->>TA: Success: Result Uploaded ✅
+    
+    Note over TA,D: Bulk Upload via Excel
+    TA->>B: POST /api/bulk-results<br/>(multipart/form-data: results.xlsx)
+    A->>A: Validate JWT & Role
+    B->>E: Parse Excel File
+    E-->>B: Array of Result Objects
+    
+    loop For Each Row
+        B->>B: Validate GR Number
+        B->>B: Validate Marks Range
+        B->>D: Check Duplicate Entry
+        D-->>B: Validation Result
+    end
+    
+    B->>D: Result.insertMany(validResults)
+    D-->>B: Bulk Insert Complete
+    B-->>TA: Upload Report<br/>{success: 48, failed: 2, errors: []}
+    
+    Note over S,P: Student Views Results
+    S->>B: GET /api/student/results<br/>Header: JWT Token
+    A->>A: Extract Student ID from JWT
+    B->>D: Result.find({grNumber: studentGR})<br/>.sort({createdAt: -1})
+    D-->>B: Array of Results
+    B-->>S: Results List (All Terms)
+    S->>S: Display Results in Dashboard
+    
+    Note over S,P: Download PDF Report Card
+    S->>B: GET /api/pdf/generate/:resultId
+    B->>D: Result.findById(resultId)<br/>.populate('uploadedBy')
+    D-->>B: Result Details
+    B->>P: Generate PDF Report
+    P->>P: Add School Logo
+    P->>P: Format Student Info
+    P->>P: Create Marks Table
+    P->>P: Calculate Total & %
+    P->>P: Add Remarks & Signatures
+    P-->>B: PDF Buffer
+    B-->>S: application/pdf<br/>Download Report Card 📄
+```
 
-### Request Flow Diagram
+### Data Flow Diagram
 
 
 ┌─────────────────────────────────────────────────────────────────────┐
