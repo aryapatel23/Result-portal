@@ -248,62 +248,73 @@ sequenceDiagram
     Note over T,D: 🔐 Authentication Phase
     T->>B: POST /api/auth/login
     activate B
-    Note right of T: {email, password}
+    Note right of T: email and password
     B->>D: Query User
     D-->>B: User Data
-    B->>B: Verify Password (bcrypt)
+    B->>B: Verify Password with bcrypt
     B->>B: Generate JWT Token
-    B-->>T: JWT Token + User Data
+    B-->>T: JWT Token and User Data
     deactivate B
     T->>T: Store Token in localStorage
     
     Note over T,D: 👤 Face Registration Check
     T->>B: GET /api/face/status
     activate B
-    Note right of T: Header: JWT Token
+    Note right of T: Header JWT Token
     A->>A: Validate JWT
     B->>D: Check Face Registration
-    D-->>B: faceRegistered: true
+    D-->>B: faceRegistered true
     B-->>T: Registration Status
     deactivate B
     
     Note over T,D: 📸 Attendance Marking Process
     T->>F: Load AI Models
-    Note right of T: face-api.js
-    F-->>T: Models Loaded ✅
+    Note right of T: face-api.js library
+    F-->>T: Models Loaded Successfully
     
     T->>G: Get GPS Location
-    Note right of T: navigator.geolocation
-    G-->>T: latitude, longitude, accuracy
+    Note right of T: navigator.geolocation API
+    G-->>T: latitude longitude accuracy
     
-    T->>T: Open Camera (getUserMedia)
+    T->>T: Open Camera with getUserMedia
     T->>F: Capture Photo
     F->>F: Detect Face
     F->>F: Extract 128D Descriptor
-    F-->>T: Face Descriptor Array [128 values]
+    F-->>T: Face Descriptor Array
     
     T->>B: POST /api/teacher-attendance/mark
     activate B
-    Note right of T: status, location, faceDescriptor
+    Note right of T: status location faceDescriptor
     A->>A: Validate JWT Token
     
     B->>B: Calculate Distance from School
-    alt Distance > 3km
-        B-->>T: ❌ Error: Too far from school
-    else Distance <= 3km
+    alt Distance greater than 3km
+        B-->>T: Error Too far from school
+    else Distance within 3km
         B->>D: Fetch Stored Face Descriptor
         D-->>B: Registered Face Data
         B->>B: Compare Descriptors
-        Note right of B: Euclidean Distance<br/>Match = (1 - distance) × 100
+        Note right of B: Euclidean Distance Calculation
         
-        alt Match < 60%
-            B-->>T: ❌ Face Verification Failed (Match: 45%)
-        else Match >= 60%
+        alt Match less than 60 percent
+            B-->>T: Face Verification Failed
+        else Match 60 percent or more
             B->>D: Create Attendance Record
             D-->>B: Attendance Saved
-            B-->>T: ✅ Success: Attendance Marked (Match: 87.5%)
+            B-->>T: Success Attendance Marked
             deactivate B
-            T->>T: Show SucceAPI
+            T->>T: Show Success Toast Message
+        end
+    end
+```
+
+### Student Result Management Flow
+
+```mermaid
+sequenceDiagram
+    participant TA as Teacher/Admin
+    participant A as Auth Middleware
+    participant B as Backend API
     participant E as Excel Parser
     participant D as MongoDB
     participant P as PDF Service
@@ -312,23 +323,23 @@ sequenceDiagram
     Note over TA,D: 📝 Single Result Upload
     TA->>B: POST /api/results/upload
     activate B
-    Note right of TA: studentName, grNumber<br/>subjects[], term
+    Note right of TA: studentName grNumber subjects term
     A->>A: Validate JWT Token
-    A->>A: Check Role (teacher/admin)
-    B->>B: Calculate Total & Percentage
+    A->>A: Check Role teacher or admin
+    B->>B: Calculate Total and Percentage
     B->>B: Validate Data
-    Note right of B: GR Number, Marks Range
+    Note right of B: GR Number and Marks Range
     B->>D: Result.create()
     D-->>B: Result Saved Successfully
-    B-->>TA: ✅ Success: Result Uploaded
+    B-->>TA: Success Result Uploaded
     deactivate B
     
     Note over TA,D: 📊 Bulk Upload via Excel
     TA->>B: POST /api/bulk-results
     activate B
-    Note right of TA: multipart/form-data<br/>results.xlsx
-    A->>A: Validate JWT & Role
-    B->>E: Parse Excel File (XLSX)
+    Note right of TA: multipart form-data Excel file
+    A->>A: Validate JWT and Role
+    B->>E: Parse Excel File XLSX
     E-->>B: Array of Result Objects
     
     loop For Each Row
@@ -338,52 +349,41 @@ sequenceDiagram
         D-->>B: Validation Result
     end
     
-    B->>D: Result.insertMany(validResults)
+    B->>D: Result.insertMany validResults
     D-->>B: Bulk Insert Complete
     B-->>TA: Upload Report
     deactivate B
-    Note left of TA: success: 48<br/>failed: 2<br/>errors: []
+    Note left of TA: success 48 failed 2
     
     Note over S,P: 📖 Student Views Results
     S->>B: GET /api/student/results
     activate B
-    Note right of S: Header: JWT Token
+    Note right of S: Header JWT Token
     A->>A: Extract Student ID from JWT
-    B->>D: Result.find + sort
-    Note right of B: grNumber: studentGR<br/>sort: createdAt desc
+    B->>D: Result.find and sort
+    Note right of B: grNumber filter and createdAt sort
     D-->>B: Array of Results
-    B-->>S: Results List (All Terms)
+    B-->>S: Results List All Terms
     deactivate B
     S->>S: Display Results in Dashboard
     
     Note over S,P: 🖨️ Download PDF Report Card
     S->>B: GET /api/pdf/generate/:resultId
     activate B
-    B->>D: Result.findById().populate()
+    B->>D: Result.findById and populate
     D-->>B: Result Details
-    B->>P: Generate PDF Report (PDFKit)
+    B->>P: Generate PDF Report with PDFKit
     activate P
     P->>P: Add School Logo
     P->>P: Format Student Info
     P->>P: Create Marks Table
-    P->>P: Calculate Total & Percentage
-    P->>P: Add Remarks & Signatures
+    P->>P: Calculate Total and Percentage
+    P->>P: Add Remarks and Signatures
     P-->>B: PDF Buffer
     deactivate P
-    B-->>S: application/pdf
+    B-->>S: Download PDF Report Card
     deactivate B
-    Note left of S: 📄 Download Report Card
-    S->>B: GET /api/pdf/generate/:resultId
-    B->>D: Result.findById(resultId)<br/>.populate('uploadedBy')
-    D-->>B: Result Details
-    B->>P: Generate PDF Report
-    P->>P: Add School Logo
-    P->>P: Format Student Info
-    P->>P: Create Marks Table
-    P->>P: Calculate Total & %
-    P->>P: Add Remarks & Signatures
-        P-->>B: PDF Buffer
-    B-->>S: application/pdf<br/>Download Report Card 📄
+    Note left of S: application/pdf file
 ```
 
 ---
