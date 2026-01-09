@@ -40,8 +40,8 @@ const drawTableCell = (doc, x, y, width, height, text, options = {}) => {
 
   // Draw text
   doc.fillColor(textColor)
-     .fontSize(fontSize)
-     .font(bold ? 'Helvetica-Bold' : font);
+    .fontSize(fontSize)
+    .font(bold ? 'Helvetica-Bold' : font);
 
   const textY = y + (height - fontSize) / 2 + 2;
   const padding = 5;
@@ -80,13 +80,13 @@ exports.generateReportCard = async (req, res) => {
 
     // Fetch results
     const results = await Result.find(query).sort({ uploadedAt: -1 });
-    
+
     if (results.length === 0) {
       return res.status(404).json({ message: 'No results found for this student' });
     }
 
     // Fetch logos as buffers
-    const leftLogoBuffer = await fetchImageAsBuffer('https://res.cloudinary.com/dzsvjyg2c/image/upload/v1766313043/50_srwqa0.png');
+    const leftLogoBuffer = await fetchImageAsBuffer('https://res.cloudinary.com/dzsvjyg2c/image/upload/v1748249134/gyzoxsk22n0z1kkkh3di.png');
     const rightLogoBuffer = await fetchImageAsBuffer('https://res.cloudinary.com/dzsvjyg2c/image/upload/v1748249134/gyzoxsk22n0z1kkkh3di.png');
 
     // Create PDF
@@ -135,37 +135,37 @@ exports.generateReportCard = async (req, res) => {
       // Header Text Section - Centered between logos
       const headerTextX = 115;
       const headerTextWidth = 365;
-      
+
       // Society Name (Small, top)
       doc.fontSize(9)
-         .font('Helvetica')
-         .fillColor('#000000')
-         .text('Devaraj Urs Education Society (R)', headerTextX, currentY + 5, { width: headerTextWidth, align: 'center' });
-      
+        .font('Helvetica')
+        .fillColor('#000000')
+        .text('Devaraj Urs Education Society (R)', headerTextX, currentY + 5, { width: headerTextWidth, align: 'center' });
+
       // School Name (Large, Bold)
       doc.fontSize(16)
-         .font('Helvetica-Bold')
-         .text('KAMLI ANUPAM PRIMARY SCHOOL', headerTextX, currentY + 20, { width: headerTextWidth, align: 'center' });
-      
+        .font('Helvetica-Bold')
+        .text('KAMLI ANUPAM PRIMARY SCHOOL', headerTextX, currentY + 20, { width: headerTextWidth, align: 'center' });
+
       // College Code
       doc.fontSize(8)
-         .font('Helvetica')
-         .text('(School Code: KAP 001)', headerTextX, currentY + 38, { width: headerTextWidth, align: 'center' });
-      
+        .font('Helvetica')
+        .text('(School Code: KAP 001)', headerTextX, currentY + 38, { width: headerTextWidth, align: 'center' });
+
       // Address
       doc.fontSize(8)
-         .font('Helvetica')
-         .text('Vidyadhaana Soudha, NH-4, Near Challakere Tollgate, Chitradurga - 577 501, Karnataka.', 
-               headerTextX, currentY + 50, { width: headerTextWidth, align: 'center' });
-      
+        .font('Helvetica')
+        .text('Vidyadhaana Soudha, NH-4, Near Challakere Tollgate, Chitradurga - 577 501, Karnataka.',
+          headerTextX, currentY + 50, { width: headerTextWidth, align: 'center' });
+
       currentY += 85;
-      
+
       // Result Title
       doc.fontSize(10)
-         .font('Helvetica-Bold')
-         .text(`RESULT OF ${result.term || 'Term-1'} ${result.academicYear || '2024-25'}`, 
-               30, currentY, { width: 535, align: 'center' });
-      
+        .font('Helvetica-Bold')
+        .text(`RESULT OF ${result.term || 'Term-1'} ${result.academicYear || '2024-25'}`,
+          30, currentY, { width: 535, align: 'center' });
+
       currentY += 20;
 
       // ============ STUDENT INFORMATION TABLE ============
@@ -176,54 +176,54 @@ exports.generateReportCard = async (req, res) => {
 
       // Draw outer border for student info section
       const studentInfoStartY = currentY;
-      
+
       // Row 1: Student Name | Class
-      drawTableCell(doc, infoTableX, currentY, colWidth, rowHeight, 
+      drawTableCell(doc, infoTableX, currentY, colWidth, rowHeight,
         `Student's Name : ${student.name}`, { fontSize: 10, font: 'Helvetica' });
-      drawTableCell(doc, infoTableX + colWidth, currentY, colWidth, rowHeight, 
+      drawTableCell(doc, infoTableX + colWidth, currentY, colWidth, rowHeight,
         `Class : ${formatStandard(result.standard)}`, { fontSize: 10, font: 'Helvetica' });
       currentY += rowHeight;
 
       // Row 2: GR Number | Enrollment No
-      drawTableCell(doc, infoTableX, currentY, colWidth, rowHeight, 
+      drawTableCell(doc, infoTableX, currentY, colWidth, rowHeight,
         `GR Number : ${student.grNumber}`, { fontSize: 10, font: 'Helvetica' });
-      drawTableCell(doc, infoTableX + colWidth, currentY, colWidth, rowHeight, 
+      drawTableCell(doc, infoTableX + colWidth, currentY, colWidth, rowHeight,
         `Enrollment No : ${student.grNumber}`, { fontSize: 10, font: 'Helvetica' });
       currentY += rowHeight;
 
       // Row 3: Email | DOB
-      drawTableCell(doc, infoTableX, currentY, colWidth, rowHeight, 
+      drawTableCell(doc, infoTableX, currentY, colWidth, rowHeight,
         `Email : ${student.email || 'N/A'}`, { fontSize: 10, font: 'Helvetica' });
-      drawTableCell(doc, infoTableX + colWidth, currentY, colWidth, rowHeight, 
+      drawTableCell(doc, infoTableX + colWidth, currentY, colWidth, rowHeight,
         `DOB : ${student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString('en-GB') : 'N/A'}`, { fontSize: 10, font: 'Helvetica' });
       currentY += rowHeight;
 
       // Row 4: Stream/Section | Combination (can be customized)
-      drawTableCell(doc, infoTableX, currentY, colWidth, rowHeight, 
+      drawTableCell(doc, infoTableX, currentY, colWidth, rowHeight,
         `Stream : General`, { fontSize: 10, font: 'Helvetica' });
-      drawTableCell(doc, infoTableX + colWidth, currentY, colWidth, rowHeight, 
+      drawTableCell(doc, infoTableX + colWidth, currentY, colWidth, rowHeight,
         `Section : A`, { fontSize: 10, font: 'Helvetica' });
       currentY += rowHeight;
 
       // Row 5: Academic Year | Language
-      drawTableCell(doc, infoTableX, currentY, colWidth, rowHeight, 
+      drawTableCell(doc, infoTableX, currentY, colWidth, rowHeight,
         `Academic Year : ${result.academicYear || '2024-25'}`, { fontSize: 10, font: 'Helvetica' });
-      drawTableCell(doc, infoTableX + colWidth, currentY, colWidth, rowHeight, 
+      drawTableCell(doc, infoTableX + colWidth, currentY, colWidth, rowHeight,
         `Language : English`, { fontSize: 10, font: 'Helvetica' });
       currentY += rowHeight;
-      
+
       // Outer border around student info section
       doc.rect(infoTableX, studentInfoStartY, infoTableWidth, rowHeight * 5)
-         .lineWidth(1.5)
-         .stroke('#000000');
-      
+        .lineWidth(1.5)
+        .stroke('#000000');
+
       currentY += 10;
-      
+
       // Horizontal separator line after student info
       doc.moveTo(40, currentY).lineTo(555, currentY)
-         .lineWidth(1)
-         .stroke('#000000');
-      
+        .lineWidth(1)
+        .stroke('#000000');
+
       currentY += 20; // More spacing before marks table
 
       // ============ MARKS TABLE ============
@@ -237,13 +237,13 @@ exports.generateReportCard = async (req, res) => {
       const dataRowHeight = 25;
 
       // Table Header (Gray background)
-      drawTableCell(doc, marksTableX, currentY, snWidth, headerHeight, 
+      drawTableCell(doc, marksTableX, currentY, snWidth, headerHeight,
         'SN', { fontSize: 10, font: 'Helvetica-Bold', align: 'center', bgColor: '#808080', textColor: '#FFFFFF', bold: true });
-      drawTableCell(doc, marksTableX + snWidth, currentY, subjectWidth, headerHeight, 
+      drawTableCell(doc, marksTableX + snWidth, currentY, subjectWidth, headerHeight,
         'SUBJECTS', { fontSize: 10, font: 'Helvetica-Bold', align: 'center', bgColor: '#808080', textColor: '#FFFFFF', bold: true });
-      drawTableCell(doc, marksTableX + snWidth + subjectWidth, currentY, maxMarksWidth, headerHeight, 
+      drawTableCell(doc, marksTableX + snWidth + subjectWidth, currentY, maxMarksWidth, headerHeight,
         'MAXIMUM MARKS', { fontSize: 10, font: 'Helvetica-Bold', align: 'center', bgColor: '#808080', textColor: '#FFFFFF', bold: true });
-      drawTableCell(doc, marksTableX + snWidth + subjectWidth + maxMarksWidth, currentY, obtainedMarksWidth, headerHeight, 
+      drawTableCell(doc, marksTableX + snWidth + subjectWidth + maxMarksWidth, currentY, obtainedMarksWidth, headerHeight,
         'OBTAINED MARKS', { fontSize: 10, font: 'Helvetica-Bold', align: 'center', bgColor: '#808080', textColor: '#FFFFFF', bold: true });
       currentY += headerHeight;
 
@@ -254,37 +254,37 @@ exports.generateReportCard = async (req, res) => {
       result.subjects.forEach((subject, index) => {
         // Alternate row colors (light pink/white)
         const bgColor = index % 2 === 0 ? '#FFE5E5' : '#FFFFFF';
-        
+
         // Safety checks for undefined marks - use correct field names: marks and maxMarks
         const totalMarks = subject.maxMarks || 0;
         const obtainedMarks = subject.marks || 0;
-        
-        drawTableCell(doc, marksTableX, currentY, snWidth, dataRowHeight, 
+
+        drawTableCell(doc, marksTableX, currentY, snWidth, dataRowHeight,
           (index + 1).toString(), { fontSize: 10, align: 'center', bgColor: bgColor });
-        drawTableCell(doc, marksTableX + snWidth, currentY, subjectWidth, dataRowHeight, 
+        drawTableCell(doc, marksTableX + snWidth, currentY, subjectWidth, dataRowHeight,
           subject.name || 'N/A', { fontSize: 10, bgColor: bgColor });
-        drawTableCell(doc, marksTableX + snWidth + subjectWidth, currentY, maxMarksWidth, dataRowHeight, 
+        drawTableCell(doc, marksTableX + snWidth + subjectWidth, currentY, maxMarksWidth, dataRowHeight,
           totalMarks.toString(), { fontSize: 10, align: 'center', bgColor: bgColor });
-        drawTableCell(doc, marksTableX + snWidth + subjectWidth + maxMarksWidth, currentY, obtainedMarksWidth, dataRowHeight, 
+        drawTableCell(doc, marksTableX + snWidth + subjectWidth + maxMarksWidth, currentY, obtainedMarksWidth, dataRowHeight,
           obtainedMarks.toString(), { fontSize: 10, align: 'center', bgColor: bgColor });
-        
+
         totalObtained += obtainedMarks;
         totalMax += totalMarks;
         currentY += dataRowHeight;
       });
 
       // Total Row (Light blue background)
-      drawTableCell(doc, marksTableX, currentY, snWidth + subjectWidth, dataRowHeight, 
+      drawTableCell(doc, marksTableX, currentY, snWidth + subjectWidth, dataRowHeight,
         `Marks Obtained : ${totalObtained} Out Of ${totalMax}`, { fontSize: 10, font: 'Helvetica-Bold', align: 'center', bgColor: '#ADD8E6', bold: true });
-      drawTableCell(doc, marksTableX + snWidth + subjectWidth, currentY, maxMarksWidth + obtainedMarksWidth, dataRowHeight, 
+      drawTableCell(doc, marksTableX + snWidth + subjectWidth, currentY, maxMarksWidth + obtainedMarksWidth, dataRowHeight,
         '', { bgColor: '#ADD8E6' });
       currentY += dataRowHeight;
 
       // Horizontal separator line
       doc.moveTo(marksTableX, currentY + 10).lineTo(marksTableX + marksTableWidth, currentY + 10)
-         .lineWidth(1)
-         .stroke('#000000');
-      
+        .lineWidth(1)
+        .stroke('#000000');
+
       currentY += 30; // More spacing before percentage box
 
       // ============ PERCENTAGE AND RESULT BOX ============
@@ -294,70 +294,70 @@ exports.generateReportCard = async (req, res) => {
 
       // Draw the full box with light yellow background
       doc.rect(marksTableX, currentY, marksTableWidth, resultBoxHeight)
-         .fillAndStroke('#FFFACD', '#000000');
+        .fillAndStroke('#FFFACD', '#000000');
 
       // Left side - Percentage
       doc.fontSize(11)
-         .font('Helvetica-Bold')
-         .fillColor('#000000')
-         .text(`Percentage : ${percentage}`, marksTableX + 10, currentY + 13, { width: 150, align: 'left' });
+        .font('Helvetica-Bold')
+        .fillColor('#000000')
+        .text(`Percentage : ${percentage}`, marksTableX + 10, currentY + 13, { width: 150, align: 'left' });
 
       // Center - Watermark (light gray, smaller font)
       doc.fontSize(10)
-         .font('Helvetica')
-         .fillColor('#D3D3D3')
-         .text('Powered By Result Hosting™', marksTableX + 150, currentY + 15, { width: 215, align: 'center' });
+        .font('Helvetica')
+        .fillColor('#D3D3D3')
+        .text('Powered By Result Hosting™', marksTableX + 150, currentY + 15, { width: 215, align: 'center' });
 
       // Right side - Result
       doc.fontSize(11)
-         .font('Helvetica-Bold')
-         .fillColor('#000000')
-         .text(`Result : ${resultStatus}`, marksTableX + 365, currentY + 13, { width: 150, align: 'right' });
+        .font('Helvetica-Bold')
+        .fillColor('#000000')
+        .text(`Result : ${resultStatus}`, marksTableX + 365, currentY + 13, { width: 150, align: 'right' });
 
       currentY += resultBoxHeight + 10;
 
       // Horizontal separator line after percentage box
       doc.moveTo(40, currentY).lineTo(555, currentY)
-         .lineWidth(1)
-         .stroke('#000000');
-      
+        .lineWidth(1)
+        .stroke('#000000');
+
       currentY += 20;
 
       // ============ VISIT SECTION ============
       const visitBoxHeight = 50;
-      
+
       // Draw visit section with border
       doc.rect(marksTableX, currentY, marksTableWidth, visitBoxHeight)
-         .lineWidth(1.5)
-         .stroke('#000000');
-      
+        .lineWidth(1.5)
+        .stroke('#000000');
+
       doc.fontSize(20)
-         .font('Helvetica-Bold')
-         .fillColor('#000000')
-         .text('Visit:', marksTableX + 10, currentY + 15, { width: 100, align: 'left' });
-      
+        .font('Helvetica-Bold')
+        .fillColor('#000000')
+        .text('Visit:', marksTableX + 10, currentY + 15, { width: 100, align: 'left' });
+
       doc.fontSize(20)
-         .font('Helvetica-Bold')
-         .fillColor('#FF0000')
-         .text('www.resulthosting.net', marksTableX + 120, currentY + 15, { width: 385, align: 'left' });
-      
+        .font('Helvetica-Bold')
+        .fillColor('#FF0000')
+        .text('www.resulthosting.net', marksTableX + 120, currentY + 15, { width: 385, align: 'left' });
+
       currentY += visitBoxHeight + 10;
 
       // Horizontal separator line after visit section
       doc.moveTo(40, currentY).lineTo(555, currentY)
-         .lineWidth(1)
-         .stroke('#000000');
-      
+        .lineWidth(1)
+        .stroke('#000000');
+
       currentY += 20;
 
       // Remarks if present
       if (result.remarks) {
         doc.fontSize(10)
-           .font('Helvetica-Bold')
-           .fillColor('#000000')
-           .text('Remarks: ', 40, currentY, { continued: true })
-           .font('Helvetica')
-           .text(result.remarks, { width: 515 });
+          .font('Helvetica-Bold')
+          .fillColor('#000000')
+          .text('Remarks: ', 40, currentY, { continued: true })
+          .font('Helvetica')
+          .text(result.remarks, { width: 515 });
         currentY += 30;
       }
 
@@ -367,68 +367,68 @@ exports.generateReportCard = async (req, res) => {
       // Draw border around signature section
       const signatureBoxHeight = 60;
       doc.rect(40, currentY, 515, signatureBoxHeight)
-         .lineWidth(1.5)
-         .stroke('#000000');
-      
+        .lineWidth(1.5)
+        .stroke('#000000');
+
       // Signature boxes
       const signatureY = currentY + 40;
       const signatureWidth = 170;
-      
+
       doc.fontSize(10)
-         .font('Helvetica')
-         .fillColor('#000000')
-         .text('Class Teacher\'s Sign.', 40, signatureY, { width: signatureWidth, align: 'center' })
-         .text('Office Seal', 210, signatureY, { width: signatureWidth, align: 'center' })
-         .text('Principal\'s Sign.', 380, signatureY, { width: signatureWidth, align: 'center' });
+        .font('Helvetica')
+        .fillColor('#000000')
+        .text('Class Teacher\'s Sign.', 40, signatureY, { width: signatureWidth, align: 'center' })
+        .text('Office Seal', 210, signatureY, { width: signatureWidth, align: 'center' })
+        .text('Principal\'s Sign.', 380, signatureY, { width: signatureWidth, align: 'center' });
 
       // Lines for signatures
       doc.moveTo(40, signatureY - 5).lineTo(200, signatureY - 5).stroke();
       doc.moveTo(210, signatureY - 5).lineTo(370, signatureY - 5).stroke();
       doc.moveTo(380, signatureY - 5).lineTo(540, signatureY - 5).stroke();
-      
+
       currentY += signatureBoxHeight + 10;
-      
+
       // Horizontal separator line after signature section
       doc.moveTo(40, currentY).lineTo(555, currentY)
-         .lineWidth(1)
-         .stroke('#000000');
-      
+        .lineWidth(1)
+        .stroke('#000000');
+
       currentY += 10;
-      
+
       // ============ DISCLAIMER ============
       doc.fontSize(7)
-         .font('Helvetica-Bold')
-         .fillColor('#FF0000')
-         .text('Disclaimer : ', 40, currentY, { continued: true })
-         .font('Helvetica')
-         .fillColor('#000000')
-         .text('Neither webmaster nor Result Hosting is responsible for any inadvertent error that may creep in the results being published on NET.', { width: 515 });
-      
+        .font('Helvetica-Bold')
+        .fillColor('#FF0000')
+        .text('Disclaimer : ', 40, currentY, { continued: true })
+        .font('Helvetica')
+        .fillColor('#000000')
+        .text('Neither webmaster nor Result Hosting is responsible for any inadvertent error that may creep in the results being published on NET.', { width: 515 });
+
       doc.fontSize(7)
-         .text('The results published on net are immediate information for Students. This cannot be treated as original mark sheet Until Signed Or Stamped By School Office.', 
-               40, currentY + 10, { width: 515 });
+        .text('The results published on net are immediate information for Students. This cannot be treated as original mark sheet Until Signed Or Stamped By School Office.',
+          40, currentY + 10, { width: 515 });
       doc.moveTo(210, signatureY - 5).lineTo(370, signatureY - 5).stroke();
       doc.moveTo(380, signatureY - 5).lineTo(540, signatureY - 5).stroke();
 
       // ============ FOOTER/DISCLAIMER ============
       currentY = signatureY + 25;
-      
+
       doc.fontSize(8)
-         .font('Helvetica')
-         .fillColor('#FF0000')
-         .text('Disclaimer : ', 40, currentY, { continued: true, underline: true })
-         .fillColor('#000000')
-         .font('Helvetica')
-         .text('Neither webmaster nor Result Hosting is responsible for any inadvertent error that may crept in the results being published on NET.', { width: 515 });
-      
+        .font('Helvetica')
+        .fillColor('#FF0000')
+        .text('Disclaimer : ', 40, currentY, { continued: true, underline: true })
+        .fillColor('#000000')
+        .font('Helvetica')
+        .text('Neither webmaster nor Result Hosting is responsible for any inadvertent error that may crept in the results being published on NET.', { width: 515 });
+
       currentY += 15;
       doc.fontSize(7)
-         .text('The results published on net are immediate information for Students. This cannot be treated as original mark sheet Until Signed Or Stamped By School Office.', 40, currentY, { width: 515 });
-      
+        .text('The results published on net are immediate information for Students. This cannot be treated as original mark sheet Until Signed Or Stamped By School Office.', 40, currentY, { width: 515 });
+
       currentY += 20;
       doc.fontSize(8)
-         .fillColor('#000000')
-         .text(`Generated on: ${new Date().toLocaleString()}`, 40, currentY, { width: 515, align: 'center' });
+        .fillColor('#000000')
+        .text(`Generated on: ${new Date().toLocaleString()}`, 40, currentY, { width: 515, align: 'center' });
     });
 
     // Finalize PDF
@@ -460,7 +460,7 @@ exports.generateLatestResultPDF = async (req, res) => {
     // Fetch latest result (sort by createdAt descending)
     const result = await Result.findOne({ grNumber }).sort({ createdAt: -1 });
     console.log('Result found:', result ? 'Yes' : 'No');
-    
+
     if (!result) {
       return res.status(404).json({ message: 'No results found' });
     }
@@ -507,37 +507,37 @@ exports.generateLatestResultPDF = async (req, res) => {
     // Header Text Section - Centered between logos
     const headerTextX = 115;
     const headerTextWidth = 365;
-    
+
     // Society Name (Small, top)
     doc.fontSize(9)
-       .font('Helvetica')
-       .fillColor('#000000')
-       .text('Devaraj Urs Education Society (R)', headerTextX, currentY + 5, { width: headerTextWidth, align: 'center' });
-    
+      .font('Helvetica')
+      .fillColor('#000000')
+      .text('Devaraj Urs Education Society (R)', headerTextX, currentY + 5, { width: headerTextWidth, align: 'center' });
+
     // School Name (Large, Bold)
     doc.fontSize(16)
-       .font('Helvetica-Bold')
-       .text('KAMLI ANUPAM PRIMARY SCHOOL', headerTextX, currentY + 20, { width: headerTextWidth, align: 'center' });
-    
+      .font('Helvetica-Bold')
+      .text('KAMLI ANUPAM PRIMARY SCHOOL', headerTextX, currentY + 20, { width: headerTextWidth, align: 'center' });
+
     // College Code
     doc.fontSize(8)
-       .font('Helvetica')
-       .text('(School Code: KAP 001)', headerTextX, currentY + 38, { width: headerTextWidth, align: 'center' });
-    
+      .font('Helvetica')
+      .text('(School Code: KAP 001)', headerTextX, currentY + 38, { width: headerTextWidth, align: 'center' });
+
     // Address
     doc.fontSize(8)
-       .font('Helvetica')
-       .text('તાલુકોં :- unjhs', 
-             headerTextX, currentY + 50, { width: headerTextWidth, align: 'center' });
-    
+      .font('Helvetica')
+      .text('Taluka :- Unjha',
+        headerTextX, currentY + 50, { width: headerTextWidth, align: 'center' });
+
     currentY += 85;
-    
+
     // Result Title
     doc.fontSize(10)
-       .font('Helvetica-Bold')
-       .text(`RESULT OF ${result.term || 'Term-1'} ${result.academicYear || '2024-25'}`, 
-             30, currentY, { width: 535, align: 'center' });
-    
+      .font('Helvetica-Bold')
+      .text(`RESULT OF ${result.term || 'Term-1'} ${result.academicYear || '2024-25'}`,
+        30, currentY, { width: 535, align: 'center' });
+
     currentY += 20;
 
     // ============ STUDENT INFORMATION TABLE ============
@@ -548,42 +548,42 @@ exports.generateLatestResultPDF = async (req, res) => {
 
     // Draw outer border for student info section
     const studentInfoStartY = currentY;
-    
+
     // Row 1: Student Name | Class
-    drawTableCell(doc, infoTableX, currentY, colWidth, rowHeight, 
+    drawTableCell(doc, infoTableX, currentY, colWidth, rowHeight,
       `Student's Name : ${student.name}`, { fontSize: 10, font: 'Helvetica' });
-    drawTableCell(doc, infoTableX + colWidth, currentY, colWidth, rowHeight, 
+    drawTableCell(doc, infoTableX + colWidth, currentY, colWidth, rowHeight,
       `Class : ${formatStandard(result.standard)}`, { fontSize: 10, font: 'Helvetica' });
     currentY += rowHeight;
 
     // Row 2: GR Number | DOB
-    drawTableCell(doc, infoTableX, currentY, colWidth, rowHeight, 
+    drawTableCell(doc, infoTableX, currentY, colWidth, rowHeight,
       `GR Number : ${student.grNumber}`, { fontSize: 10, font: 'Helvetica' });
-    drawTableCell(doc, infoTableX + colWidth, currentY, colWidth, rowHeight, 
+    drawTableCell(doc, infoTableX + colWidth, currentY, colWidth, rowHeight,
       `DOB : ${student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString('en-GB') : 'N/A'}`, { fontSize: 10, font: 'Helvetica' });
     currentY += rowHeight;
 
     // Row 3: Academic Year | Section
-    drawTableCell(doc, infoTableX, currentY, colWidth, rowHeight, 
+    drawTableCell(doc, infoTableX, currentY, colWidth, rowHeight,
       `Academic Year : ${result.academicYear || '2024-25'}`, { fontSize: 10, font: 'Helvetica' });
-    drawTableCell(doc, infoTableX + colWidth, currentY, colWidth, rowHeight, 
+    drawTableCell(doc, infoTableX + colWidth, currentY, colWidth, rowHeight,
       `Section : A`, { fontSize: 10, font: 'Helvetica' });
     currentY += rowHeight;
 
 
-    
+
     // Outer border around student info section
     doc.rect(infoTableX, studentInfoStartY, infoTableWidth, rowHeight * 3)
-       .lineWidth(1.5)
-       .stroke('#000000');
-    
+      .lineWidth(1.5)
+      .stroke('#000000');
+
     currentY += 10;
-    
+
     // Horizontal separator line after student info
     doc.moveTo(40, currentY).lineTo(555, currentY)
-       .lineWidth(1)
-       .stroke('#000000');
-    
+      .lineWidth(1)
+      .stroke('#000000');
+
     currentY += 20; // More spacing before marks table
 
 
@@ -599,13 +599,13 @@ exports.generateLatestResultPDF = async (req, res) => {
     const dataRowHeight = 25;
 
     // Table Header (Gray background)
-    drawTableCell(doc, marksTableX, currentY, snWidth, headerHeight, 
+    drawTableCell(doc, marksTableX, currentY, snWidth, headerHeight,
       'SN', { fontSize: 10, font: 'Helvetica-Bold', align: 'center', bgColor: '#808080', textColor: '#FFFFFF', bold: true });
-    drawTableCell(doc, marksTableX + snWidth, currentY, subjectWidth, headerHeight, 
+    drawTableCell(doc, marksTableX + snWidth, currentY, subjectWidth, headerHeight,
       'SUBJECTS', { fontSize: 10, font: 'Helvetica-Bold', align: 'center', bgColor: '#808080', textColor: '#FFFFFF', bold: true });
-    drawTableCell(doc, marksTableX + snWidth + subjectWidth, currentY, maxMarksWidth, headerHeight, 
+    drawTableCell(doc, marksTableX + snWidth + subjectWidth, currentY, maxMarksWidth, headerHeight,
       'MAXIMUM MARKS', { fontSize: 10, font: 'Helvetica-Bold', align: 'center', bgColor: '#808080', textColor: '#FFFFFF', bold: true });
-    drawTableCell(doc, marksTableX + snWidth + subjectWidth + maxMarksWidth, currentY, obtainedMarksWidth, headerHeight, 
+    drawTableCell(doc, marksTableX + snWidth + subjectWidth + maxMarksWidth, currentY, obtainedMarksWidth, headerHeight,
       'OBTAINED MARKS', { fontSize: 10, font: 'Helvetica-Bold', align: 'center', bgColor: '#808080', textColor: '#FFFFFF', bold: true });
     currentY += headerHeight;
 
@@ -616,27 +616,27 @@ exports.generateLatestResultPDF = async (req, res) => {
     result.subjects.forEach((subject, index) => {
       // Alternate row colors (light pink/white)
       const bgColor = index % 2 === 0 ? '#FFFFFF' : '#FFFFFF';
-      
+
       // Safety checks for undefined marks - use correct field names: marks and maxMarks
       const totalMarks = subject.maxMarks || 0;
       const obtainedMarks = subject.marks || 0;
-      
-      drawTableCell(doc, marksTableX, currentY, snWidth, dataRowHeight, 
+
+      drawTableCell(doc, marksTableX, currentY, snWidth, dataRowHeight,
         (index + 1).toString(), { fontSize: 10, align: 'center', bgColor: bgColor });
-      drawTableCell(doc, marksTableX + snWidth, currentY, subjectWidth, dataRowHeight, 
+      drawTableCell(doc, marksTableX + snWidth, currentY, subjectWidth, dataRowHeight,
         subject.name || 'N/A', { fontSize: 10, bgColor: bgColor });
-      drawTableCell(doc, marksTableX + snWidth + subjectWidth, currentY, maxMarksWidth, dataRowHeight, 
+      drawTableCell(doc, marksTableX + snWidth + subjectWidth, currentY, maxMarksWidth, dataRowHeight,
         totalMarks.toString(), { fontSize: 10, align: 'center', bgColor: bgColor });
-      drawTableCell(doc, marksTableX + snWidth + subjectWidth + maxMarksWidth, currentY, obtainedMarksWidth, dataRowHeight, 
+      drawTableCell(doc, marksTableX + snWidth + subjectWidth + maxMarksWidth, currentY, obtainedMarksWidth, dataRowHeight,
         obtainedMarks.toString(), { fontSize: 10, align: 'center', bgColor: bgColor });
-      
+
       totalObtained += obtainedMarks;
       totalMax += totalMarks;
       currentY += dataRowHeight;
     });
 
     // Total Row (Light blue background)
-    drawTableCell(doc, marksTableX, currentY, snWidth + subjectWidth + maxMarksWidth + obtainedMarksWidth, dataRowHeight, 
+    drawTableCell(doc, marksTableX, currentY, snWidth + subjectWidth + maxMarksWidth + obtainedMarksWidth, dataRowHeight,
       `Marks Obtained : ${totalObtained} Out Of ${totalMax}`, { fontSize: 10, font: 'Helvetica-Bold', align: 'center', bgColor: '#ADD8E6', bold: true });
     // drawTableCell(doc, marksTableX + snWidth + subjectWidth, currentY, maxMarksWidth + obtainedMarksWidth, dataRowHeight, 
     //   '', { bgColor: '#ADD8E6' });
@@ -644,9 +644,9 @@ exports.generateLatestResultPDF = async (req, res) => {
 
     // Horizontal separator line
     doc.moveTo(marksTableX, currentY + 10).lineTo(marksTableX + marksTableWidth, currentY + 10)
-       .lineWidth(1)
-       .stroke('#000000');
-    
+      .lineWidth(1)
+      .stroke('#000000');
+
     currentY += 30; // More spacing before percentage box
 
     // ============ PERCENTAGE AND RESULT BOX ============
@@ -656,38 +656,38 @@ exports.generateLatestResultPDF = async (req, res) => {
 
     // Draw the full box with light yellow background
     doc.rect(marksTableX, currentY, marksTableWidth, resultBoxHeight)
-       .fillAndStroke('#FFFACD', '#000000');
+      .fillAndStroke('#FFFACD', '#000000');
 
     // Left side - Percentage
     doc.fontSize(11)
-       .font('Helvetica-Bold')
-       .fillColor('#000000')
-       .text(`Percentage : ${percentage}`, marksTableX + 10, currentY + 13, { width: 150, align: 'left' });
+      .font('Helvetica-Bold')
+      .fillColor('#000000')
+      .text(`Percentage : ${percentage}`, marksTableX + 10, currentY + 13, { width: 150, align: 'left' });
 
 
     // Right side - Result
     doc.fontSize(11)
-       .font('Helvetica-Bold')
-       .fillColor('#000000')
-       .text(`Result : ${resultStatus}`, marksTableX + 365, currentY + 13, { width: 150, align: 'right' });
+      .font('Helvetica-Bold')
+      .fillColor('#000000')
+      .text(`Result : ${resultStatus}`, marksTableX + 365, currentY + 13, { width: 150, align: 'right' });
 
     currentY += resultBoxHeight + 10;
 
     // Horizontal separator line after percentage box
     doc.moveTo(40, currentY).lineTo(555, currentY)
-       .lineWidth(1)
-       .stroke('#000000');
-    
+      .lineWidth(1)
+      .stroke('#000000');
+
     currentY += 20;
 
     // Remarks if present
     if (result.remarks) {
       doc.fontSize(10)
-         .font('Helvetica-Bold')
-         .fillColor('#000000')
-         .text('Remarks: ', 40, currentY, { continued: true })
-         .font('Helvetica')
-         .text(result.remarks, { width: 515 });
+        .font('Helvetica-Bold')
+        .fillColor('#000000')
+        .text('Remarks: ', 40, currentY, { continued: true })
+        .font('Helvetica')
+        .text(result.remarks, { width: 515 });
       currentY += 30;
     }
 
@@ -700,40 +700,40 @@ exports.generateLatestResultPDF = async (req, res) => {
     // Signature boxes
     const signatureY = currentY + 40;
     const signatureWidth = 170;
-    
+
     doc.fontSize(10)
-       .font('Helvetica')
-       .fillColor('#000000')
-       .text('Class Teacher\'s Sign.', 40, signatureY, { width: signatureWidth, align: 'center' })
-       .text('Office Seal', 210, signatureY, { width: signatureWidth, align: 'center' })
-       .text('Principal\'s Sign.', 380, signatureY, { width: signatureWidth, align: 'center' });
+      .font('Helvetica')
+      .fillColor('#000000')
+      .text('Class Teacher\'s Sign.', 40, signatureY, { width: signatureWidth, align: 'center' })
+      .text('Office Seal', 210, signatureY, { width: signatureWidth, align: 'center' })
+      .text('Principal\'s Sign.', 380, signatureY, { width: signatureWidth, align: 'center' });
 
     // Lines for signatures
     doc.moveTo(40, signatureY - 5).lineTo(200, signatureY - 5).stroke();
     doc.moveTo(210, signatureY - 5).lineTo(370, signatureY - 5).stroke();
     doc.moveTo(380, signatureY - 5).lineTo(540, signatureY - 5).stroke();
-    
+
     currentY += signatureBoxHeight + 10;
-    
+
     // Horizontal separator line after signature section
     doc.moveTo(40, currentY).lineTo(555, currentY)
-       .lineWidth(1)
-       .stroke('#000000');
-    
+      .lineWidth(1)
+      .stroke('#000000');
+
     currentY += 10;
-    
+
     // ============ DISCLAIMER ============
     doc.fontSize(7)
-       .font('Helvetica-Bold')
-       .fillColor('#FF0000')
-       .text('Disclaimer : ', 40, currentY, { continued: true })
-       .font('Helvetica')
-       .fillColor('#000000')
-       .text('Neither webmaster nor Result Hosting is responsible for any inadvertent error that may creep in the results being published on NET.', { width: 515 });
-    
+      .font('Helvetica-Bold')
+      .fillColor('#FF0000')
+      .text('Disclaimer : ', 40, currentY, { continued: true })
+      .font('Helvetica')
+      .fillColor('#000000')
+      .text('Neither webmaster nor Result Hosting is responsible for any inadvertent error that may creep in the results being published on NET.', { width: 515 });
+
     doc.fontSize(7)
-       .text('The results published on net are immediate information for Students. This cannot be treated as original mark sheet Until Signed Or Stamped By School Office.', 
-             40, currentY + 10, { width: 515 });
+      .text('The results published on net are immediate information for Students. This cannot be treated as original mark sheet Until Signed Or Stamped By School Office.',
+        40, currentY + 10, { width: 515 });
 
     // Finalize PDF
     doc.end();
@@ -755,7 +755,7 @@ exports.generateResultPDFById = async (req, res) => {
 
     // Fetch specific result by ID
     const result = await Result.findById(resultId);
-    
+
     if (!result) {
       return res.status(404).json({ message: 'Result not found' });
     }
@@ -805,37 +805,37 @@ exports.generateResultPDFById = async (req, res) => {
     // Header Text Section - Centered between logos
     const headerTextX = 115;
     const headerTextWidth = 365;
-    
+
     // Society Name (Small, top)
     doc.fontSize(9)
-       .font('Helvetica')
-       .fillColor('#000000')
-       .text('Devaraj Urs Education Society (R)', headerTextX, currentY + 5, { width: headerTextWidth, align: 'center' });
-    
+      .font('Helvetica')
+      .fillColor('#000000')
+      .text('Devaraj Urs Education Society (R)', headerTextX, currentY + 5, { width: headerTextWidth, align: 'center' });
+
     // School Name (Large, Bold)
     doc.fontSize(16)
-       .font('Helvetica-Bold')
-       .text('KAMLI ANUPAM PRIMARY SCHOOL', headerTextX, currentY + 20, { width: headerTextWidth, align: 'center' });
-    
+      .font('Helvetica-Bold')
+      .text('KAMLI ANUPAM PRIMARY SCHOOL', headerTextX, currentY + 20, { width: headerTextWidth, align: 'center' });
+
     // College Code
     doc.fontSize(8)
-       .font('Helvetica')
-       .text('(School Code: KAP 001)', headerTextX, currentY + 38, { width: headerTextWidth, align: 'center' });
-    
+      .font('Helvetica')
+      .text('(School Code: KAP 001)', headerTextX, currentY + 38, { width: headerTextWidth, align: 'center' });
+
     // Address
     doc.fontSize(8)
-       .font('Helvetica')
-       .text('તાલુકોં :- unjhs', 
-             headerTextX, currentY + 50, { width: headerTextWidth, align: 'center' });
-    
+      .font('Helvetica')
+      .text('તાલુકોં :- unjhs',
+        headerTextX, currentY + 50, { width: headerTextWidth, align: 'center' });
+
     currentY += 85;
-    
+
     // Result Title
     doc.fontSize(10)
-       .font('Helvetica-Bold')
-       .text(`RESULT OF ${result.term || 'Term-1'} ${result.academicYear || '2024-25'}`, 
-             30, currentY, { width: 535, align: 'center' });
-    
+      .font('Helvetica-Bold')
+      .text(`RESULT OF ${result.term || 'Term-1'} ${result.academicYear || '2024-25'}`,
+        30, currentY, { width: 535, align: 'center' });
+
     currentY += 20;
 
     // ============ STUDENT INFORMATION TABLE ============
@@ -846,40 +846,40 @@ exports.generateResultPDFById = async (req, res) => {
 
     // Draw outer border for student info section
     const studentInfoStartY = currentY;
-    
+
     // Row 1: Student Name | Class
-    drawTableCell(doc, infoTableX, currentY, colWidth, rowHeight, 
+    drawTableCell(doc, infoTableX, currentY, colWidth, rowHeight,
       `Student's Name : ${student.name}`, { fontSize: 10, font: 'Helvetica' });
-    drawTableCell(doc, infoTableX + colWidth, currentY, colWidth, rowHeight, 
+    drawTableCell(doc, infoTableX + colWidth, currentY, colWidth, rowHeight,
       `Class : ${formatStandard(result.standard)}`, { fontSize: 10, font: 'Helvetica' });
     currentY += rowHeight;
 
     // Row 2: GR Number | DOB
-    drawTableCell(doc, infoTableX, currentY, colWidth, rowHeight, 
+    drawTableCell(doc, infoTableX, currentY, colWidth, rowHeight,
       `GR Number : ${student.grNumber}`, { fontSize: 10, font: 'Helvetica' });
-    drawTableCell(doc, infoTableX + colWidth, currentY, colWidth, rowHeight, 
+    drawTableCell(doc, infoTableX + colWidth, currentY, colWidth, rowHeight,
       `DOB : ${student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString('en-GB') : 'N/A'}`, { fontSize: 10, font: 'Helvetica' });
     currentY += rowHeight;
 
     // Row 3: Academic Year | Section
-    drawTableCell(doc, infoTableX, currentY, colWidth, rowHeight, 
+    drawTableCell(doc, infoTableX, currentY, colWidth, rowHeight,
       `Academic Year : ${result.academicYear || '2024-25'}`, { fontSize: 10, font: 'Helvetica' });
-    drawTableCell(doc, infoTableX + colWidth, currentY, colWidth, rowHeight, 
+    drawTableCell(doc, infoTableX + colWidth, currentY, colWidth, rowHeight,
       `Section : A`, { fontSize: 10, font: 'Helvetica' });
     currentY += rowHeight;
-    
+
     // Outer border around student info section
     doc.rect(infoTableX, studentInfoStartY, infoTableWidth, rowHeight * 3)
-       .lineWidth(1.5)
-       .stroke('#000000');
-    
+      .lineWidth(1.5)
+      .stroke('#000000');
+
     currentY += 10;
-    
+
     // Horizontal separator line after student info
     doc.moveTo(40, currentY).lineTo(555, currentY)
-       .lineWidth(1)
-       .stroke('#000000');
-    
+      .lineWidth(1)
+      .stroke('#000000');
+
     currentY += 20; // More spacing before marks table
 
     // ============ MARKS TABLE ============
@@ -893,13 +893,13 @@ exports.generateResultPDFById = async (req, res) => {
     const dataRowHeight = 25;
 
     // Table Header (Gray background)
-    drawTableCell(doc, marksTableX, currentY, snWidth, headerHeight, 
+    drawTableCell(doc, marksTableX, currentY, snWidth, headerHeight,
       'SN', { fontSize: 10, font: 'Helvetica-Bold', align: 'center', bgColor: '#808080', textColor: '#FFFFFF', bold: true });
-    drawTableCell(doc, marksTableX + snWidth, currentY, subjectWidth, headerHeight, 
+    drawTableCell(doc, marksTableX + snWidth, currentY, subjectWidth, headerHeight,
       'SUBJECTS', { fontSize: 10, font: 'Helvetica-Bold', align: 'center', bgColor: '#808080', textColor: '#FFFFFF', bold: true });
-    drawTableCell(doc, marksTableX + snWidth + subjectWidth, currentY, maxMarksWidth, headerHeight, 
+    drawTableCell(doc, marksTableX + snWidth + subjectWidth, currentY, maxMarksWidth, headerHeight,
       'MAXIMUM MARKS', { fontSize: 10, font: 'Helvetica-Bold', align: 'center', bgColor: '#808080', textColor: '#FFFFFF', bold: true });
-    drawTableCell(doc, marksTableX + snWidth + subjectWidth + maxMarksWidth, currentY, obtainedMarksWidth, headerHeight, 
+    drawTableCell(doc, marksTableX + snWidth + subjectWidth + maxMarksWidth, currentY, obtainedMarksWidth, headerHeight,
       'OBTAINED MARKS', { fontSize: 10, font: 'Helvetica-Bold', align: 'center', bgColor: '#808080', textColor: '#FFFFFF', bold: true });
     currentY += headerHeight;
 
@@ -910,35 +910,35 @@ exports.generateResultPDFById = async (req, res) => {
     result.subjects.forEach((subject, index) => {
       // Alternate row colors (light pink/white)
       const bgColor = index % 2 === 0 ? '#FFFFFF' : '#FFFFFF';
-      
+
       // Safety checks for undefined marks - use correct field names: marks and maxMarks
       const totalMarks = subject.maxMarks || 0;
       const obtainedMarks = subject.marks || 0;
-      
-      drawTableCell(doc, marksTableX, currentY, snWidth, dataRowHeight, 
+
+      drawTableCell(doc, marksTableX, currentY, snWidth, dataRowHeight,
         (index + 1).toString(), { fontSize: 10, align: 'center', bgColor: bgColor });
-      drawTableCell(doc, marksTableX + snWidth, currentY, subjectWidth, dataRowHeight, 
+      drawTableCell(doc, marksTableX + snWidth, currentY, subjectWidth, dataRowHeight,
         subject.name || 'N/A', { fontSize: 10, bgColor: bgColor });
-      drawTableCell(doc, marksTableX + snWidth + subjectWidth, currentY, maxMarksWidth, dataRowHeight, 
+      drawTableCell(doc, marksTableX + snWidth + subjectWidth, currentY, maxMarksWidth, dataRowHeight,
         totalMarks.toString(), { fontSize: 10, align: 'center', bgColor: bgColor });
-      drawTableCell(doc, marksTableX + snWidth + subjectWidth + maxMarksWidth, currentY, obtainedMarksWidth, dataRowHeight, 
+      drawTableCell(doc, marksTableX + snWidth + subjectWidth + maxMarksWidth, currentY, obtainedMarksWidth, dataRowHeight,
         obtainedMarks.toString(), { fontSize: 10, align: 'center', bgColor: bgColor });
-      
+
       totalObtained += obtainedMarks;
       totalMax += totalMarks;
       currentY += dataRowHeight;
     });
 
     // Total Row (Light blue background)
-    drawTableCell(doc, marksTableX, currentY, snWidth + subjectWidth + maxMarksWidth + obtainedMarksWidth, dataRowHeight, 
+    drawTableCell(doc, marksTableX, currentY, snWidth + subjectWidth + maxMarksWidth + obtainedMarksWidth, dataRowHeight,
       `Marks Obtained : ${totalObtained} Out Of ${totalMax}`, { fontSize: 10, font: 'Helvetica-Bold', align: 'center', bgColor: '#ADD8E6', bold: true });
     currentY += dataRowHeight;
 
     // Horizontal separator line
     doc.moveTo(marksTableX, currentY + 10).lineTo(marksTableX + marksTableWidth, currentY + 10)
-       .lineWidth(1)
-       .stroke('#000000');
-    
+      .lineWidth(1)
+      .stroke('#000000');
+
     currentY += 30; // More spacing before percentage box
 
     // ============ PERCENTAGE AND RESULT BOX ============
@@ -948,37 +948,37 @@ exports.generateResultPDFById = async (req, res) => {
 
     // Draw the full box with light yellow background
     doc.rect(marksTableX, currentY, marksTableWidth, resultBoxHeight)
-       .fillAndStroke('#FFFACD', '#000000');
+      .fillAndStroke('#FFFACD', '#000000');
 
     // Left side - Percentage
     doc.fontSize(11)
-       .font('Helvetica-Bold')
-       .fillColor('#000000')
-       .text(`Percentage : ${percentage}`, marksTableX + 10, currentY + 13, { width: 150, align: 'left' });
+      .font('Helvetica-Bold')
+      .fillColor('#000000')
+      .text(`Percentage : ${percentage}`, marksTableX + 10, currentY + 13, { width: 150, align: 'left' });
 
     // Right side - Result
     doc.fontSize(11)
-       .font('Helvetica-Bold')
-       .fillColor('#000000')
-       .text(`Result : ${resultStatus}`, marksTableX + 365, currentY + 13, { width: 150, align: 'right' });
+      .font('Helvetica-Bold')
+      .fillColor('#000000')
+      .text(`Result : ${resultStatus}`, marksTableX + 365, currentY + 13, { width: 150, align: 'right' });
 
     currentY += resultBoxHeight + 10;
 
     // Horizontal separator line after percentage box
     doc.moveTo(40, currentY).lineTo(555, currentY)
-       .lineWidth(1)
-       .stroke('#000000');
-    
+      .lineWidth(1)
+      .stroke('#000000');
+
     currentY += 20;
 
     // Remarks if present
     if (result.remarks) {
       doc.fontSize(10)
-         .font('Helvetica-Bold')
-         .fillColor('#000000')
-         .text('Remarks: ', 40, currentY, { continued: true })
-         .font('Helvetica')
-         .text(result.remarks, { width: 515 });
+        .font('Helvetica-Bold')
+        .fillColor('#000000')
+        .text('Remarks: ', 40, currentY, { continued: true })
+        .font('Helvetica')
+        .text(result.remarks, { width: 515 });
       currentY += 30;
     }
 
@@ -991,40 +991,40 @@ exports.generateResultPDFById = async (req, res) => {
     // Signature boxes
     const signatureY = currentY + 40;
     const signatureWidth = 170;
-    
+
     doc.fontSize(10)
-       .font('Helvetica')
-       .fillColor('#000000')
-       .text('Class Teacher\'s Sign.', 40, signatureY, { width: signatureWidth, align: 'center' })
-       .text('Office Seal', 210, signatureY, { width: signatureWidth, align: 'center' })
-       .text('Principal\'s Sign.', 380, signatureY, { width: signatureWidth, align: 'center' });
+      .font('Helvetica')
+      .fillColor('#000000')
+      .text('Class Teacher\'s Sign.', 40, signatureY, { width: signatureWidth, align: 'center' })
+      .text('Office Seal', 210, signatureY, { width: signatureWidth, align: 'center' })
+      .text('Principal\'s Sign.', 380, signatureY, { width: signatureWidth, align: 'center' });
 
     // Lines for signatures
     doc.moveTo(40, signatureY - 5).lineTo(200, signatureY - 5).stroke();
     doc.moveTo(210, signatureY - 5).lineTo(370, signatureY - 5).stroke();
     doc.moveTo(380, signatureY - 5).lineTo(540, signatureY - 5).stroke();
-    
+
     currentY += signatureBoxHeight + 10;
-    
+
     // Horizontal separator line after signature section
     doc.moveTo(40, currentY).lineTo(555, currentY)
-       .lineWidth(1)
-       .stroke('#000000');
-    
+      .lineWidth(1)
+      .stroke('#000000');
+
     currentY += 10;
-    
+
     // ============ DISCLAIMER ============
     doc.fontSize(7)
-       .font('Helvetica-Bold')
-       .fillColor('#FF0000')
-       .text('Disclaimer : ', 40, currentY, { continued: true })
-       .font('Helvetica')
-       .fillColor('#000000')
-       .text('Neither webmaster nor Result Hosting is responsible for any inadvertent error that may creep in the results being published on NET.', { width: 515 });
-    
+      .font('Helvetica-Bold')
+      .fillColor('#FF0000')
+      .text('Disclaimer : ', 40, currentY, { continued: true })
+      .font('Helvetica')
+      .fillColor('#000000')
+      .text('Neither webmaster nor Result Hosting is responsible for any inadvertent error that may creep in the results being published on NET.', { width: 515 });
+
     doc.fontSize(7)
-       .text('The results published on net are immediate information for Students. This cannot be treated as original mark sheet Until Signed Or Stamped By School Office.', 
-             40, currentY + 10, { width: 515 });
+      .text('The results published on net are immediate information for Students. This cannot be treated as original mark sheet Until Signed Or Stamped By School Office.',
+        40, currentY + 10, { width: 515 });
 
     // Finalize PDF
     doc.end();
