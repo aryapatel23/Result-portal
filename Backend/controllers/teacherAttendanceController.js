@@ -1,31 +1,11 @@
 const TeacherAttendance = require('../models/TeacherAttendance');
 const User = require('../models/User');
-
-// School location (you can update these coordinates)
-const SCHOOL_LOCATION = {
-  latitude: 22.81713251852116, // Replace with actual school latitude
-  longitude: 72.47335209589137, // Replace with actual school longitude
-  maxDistance: 3 // 3 km radius
-};
-
-// Calculate distance between two coordinates (Haversine formula)
-const calculateDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 6371; // Radius of the Earth in km
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const distance = R * c;
-  return distance;
-};
+const { verifyLocation } = require('../utils/locationUtils');
 
 // Mark attendance (Teacher)
 exports.markAttendance = async (req, res) => {
   try {
-    const { status, location, faceImage, capturedFaceDescriptor, remarks } = req.body;
+    const { status, location, remarks } = req.body;
     const teacherId = req.user.id || req.user._id;
 
     if (!teacherId) {
@@ -47,14 +27,6 @@ exports.markAttendance = async (req, res) => {
       return res.status(403).json({ message: `Access denied. Your role is ${teacher.role}.` });
     }
 
-    // Check if face is registered
-    if (!teacher.faceRegistered || !teacher.faceDescriptor) {
-      return res.status(400).json({
-        message: 'Please register your face first before marking attendance',
-        requireFaceRegistration: true
-      });
-    }
-
     // Check if attendance already marked today
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -73,78 +45,55 @@ exports.markAttendance = async (req, res) => {
       });
     }
 
-    let distance = 0;
+    let locationCheck = null;
+    const currentTime = new Date();
+    const currentHour = currentTime.getHours();
+    const currentMinute = currentTime.getMinutes();
+    const currentTimeInMinutes = currentHour * 60 + currentMinute;
 
-    // Skip verification for "Leave" status
-    if (status !== 'Leave') {
-      // Validate location (3 km range)
-      if (!location || !location.latitude || !location.longitude) {
-        return res.status(400).json({ message: 'Location is required' });
-      }
+    // Time restrictions
+    const PRESENT_CUTOFF = 11 * 60; // 11:00 AM
+    const HALF_DAY_CUTOFF = 14 * 60 + 30; // 2:30 PM
 
-      distance = calculateDistance(
-        location.latitude,
-        location.longitude,
-        SCHOOL_LOCATION.latitude,
-        SCHOOL_LOCATION.longitude
-      );
-
-      if (distance > SCHOOL_LOCATION.maxDistance) {
-        return res.status(400).json({
-          message: `You must be within ${SCHOOL_LOCATION.maxDistance} km of school to mark attendance. Current distance: ${distance.toFixed(2)} km`,
-          distance: distance.toFixed(2)
-        });
-      }
-
-      // Validate face image
-      if (!faceImage) {
-        return res.status(400).json({ message: 'Face verification is required' });
-      }
-
-      // Verify face match using descriptors
-      if (!capturedFaceDescriptor || !Array.isArray(capturedFaceDescriptor)) {
-        return res.status(400).json({
-          message: 'Face descriptor not provided. Please capture face properly.'
-        });
-      }
-
-      // Calculate Euclidean distance between stored and captured face descriptors
-      const storedDescriptor = teacher.faceDescriptor;
-      let sumSquaredDiff = 0;
-
-      for (let i = 0; i < storedDescriptor.length; i++) {
-        const diff = storedDescriptor[i] - capturedFaceDescriptor[i];
-        sumSquaredDiff += diff * diff;
-      }
-
-      const euclideanDistance = Math.sqrt(sumSquaredDiff);
-      const matchPercentage = Math.max(0, Math.min(100, (1 - euclideanDistance) * 100));
-      const MATCH_THRESHOLD = 0.6;
-
-      console.log(`🔍 Face Verification: Distance=${euclideanDistance.toFixed(4)}, Match=${matchPercentage.toFixed(2)}%`);
-
-      // Allow bypass for development testing
-      const shouldIgnoreVerification = req.body.ignoreFaceVerification === true || (remarks && remarks.includes('[SKIP_FACE]'));
-
-      if (euclideanDistance > MATCH_THRESHOLD && !shouldIgnoreVerification) {
-        console.log('❌ Face verification failed');
-        return res.status(403).json({
-          message: 'Face verification failed. Your face does not match the registered face.',
-          matchPercentage: matchPercentage.toFixed(2),
-          euclideanDistance: euclideanDistance.toFixed(4),
-          threshold: MATCH_THRESHOLD,
-          verificationFailed: true
-        });
-      }
-
-      if (shouldIgnoreVerification) {
-        console.log('⚠️ Face verification bypassed by user');
-      } else {
-        console.log('✅ Face verification passed');
-      }
-    } else {
-      console.log('📝 Status is Leave: Skipping location and face verification');
+    // Validate time restrictions based on status
+    if (status === 'Present' && currentTimeInMinutes >= PRESENT_CUTOFF) {
+      return res.status(400).json({
+        message: 'Present attendance must be marked before 11:00 AM',
+        currentTime: currentTime.toLocaleTimeString()
+      });
     }
+
+    if (status === 'Half Day' && currentTimeInMinutes >= HALF_DAY_CUTOFF) {
+      return res.status(400).json({
+        message: 'Half Day attendance must be marked before 2:30 PM',
+        currentTime: currentTime.toLocaleTimeString()
+      });
+    }
+
+    // Skip location verification for "Leave" status
+    if (status !== 'Leave') {
+      // Validate location (using environment variables)
+      if (!location || !location.latitude || !location.longitude) {
+        return res.status(400).json({ message: 'Location is required for Present and Half Day status' });
+      }
+
+      // Verify location using utility function
+      locationCheck = verifyLocation(location.latitude, location.longitude);
+
+      if (!locationCheck.isValid) {
+        return res.status(400).json({
+          message: locationCheck.message,
+          distance: locationCheck.distance,
+          allowedRadius: parseFloat(process.env.ATTENDANCE_RADIUS_KM)
+        });
+      }
+
+      console.log(`✅ Location verified: ${locationCheck.message}`);
+    } else {
+      console.log('📝 Status is Leave: Skipping location verification');
+    }
+
+    console.log(`📝 Marking attendance - Status: ${status}, Teacher: ${teacher.name}`);
 
     // Create attendance record
     const checkInTime = new Date().toLocaleTimeString('en-US', {
@@ -156,20 +105,19 @@ exports.markAttendance = async (req, res) => {
     const attendance = new TeacherAttendance({
       teacher: teacherId,
       teacherName: teacher.name,
-      employeeId: teacher.employeeId,
+      employeeId: teacher.employeeId || 'N/A',
       date: today,
       status: status || 'Present',
       checkInTime,
       location: location ? {
         latitude: location.latitude,
         longitude: location.longitude,
-        address: location.address || (status !== 'Leave' ? `${distance.toFixed(2)} km from school` : 'N/A')
+        address: location.address || (status !== 'Leave' && locationCheck ? `${locationCheck.distance.toFixed(2)} km from school` : 'N/A')
       } : {
         latitude: 0,
         longitude: 0,
         address: 'N/A'
       },
-      faceImage,
       remarks: remarks || '',
       markedBy: 'self'
     });
@@ -179,7 +127,7 @@ exports.markAttendance = async (req, res) => {
     res.status(201).json({
       message: 'Attendance marked successfully',
       attendance,
-      distance: distance.toFixed(2)
+      distance: locationCheck ? locationCheck.distance : 'N/A'
     });
 
   } catch (error) {
