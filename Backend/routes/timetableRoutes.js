@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { protectAdmin } = require('../middleware/authMiddleware');
-const { protectTeacher } = require('../middleware/authMiddleware');
+const { protect, protectAdmin, protectTeacher } = require('../middleware/authMiddleware');
 const {
   getTimetable,
   saveTimetable,
   getMyTimetable,
+  getStudentTimetable,
   deleteTimetable
 } = require('../controllers/timetableController');
 
@@ -16,5 +16,8 @@ router.delete('/admin/timetable/:teacherId', protectAdmin, deleteTimetable);
 
 // Teacher routes - view own timetable
 router.get('/teacher/timetable', protectTeacher, getMyTimetable);
+
+// Student routes - view class timetable
+router.get('/student/timetable', protect, getStudentTimetable);
 
 module.exports = router;

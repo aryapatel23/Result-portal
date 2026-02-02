@@ -32,6 +32,13 @@ exports.loginAdmin = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    // Check if account is active
+    if (!user.isActive) {
+      return res.status(403).json({
+        message: "Your account has been deactivated. Please contact the administrator for assistance."
+      });
+    }
+
     // Verify password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
@@ -40,9 +47,9 @@ exports.loginAdmin = async (req, res) => {
 
     // Generate token
     const token = jwt.sign(
-      { 
-        id: user._id, 
-        email: user.email, 
+      {
+        id: user._id,
+        email: user.email,
         role: user.role,
         name: user.name,
         employeeId: user.employeeId
@@ -156,9 +163,9 @@ exports.registerTeacher = async (req, res) => {
 
     // Generate token
     const token = jwt.sign(
-      { 
-        id: teacher._id, 
-        email: teacher.email, 
+      {
+        id: teacher._id,
+        email: teacher.email,
         role: teacher.role,
         name: teacher.name,
         employeeId: teacher.employeeId

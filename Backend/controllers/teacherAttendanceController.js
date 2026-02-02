@@ -259,11 +259,62 @@ exports.getTodaySummary = async (req, res) => {
     }).populate('teacher', 'name email employeeId');
 
     // Get all teachers
-    const allTeachers = await User.find({ role: 'teacher' });
+    const allTeachers = await User.find({ role: 'teacher', isActive: true });
 
     // Find teachers who haven't marked attendance
-    const markedTeacherIds = attendance.map(a => a.teacher._id.toString());
+    const markedTeacherIds = attendance.map(a => a.teacher?._id?.toString() || a.teacher?.toString());
     const absentTeachers = allTeachers.filter(t => !markedTeacherIds.includes(t._id.toString()));
+
+    // --- AUTO-ABSENT PERSISTENCE LOGIC ---
+    // If it's after 6 PM, we automatically mark missing teachers as 'Absent' in the DB
+    const now = new Date();
+    const cutoffHour = 18; // 6 PM
+
+    if (now.getHours() >= cutoffHour) {
+      for (const t of absentTeachers) {
+        try {
+          // Double check if already exists to prevent race conditions
+          const exists = await TeacherAttendance.findOne({
+            teacher: t._id,
+            date: today
+          });
+
+          if (!exists) {
+            const autoAbsent = new TeacherAttendance({
+              teacher: t._id,
+              teacherName: t.name,
+              employeeId: t.employeeId,
+              date: today,
+              status: 'Absent',
+              remarks: 'Automatically marked absent (System Cutoff)',
+              markedBy: 'system',
+              checkInTime: 'N/A'
+            });
+            await autoAbsent.save();
+            console.log(`🤖 Auto-marked absent: ${t.name}`);
+          }
+        } catch (e) {
+          console.error(`Error auto-marking ${t.name}:`, e.message);
+        }
+      }
+
+      // Re-fetch attendance after potential auto-marks to get updated counts
+      const updatedAttendance = await TeacherAttendance.find({
+        date: { $gte: today, $lt: tomorrow }
+      }).populate('teacher', 'name email employeeId');
+
+      const summary = {
+        total: allTeachers.length,
+        present: updatedAttendance.filter(a => a.status === 'Present').length,
+        absent: updatedAttendance.filter(a => a.status === 'Absent').length,
+        halfDay: updatedAttendance.filter(a => a.status === 'Half-Day').length,
+        leave: updatedAttendance.filter(a => a.status === 'Leave').length,
+        notMarked: allTeachers.length - updatedAttendance.length,
+        attendance: updatedAttendance
+      };
+      return res.json(summary);
+    }
+    // --- END AUTO-LOGIC ---
 
     const summary = {
       total: allTeachers.length,

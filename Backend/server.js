@@ -18,18 +18,19 @@ app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/results", require("./routes/resultRoutes"));
 app.use("/api/admin", require("./routes/adminTeacherRoutes"));
 app.use("/api/teacher", require("./routes/teacherRoutes"));
-app.use("/api/student", require("./routes/studentRoutes")); 
-app.use("/api", require("./routes/timetableRoutes"));
+app.use("/api/student", require("./routes/studentRoutes"));
+app.use("/api/timetable", require("./routes/timetableRoutes"));
 app.use("/api/bulk-students", require("./routes/bulkStudentRoutes"));
 app.use("/api/student-promotion", require("./routes/studentPromotionRoutes"));
 app.use("/api/bulk-results", require("./routes/bulkResultRoutes"));
 app.use("/api/student-management", require("./routes/studentManagementRoutes"));
 app.use("/api/pdf", require("./routes/pdfRoutes"));
 app.use("/api/teacher-attendance", require("./routes/teacherAttendanceRoutes"));
-app.use("/api/admin/attendance", require("./routes/adminAttendanceRoutes")); 
+app.use("/api/admin/attendance", require("./routes/adminAttendanceRoutes"));
 app.use("/api/face", require("./routes/faceRegistrationRoutes"));
+app.use("/api/profile", require("./routes/profileRoutes"));
 
-console.log('✅ All routes registered including timetable routes'); 
+console.log('✅ All routes registered including timetable routes');
 
 
 app.get("/", (req, res) => {
