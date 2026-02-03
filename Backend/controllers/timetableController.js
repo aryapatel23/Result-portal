@@ -6,8 +6,21 @@ const getTimetable = async (req, res) => {
     const { teacherId } = req.params;
     const { academicYear = '2024-25' } = req.query;
 
-    // Verify teacher exists
-    const teacher = await User.findById(teacherId);
+    if (!teacherId || teacherId === 'undefined') {
+      return res.status(400).json({ message: 'Invalid teacher ID' });
+    }
+
+    // Verify teacher exists (handle invalid ID format)
+    let teacher;
+    try {
+      teacher = await User.findById(teacherId);
+    } catch (err) {
+      if (err.name === 'CastError') {
+        return res.status(400).json({ message: 'Invalid teacher ID format' });
+      }
+      throw err;
+    }
+
     if (!teacher || teacher.role !== 'teacher') {
       return res.status(404).json({ message: 'Teacher not found' });
     }
@@ -50,13 +63,14 @@ const getTimetable = async (req, res) => {
       };
     }
 
+    // Safely structure the response even if teacher fields are missing
     res.status(200).json({
       timetable,
       teacher: {
         name: teacher.name,
         employeeId: teacher.employeeId,
-        subjects: teacher.subjects,
-        assignedClasses: teacher.assignedClasses
+        subjects: teacher.subjects || [],
+        assignedClasses: teacher.assignedClasses || []
       }
     });
   } catch (error) {
@@ -73,13 +87,23 @@ const saveTimetable = async (req, res) => {
     const adminId = req.user.id;
 
     // Verify teacher exists
-    const teacher = await User.findById(teacherId);
+    let teacher;
+    try {
+      if (!teacherId) throw new Error('No teacher ID provided');
+      teacher = await User.findById(teacherId);
+    } catch (err) {
+      if (err.name === 'CastError') return res.status(400).json({ message: 'Invalid teacher ID' });
+      throw err;
+    }
+
     if (!teacher || teacher.role !== 'teacher') {
       return res.status(404).json({ message: 'Teacher not found' });
     }
 
     // Validate schedule structure
-    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    console.log('Saving Timetable for:', teacher.name);
+    console.log('Incoming Schedule Keys:', Object.keys(schedule || {}));
+
     if (!schedule || typeof schedule !== 'object') {
       return res.status(400).json({ message: 'Invalid schedule format' });
     }
@@ -90,11 +114,22 @@ const saveTimetable = async (req, res) => {
     try {
       if (timetable) {
         // Update existing timetable
-        timetable.schedule = schedule;
+        console.log('Updating existing timetable...');
+        // Explicitly set each day to trigger Mongoose change tracking for arrays
+        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        days.forEach(day => {
+          if (schedule[day]) {
+            timetable.schedule[day] = schedule[day];
+          }
+        });
+
         timetable.lastModifiedBy = adminId;
-        await timetable.save();
+        timetable.markModified('schedule'); // Critical for Mixed types or deep updates
+        const saved = await timetable.save();
+        console.log('Timetable updated. Modified paths:', saved.modifiedPaths());
       } else {
         // Create new timetable
+        console.log('Creating new timetable...');
         timetable = new Timetable({
           teacher: teacherId,
           academicYear,
@@ -103,6 +138,7 @@ const saveTimetable = async (req, res) => {
           lastModifiedBy: adminId
         });
         await timetable.save();
+        console.log('New timetable created.');
       }
 
       res.status(200).json({
@@ -112,7 +148,8 @@ const saveTimetable = async (req, res) => {
     } catch (saveError) {
       console.error('Validation error saving timetable:', saveError);
       return res.status(400).json({
-        message: 'Validation failed: ' + (saveError.message || 'Check all required fields (Time, Subject, and Class).')
+        // Return the actual validation message to the client
+        message: 'Validation failed: ' + (saveError.message || 'Check required fields.')
       });
     }
   } catch (error) {
@@ -197,7 +234,7 @@ const getStudentTimetable = async (req, res) => {
         const periods = t.schedule[day] || [];
         periods.forEach(p => {
           // Check if class matches (e.g. "10" or "STD 10")
-          if (p.class && p.class.includes(className)) {
+          if (p.class && className && p.class.includes(className)) {
             schedule[day].push({
               _id: p._id,
               timeSlot: p.timeSlot,
