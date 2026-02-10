@@ -20,7 +20,7 @@ const User = require('../models/User');
 router.get('/teachers-list', async (req, res) => {
   try {
     const teachers = await User.find({ role: 'teacher' })
-      .select('_id name employeeId email')
+      .select('_id name employeeId email isActive')
       .sort({ name: 1 });
     res.status(200).json(teachers);
   } catch (error) {
