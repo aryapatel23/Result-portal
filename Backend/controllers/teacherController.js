@@ -1,33 +1,38 @@
 const Result = require('../models/Result');
 const User = require('../models/User');
 const TeacherPerformance = require('../models/Teacher');
+const Timetable = require('../models/Timetable');
 
 // Get teacher dashboard data
 const getTeacherDashboard = async (req, res) => {
   try {
     const teacherId = req.user.id;
-    
+
     // Get teacher info
     const teacher = await User.findById(teacherId).select('-password');
-    if (!teacher || teacher.role !== 'teacher') {
+    if (!teacher || (teacher.role !== 'teacher' && teacher.role !== 'admin')) {
       return res.status(403).json({ message: 'Not authorized as teacher' });
     }
 
     // Get results uploaded by this teacher
     const results = await Result.find({ uploadedBy: teacherId });
-    
+
     // Calculate statistics
-    const totalStudents = results.length;
-    const classesTaught = [...new Set(results.map(r => r.standard))];
-    
+    const studentCount = await User.countDocuments({
+      role: 'student',
+      standard: { $in: [teacher.classTeacher, ...(teacher.assignedClasses || [])].filter(Boolean) }
+    });
+
+    const classesTaught = [...new Set([teacher.classTeacher, ...(teacher.assignedClasses || [])].filter(Boolean))];
+
     // Calculate average performance
     let totalPercentage = 0;
     results.forEach(result => {
       const totalMarks = result.subjects.reduce((sum, sub) => sum + sub.marks, 0);
       const totalMax = result.subjects.reduce((sum, sub) => sum + sub.maxMarks, 0);
-      totalPercentage += (totalMarks / totalMax) * 100;
+      if (totalMax > 0) totalPercentage += (totalMarks / totalMax) * 100;
     });
-    const avgPercentage = totalStudents > 0 ? (totalPercentage / totalStudents).toFixed(2) : 0;
+    const avgPercentage = results.length > 0 ? (totalPercentage / results.length).toFixed(2) : 0;
 
     // Recent uploads
     const recentResults = await Result.find({ uploadedBy: teacherId })
@@ -35,22 +40,45 @@ const getTeacherDashboard = async (req, res) => {
       .limit(10)
       .select('studentName grNumber standard createdAt');
 
+    // Get Next Class from Timetable
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const today = days[new Date().getDay()];
+    let nextClass = null;
+
+    if (today !== 'Sunday') {
+      const timetable = await Timetable.findOne({ teacher: teacherId });
+      if (timetable && timetable.schedule && timetable.schedule[today]) {
+        const now = new Date();
+        const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+        // Find next class in today's schedule
+        const upcoming = timetable.schedule[today]
+          .filter(p => p.startTime > currentTime)
+          .sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+        if (upcoming.length > 0) {
+          nextClass = upcoming[0];
+        }
+      }
+    }
+
     res.status(200).json({
       teacher: {
         name: teacher.name,
         email: teacher.email,
         employeeId: teacher.employeeId,
         subjects: teacher.subjects,
-        classTeacher: teacher.classTeacher, // The class they're class teacher of
-        assignedClasses: teacher.assignedClasses // All classes they teach in
+        classTeacher: teacher.classTeacher,
+        assignedClasses: teacher.assignedClasses
       },
       statistics: {
-        totalStudents,
+        totalStudents: studentCount,
         classesTaught: classesTaught.length,
         classes: classesTaught,
         averagePercentage: avgPercentage
       },
-      recentResults
+      recentResults,
+      nextClass
     });
   } catch (error) {
     console.error('Error fetching teacher dashboard:', error);
@@ -71,59 +99,57 @@ const uploadResultByTeacher = async (req, res) => {
       return res.status(400).json({ message: 'Please fill all required fields' });
     }
 
-    // Check if teacher is class teacher of this class
+    // Check teacher details
     const teacher = await User.findById(teacherId);
-    console.log('👨‍🏫 Teacher details:', { 
-      name: teacher?.name, 
-      classTeacher: teacher?.classTeacher, 
-      role: teacher?.role 
-    });
-
     if (!teacher) {
       return res.status(404).json({ message: 'Teacher not found' });
     }
 
-    // Allow admins to upload for any class, teachers only for their class
-    if (teacher.role === 'teacher' && teacher.classTeacher !== standard) {
-      return res.status(403).json({ 
-        message: `You can only upload results for your class teacher class: ${teacher.classTeacher || 'None assigned'}. Trying to upload for: ${standard}` 
+    // Allow admins to upload for any class
+    // Teachers can upload for their classTeacher class OR any class in assignedClasses
+    const allowedClasses = new Set();
+    if (teacher.classTeacher) allowedClasses.add(teacher.classTeacher);
+    if (teacher.assignedClasses) teacher.assignedClasses.forEach(c => allowedClasses.add(c));
+
+    if (teacher.role === 'teacher' && !allowedClasses.has(standard)) {
+      console.log(`❌ Permission denied for class: ${standard}. Allowed:`, Array.from(allowedClasses));
+      return res.status(403).json({
+        message: `You are not authorized to upload results for ${standard}. You can only upload for: ${Array.from(allowedClasses).join(', ') || 'None assigned'}`
       });
     }
 
     const existingResult = await Result.findOne({ grNumber, term, academicYear });
     if (existingResult) {
-      return res.status(400).json({ 
-        message: `Result for GR Number ${grNumber} already exists for this term (${term})` 
+      return res.status(400).json({
+        message: `Result for GR Number ${grNumber} already exists for this term (${term})`
       });
     }
 
-    const newResult = new Result({ 
-      studentName, 
-      grNumber, 
-      dateOfBirth, 
-      standard, 
-      subjects, 
+    const newResult = new Result({
+      studentName,
+      grNumber,
+      dateOfBirth,
+      standard,
+      subjects,
       remarks,
       term: term || 'Term-1',
       academicYear: academicYear || '2024-25',
       uploadedBy: teacherId,
       uploadedByRole: teacher.role || 'teacher'
     });
-    
+
     await newResult.save();
     console.log('✅ Result saved successfully');
 
     // Update teacher performance metrics
     await updateTeacherPerformance(teacherId, standard, term, academicYear);
 
-    res.status(201).json({ 
+    res.status(201).json({
       message: 'Result uploaded successfully',
       result: newResult
     });
   } catch (error) {
     console.error('❌ Error uploading result:', error);
-    console.error('Error details:', error.message);
-    console.error('Stack trace:', error.stack);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -161,8 +187,8 @@ const getResultById = async (req, res) => {
 
     // Check if teacher uploaded this result
     if (result.uploadedBy.toString() !== teacherId) {
-      return res.status(403).json({ 
-        message: 'You can only view results you uploaded' 
+      return res.status(403).json({
+        message: 'You can only view results you uploaded'
       });
     }
 
@@ -187,8 +213,8 @@ const editResult = async (req, res) => {
 
     // Check if teacher uploaded this result
     if (result.uploadedBy.toString() !== teacherId) {
-      return res.status(403).json({ 
-        message: 'You can only edit results you uploaded' 
+      return res.status(403).json({
+        message: 'You can only edit results you uploaded'
       });
     }
 
@@ -196,9 +222,9 @@ const editResult = async (req, res) => {
     result.lastModifiedBy = teacherId;
     await result.save();
 
-    res.status(200).json({ 
+    res.status(200).json({
       message: 'Result updated successfully',
-      result 
+      result
     });
   } catch (error) {
     console.error('Error updating result:', error);
@@ -218,8 +244,8 @@ const deleteResult = async (req, res) => {
     }
 
     if (result.uploadedBy.toString() !== teacherId) {
-      return res.status(403).json({ 
-        message: 'You can only delete results you uploaded' 
+      return res.status(403).json({
+        message: 'You can only delete results you uploaded'
       });
     }
 
@@ -254,10 +280,10 @@ const getMyPerformance = async (req, res) => {
 // Helper function to update teacher performance
 const updateTeacherPerformance = async (teacherId, standard, term, academicYear) => {
   try {
-    let performance = await TeacherPerformance.findOne({ 
-      teacherId, 
-      term, 
-      academicYear 
+    let performance = await TeacherPerformance.findOne({
+      teacherId,
+      term,
+      academicYear
     });
 
     if (!performance) {
@@ -292,11 +318,11 @@ const updateTeacherPerformance = async (teacherId, standard, term, academicYear)
       if (percentage >= 35) passCount++; // Assuming 35% is passing
     });
 
-    performance.metrics.classAveragePercentage = results.length > 0 
-      ? (totalPercentage / results.length).toFixed(2) 
+    performance.metrics.classAveragePercentage = results.length > 0
+      ? (totalPercentage / results.length).toFixed(2)
       : 0;
-    performance.metrics.passPercentage = results.length > 0 
-      ? ((passCount / results.length) * 100).toFixed(2) 
+    performance.metrics.passPercentage = results.length > 0
+      ? ((passCount / results.length) * 100).toFixed(2)
       : 0;
 
     // Add to upload history
