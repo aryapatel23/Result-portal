@@ -13,20 +13,37 @@ const studentLogin = async (req, res) => {
     }
 
     // Find student by GR number and DOB
-    const student = await User.findOne({ 
-      grNumber, 
-      dateOfBirth: new Date(dateOfBirth),
+    console.log(`🔍 Student login attempt - GR: ${grNumber}, DOB: ${dateOfBirth}`);
+
+    // Normalize date to search
+    const searchDate = new Date(dateOfBirth);
+    searchDate.setHours(0, 0, 0, 0);
+
+    const student = await User.findOne({
+      grNumber,
+      dateOfBirth: {
+        $gte: searchDate,
+        $lt: new Date(searchDate.getTime() + 24 * 60 * 60 * 1000)
+      },
       role: 'student'
     });
 
     if (!student) {
+      console.log(`❌ No student found with GR: ${grNumber} and DOB: ${dateOfBirth}`);
+      // Try finding by GR only to see if it exists
+      const grOnly = await User.findOne({ grNumber, role: 'student' });
+      if (grOnly) {
+        console.log(`💡 Student found with GR ${grNumber} but DOB mismatch. DB DOB: ${grOnly.dateOfBirth}`);
+      }
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    console.log(`✅ Student login successful: ${student.name}`);
+
     // Generate token
     const token = jwt.sign(
-      { 
-        id: student._id, 
+      {
+        id: student._id,
         role: student.role,
         grNumber: student.grNumber,
         name: student.name
@@ -75,14 +92,14 @@ const getMyResults = async (req, res) => {
 const getMyProfile = async (req, res) => {
   try {
     const student = await User.findById(req.user.id).select('-password');
-    
+
     if (!student) {
       return res.status(404).json({ message: 'Student not found' });
     }
 
     // Get result statistics
     const results = await Result.find({ grNumber: student.grNumber });
-    
+
     let avgPercentage = 0;
     if (results.length > 0) {
       let totalPercentage = 0;
