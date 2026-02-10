@@ -12,7 +12,7 @@ const teacherAttendanceSchema = new mongoose.Schema({
   },
   employeeId: {
     type: String,
-    default: 'N/A'
+    required: true
   },
   date: {
     type: Date,
@@ -20,7 +20,7 @@ const teacherAttendanceSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['Present', 'Absent', 'Half Day', 'Leave'],
+    enum: ['Present', 'Absent', 'Half-Day', 'Leave'],
     required: true
   },
   checkInTime: {
