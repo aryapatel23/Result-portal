@@ -3,62 +3,116 @@ const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 
 // Admin/Teacher Login
-exports.loginAdmin = async (req, res) => {
+// Unified Login (Admin, Teacher, Student)
+exports.loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { role, email, password, grNumber, dateOfBirth } = req.body;
 
-    // Check for hardcoded admin
-    if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
+    // --- STUDENT LOGIN ---
+    if (role === 'student') {
+      console.log(`Student Login Attempt: GR=${grNumber}, DOB=${dateOfBirth}`);
+
+      if (!grNumber || !dateOfBirth) {
+        return res.status(400).json({ message: "Please provide GR Number and Date of Birth" });
+      }
+
+      const student = await User.findOne({ grNumber, role: 'student' });
+      if (!student) {
+        console.log("Student not found");
+        return res.status(401).json({ message: "Student not found with this GR Number" });
+      }
+
+      // Verify DOB
+      // Backend received YYYY-MM-DD string
+      const inputDOB = new Date(dateOfBirth).toISOString().split('T')[0];
+
+      // Database has Date object
+      const studentDOB = new Date(student.dateOfBirth).toISOString().split('T')[0];
+
+      console.log(`Comparing DOB: Input=${inputDOB} vs Stored=${studentDOB}`);
+
+      if (inputDOB !== studentDOB) {
+        console.log("DOB Mismatch");
+        return res.status(401).json({ message: "Invalid Date of Birth" });
+      }
+
+      // Generate token
       const token = jwt.sign(
-        { email, role: "admin", name: "Admin" },
+        { id: student._id, role: 'student', name: student.name, grNumber: student.grNumber },
         process.env.JWT_SECRET,
         { expiresIn: "7d" }
       );
 
       return res.json({
+        success: true,
         message: "Login successful",
         token,
         user: {
-          email,
-          role: "admin",
-          name: "Admin"
+          id: student._id,
+          name: student.name,
+          role: 'student',
+          grNumber: student.grNumber,
+          standard: student.standard,
+          email: student.email
         }
       });
     }
 
-    // Check database for teacher/admin
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(401).json({ message: "Invalid credentials" });
+    // --- ADMIN / TEACHER LOGIN ---
+    if (!email || !password) {
+      return res.status(400).json({ message: "Please provide Email and Password" });
     }
 
-    // Check if account is active
-    if (!user.isActive) {
-      return res.status(403).json({
-        message: "Your account has been deactivated. Please contact the administrator for assistance."
+    console.log(`Staff Login Attempt: Email="${email}"`);
+
+    // Dynamic Admin Check (Env vars + Fallback/Trim)
+    const adminEmail = (process.env.ADMIN_EMAIL || '').trim();
+    const adminPass = (process.env.ADMIN_PASSWORD || '').trim();
+    const inputEmail = email.trim();
+    const inputPass = password.trim();
+
+    if (inputEmail === adminEmail && inputPass === adminPass) {
+      console.log("Admin Login Successful via Hardcoded Check");
+      const token = jwt.sign(
+        { email, role: "admin", name: "Admin" },
+        process.env.JWT_SECRET,
+        { expiresIn: "7d" }
+      );
+      return res.json({
+        success: true,
+        message: "Login successful",
+        token,
+        user: { _id: "admin-static-id", email, role: "admin", name: "Admin" }
       });
     }
 
-    // Verify password
-    const isMatch = await bcrypt.compare(password, user.password);
+    // DB Check for Teacher/Admin
+    const user = await User.findOne({ email: inputEmail });
+    if (!user) {
+      console.log("User not found in DB");
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    console.log(`User Found: Role=${user.role}`);
+
+    if (user.role === 'student') {
+      return res.status(401).json({ message: "Students must login with GR Number" });
+    }
+
+    const isMatch = await bcrypt.compare(inputPass, user.password);
     if (!isMatch) {
+      console.log("Password Mismatch for Teacher/Staff");
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // Generate token
     const token = jwt.sign(
-      {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-        name: user.name,
-        employeeId: user.employeeId
-      },
+      { id: user._id, role: user.role, name: user.name, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
     res.json({
+      success: true,
       message: "Login successful",
       token,
       user: {
@@ -67,13 +121,15 @@ exports.loginAdmin = async (req, res) => {
         email: user.email,
         role: user.role,
         employeeId: user.employeeId,
+        classTeacher: user.classTeacher,
         subjects: user.subjects,
         assignedClasses: user.assignedClasses
       }
     });
+
   } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error("Login Error:", error);
+    res.status(500).json({ message: "Server error during login" });
   }
 };
 
