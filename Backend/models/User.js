@@ -1,57 +1,57 @@
 const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
-  name: { 
-    type: String, 
-    required: true 
+  name: {
+    type: String,
+    required: true
   },
-  email: { 
-    type: String, 
-    required: true, 
-    unique: true 
+  email: {
+    type: String,
+    unique: true,
+    sparse: true // Allows null/missing values for students while keeping it unique for others
   },
-  password: { 
-    type: String, 
-    required: true 
+  password: {
+    type: String,
+    required: true
   },
-  role: { 
-    type: String, 
-    enum: ["admin", "teacher", "student"], 
-    default: "student" 
+  role: {
+    type: String,
+    enum: ["admin", "teacher", "student"],
+    default: "student"
   },
   // Student-specific fields
-  grNumber: { 
-    type: String, 
+  grNumber: {
+    type: String,
     sparse: true, // Only for students
-    unique: true 
+    unique: true
   },
-  dateOfBirth: { 
-    type: Date 
+  dateOfBirth: {
+    type: Date
   },
-  standard: { 
-    type: String 
+  standard: {
+    type: String
   },
   // Teacher-specific fields
-  employeeId: { 
-    type: String, 
+  employeeId: {
+    type: String,
     sparse: true // Only for teachers
   },
-  subjects: [{ 
-    type: String 
+  subjects: [{
+    type: String
   }], // Subjects teacher handles
   classTeacher: {
     type: String, // The ONE class this teacher is class teacher of (e.g., "STD 9")
     default: null
   },
-  assignedClasses: [{ 
-    type: String 
+  assignedClasses: [{
+    type: String
   }], // All classes teacher teaches subjects in (includes classTeacher class)
-  phone: { 
-    type: String 
+  phone: {
+    type: String
   },
-  isActive: { 
-    type: Boolean, 
-    default: true 
+  isActive: {
+    type: Boolean,
+    default: true
   },
   // Face recognition data (for teachers)
   faceDescriptor: {
