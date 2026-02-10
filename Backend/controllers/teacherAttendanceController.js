@@ -1,6 +1,29 @@
 const TeacherAttendance = require('../models/TeacherAttendance');
 const User = require('../models/User');
-const { verifyLocation } = require('../utils/locationUtils');
+
+// Load environment variables
+require('dotenv').config();
+
+// School location from environment variables
+const SCHOOL_LOCATION = {
+  latitude: parseFloat(process.env.SCHOOL_LATITUDE) || 22.81713251852116,
+  longitude: parseFloat(process.env.SCHOOL_LONGITUDE) || 72.47335209589137,
+  maxDistance: parseFloat(process.env.SCHOOL_ATTENDANCE_RADIUS_KM) || 3
+};
+
+// Calculate distance between two coordinates (Haversine formula)
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371; // Radius of the Earth in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const distance = R * c;
+  return distance;
+};
 
 // Mark attendance (Teacher)
 exports.markAttendance = async (req, res) => {
@@ -45,55 +68,40 @@ exports.markAttendance = async (req, res) => {
       });
     }
 
-    let locationCheck = null;
-    const currentTime = new Date();
-    const currentHour = currentTime.getHours();
-    const currentMinute = currentTime.getMinutes();
-    const currentTimeInMinutes = currentHour * 60 + currentMinute;
+    let distance = 0;
 
-    // Time restrictions
-    const PRESENT_CUTOFF = 11 * 60; // 11:00 AM
-    const HALF_DAY_CUTOFF = 14 * 60 + 30; // 2:30 PM
-
-    // Validate time restrictions based on status
-    if (status === 'Present' && currentTimeInMinutes >= PRESENT_CUTOFF) {
-      return res.status(400).json({
-        message: 'Present attendance must be marked before 11:00 AM',
-        currentTime: currentTime.toLocaleTimeString()
-      });
-    }
-
-    if (status === 'Half Day' && currentTimeInMinutes >= HALF_DAY_CUTOFF) {
-      return res.status(400).json({
-        message: 'Half Day attendance must be marked before 2:30 PM',
-        currentTime: currentTime.toLocaleTimeString()
-      });
-    }
-
-    // Skip location verification for "Leave" status
+    // Skip location verification only for "Leave" status
     if (status !== 'Leave') {
-      // Validate location (using environment variables)
+      // Validate location (within school radius)
       if (!location || !location.latitude || !location.longitude) {
-        return res.status(400).json({ message: 'Location is required for Present and Half Day status' });
+        return res.status(400).json({ message: 'Location is required for attendance marking' });
       }
 
-      // Verify location using utility function
-      locationCheck = verifyLocation(location.latitude, location.longitude);
+      distance = calculateDistance(
+        location.latitude,
+        location.longitude,
+        SCHOOL_LOCATION.latitude,
+        SCHOOL_LOCATION.longitude
+      );
 
-      if (!locationCheck.isValid) {
+      console.log(`🌍 Location Check: Distance=${distance.toFixed(2)}km, Max allowed=${SCHOOL_LOCATION.maxDistance}km`);
+
+      if (distance > SCHOOL_LOCATION.maxDistance) {
         return res.status(400).json({
-          message: locationCheck.message,
-          distance: locationCheck.distance,
-          allowedRadius: parseFloat(process.env.ATTENDANCE_RADIUS_KM)
+          message: `You must be within ${SCHOOL_LOCATION.maxDistance} km of school to mark attendance. Current distance: ${distance.toFixed(2)} km`,
+          distance: distance.toFixed(2),
+          schoolLocation: {
+            latitude: SCHOOL_LOCATION.latitude,
+            longitude: SCHOOL_LOCATION.longitude
+          },
+          userLocation: location
         });
       }
 
-      console.log(`✅ Location verified: ${locationCheck.message}`);
+      console.log('✅ Location verification passed');
     } else {
       console.log('📝 Status is Leave: Skipping location verification');
     }
-
-    console.log(`📝 Marking attendance - Status: ${status}, Teacher: ${teacher.name}`);
 
     // Create attendance record
     const checkInTime = new Date().toLocaleTimeString('en-US', {
@@ -105,14 +113,14 @@ exports.markAttendance = async (req, res) => {
     const attendance = new TeacherAttendance({
       teacher: teacherId,
       teacherName: teacher.name,
-      employeeId: teacher.employeeId || 'N/A',
+      employeeId: teacher.employeeId,
       date: today,
       status: status || 'Present',
       checkInTime,
       location: location ? {
         latitude: location.latitude,
         longitude: location.longitude,
-        address: location.address || (status !== 'Leave' && locationCheck ? `${locationCheck.distance.toFixed(2)} km from school` : 'N/A')
+        address: location.address || (status !== 'Leave' ? `${distance.toFixed(2)} km from school` : 'N/A')
       } : {
         latitude: 0,
         longitude: 0,
@@ -127,7 +135,13 @@ exports.markAttendance = async (req, res) => {
     res.status(201).json({
       message: 'Attendance marked successfully',
       attendance,
-      distance: locationCheck ? locationCheck.distance : 'N/A'
+      distance: distance.toFixed(2),
+      locationVerified: status !== 'Leave',
+      schoolLocation: status !== 'Leave' ? {
+        latitude: SCHOOL_LOCATION.latitude,
+        longitude: SCHOOL_LOCATION.longitude,
+        radius: SCHOOL_LOCATION.maxDistance
+      } : null
     });
 
   } catch (error) {
@@ -259,62 +273,11 @@ exports.getTodaySummary = async (req, res) => {
     }).populate('teacher', 'name email employeeId');
 
     // Get all teachers
-    const allTeachers = await User.find({ role: 'teacher', isActive: true });
+    const allTeachers = await User.find({ role: 'teacher' });
 
     // Find teachers who haven't marked attendance
-    const markedTeacherIds = attendance.map(a => a.teacher?._id?.toString() || a.teacher?.toString());
+    const markedTeacherIds = attendance.map(a => a.teacher._id.toString());
     const absentTeachers = allTeachers.filter(t => !markedTeacherIds.includes(t._id.toString()));
-
-    // --- AUTO-ABSENT PERSISTENCE LOGIC ---
-    // If it's after 6 PM, we automatically mark missing teachers as 'Absent' in the DB
-    const now = new Date();
-    const cutoffHour = 18; // 6 PM
-
-    if (now.getHours() >= cutoffHour) {
-      for (const t of absentTeachers) {
-        try {
-          // Double check if already exists to prevent race conditions
-          const exists = await TeacherAttendance.findOne({
-            teacher: t._id,
-            date: today
-          });
-
-          if (!exists) {
-            const autoAbsent = new TeacherAttendance({
-              teacher: t._id,
-              teacherName: t.name,
-              employeeId: t.employeeId,
-              date: today,
-              status: 'Absent',
-              remarks: 'Automatically marked absent (System Cutoff)',
-              markedBy: 'system',
-              checkInTime: 'N/A'
-            });
-            await autoAbsent.save();
-            console.log(`🤖 Auto-marked absent: ${t.name}`);
-          }
-        } catch (e) {
-          console.error(`Error auto-marking ${t.name}:`, e.message);
-        }
-      }
-
-      // Re-fetch attendance after potential auto-marks to get updated counts
-      const updatedAttendance = await TeacherAttendance.find({
-        date: { $gte: today, $lt: tomorrow }
-      }).populate('teacher', 'name email employeeId');
-
-      const summary = {
-        total: allTeachers.length,
-        present: updatedAttendance.filter(a => a.status === 'Present').length,
-        absent: updatedAttendance.filter(a => a.status === 'Absent').length,
-        halfDay: updatedAttendance.filter(a => a.status === 'Half-Day').length,
-        leave: updatedAttendance.filter(a => a.status === 'Leave').length,
-        notMarked: allTeachers.length - updatedAttendance.length,
-        attendance: updatedAttendance
-      };
-      return res.json(summary);
-    }
-    // --- END AUTO-LOGIC ---
 
     const summary = {
       total: allTeachers.length,
