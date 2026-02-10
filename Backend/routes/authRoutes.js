@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const { loginAdmin, registerStudent, registerTeacher } = require("../controllers/authController");
+const { loginUser, registerStudent, registerTeacher } = require("../controllers/authController");
 
-// Login route (for admin and teachers)
-router.post("/login", loginAdmin);
+// Login route (Unified)
+router.post("/login", loginUser);
 
 // Registration routes
 router.post("/register/student", registerStudent);
