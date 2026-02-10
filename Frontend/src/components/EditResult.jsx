@@ -156,13 +156,23 @@ const EditResult = () => {
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Standard</label>
-                        <input
-                            type="text"
+                        <select
                             name="standard"
                             value={formData.standard}
                             onChange={handleChange}
                             className="w-full border px-3 py-2 rounded-md"
-                        />
+                        >
+                            <option value="">Select Standard</option>
+                            <option value="Balvatika">Balvatika</option>
+                            <option value="1">STD-1</option>
+                            <option value="2">STD-2</option>
+                            <option value="3">STD-3</option>
+                            <option value="4">STD-4</option>
+                            <option value="5">STD-5</option>
+                            <option value="6">STD-6</option>
+                            <option value="7">STD-7</option>
+                            <option value="8">STD-8</option>
+                        </select>
                     </div>
                 </div>
 
