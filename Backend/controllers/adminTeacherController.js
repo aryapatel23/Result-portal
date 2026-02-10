@@ -15,8 +15,8 @@ const getAllTeachers = async (req, res) => {
     const teachersWithPerformance = await Promise.all(
       teachers.map(async (teacher) => {
         const results = await Result.find({ uploadedBy: teacher._id });
-        const latestPerformance = await TeacherPerformance.findOne({ 
-          teacherId: teacher._id 
+        const latestPerformance = await TeacherPerformance.findOne({
+          teacherId: teacher._id
         }).sort({ createdAt: -1 });
 
         return {
@@ -60,7 +60,7 @@ const getTeacherPerformance = async (req, res) => {
     // Calculate overall statistics
     const totalStudents = results.length;
     const classesTaught = [...new Set(results.map(r => r.standard))];
-    
+
     let totalPercentage = 0;
     let passCount = 0;
     results.forEach(result => {
@@ -148,7 +148,7 @@ const createTeacher = async (req, res) => {
       // Don't fail the request if email fails - teacher is already created
     }
 
-    res.status(201).json({ 
+    res.status(201).json({
       message: 'Teacher account created successfully',
       emailSent: true, // Indicate email was attempted
       teacher: {
@@ -217,10 +217,10 @@ const updateTeacher = async (req, res) => {
       }
     }
 
-    res.status(200).json({ 
+    res.status(200).json({
       message: 'Teacher updated successfully',
       emailSent: emailChanged || passwordChanged,
-      teacher 
+      teacher
     });
   } catch (error) {
     console.error('Error updating teacher:', error);
@@ -244,10 +244,10 @@ const deleteTeacher = async (req, res) => {
         { isActive: false },
         { new: true }
       ).select('-password');
-      
-      res.status(200).json({ 
+
+      res.status(200).json({
         message: 'Teacher deactivated',
-        teacher 
+        teacher
       });
     }
   } catch (error) {
@@ -266,8 +266,8 @@ const rateTeacher = async (req, res) => {
       return res.status(400).json({ message: 'Rating must be between 1 and 5' });
     }
 
-    let performance = await TeacherPerformance.findOne({ 
-      teacherId, 
+    let performance = await TeacherPerformance.findOne({
+      teacherId,
       term: term || 'Term-1',
       academicYear: academicYear || '2024-25'
     });
@@ -291,9 +291,9 @@ const rateTeacher = async (req, res) => {
 
     await performance.save();
 
-    res.status(200).json({ 
+    res.status(200).json({
       message: 'Teacher rated successfully',
-      performance 
+      performance
     });
   } catch (error) {
     console.error('Error rating teacher:', error);
@@ -304,38 +304,62 @@ const rateTeacher = async (req, res) => {
 // Get admin dashboard with overview
 const getAdminDashboard = async (req, res) => {
   try {
-    // Total counts
-    const totalStudents = await User.countDocuments({ role: 'student' });
-    const totalTeachers = await User.countDocuments({ role: 'teacher', isActive: true });
-    const totalResults = await Result.countDocuments();
+    console.log('📊 Fetching Admin Dashboard Data...');
 
-    // Recent activities
+    // Total counts
+    const [totalStudents, totalTeachers, totalResults] = await Promise.all([
+      User.countDocuments({ role: 'student' }),
+      User.countDocuments({ role: 'teacher', isActive: true }),
+      Result.countDocuments()
+    ]);
+
+    console.log(`📈 Counts - Students: ${totalStudents}, Teachers: ${totalTeachers}, Results: ${totalResults}`);
+
+    // Recent activities (populate uploadedBy carefully)
     const recentResults = await Result.find()
       .sort({ createdAt: -1 })
       .limit(10)
-      .populate('uploadedBy', 'name role');
+      .populate('uploadedBy', 'name role email');
 
-    // Teacher performance summary
+    console.log('🔄 Recent results fetched');
+
+    // Teacher performance summary (fetch only active teachers)
     const teachers = await User.find({ role: 'teacher', isActive: true }).select('name employeeId');
+    console.log(`👨‍🏫 Processing stats for ${teachers.length} teachers`);
+
     const teacherStats = await Promise.all(
       teachers.map(async (teacher) => {
-        const resultsCount = await Result.countDocuments({ uploadedBy: teacher._id });
-        const latestPerf = await TeacherPerformance.findOne({ teacherId: teacher._id })
-          .sort({ createdAt: -1 });
-        
-        return {
-          teacherId: teacher._id,
-          name: teacher.name,
-          employeeId: teacher.employeeId,
-          resultsUploaded: resultsCount,
-          rating: latestPerf?.ratings?.adminRating || 0,
-          classAverage: latestPerf?.metrics?.classAveragePercentage || 0
-        };
+        try {
+          const [resultsCount, latestPerf] = await Promise.all([
+            Result.countDocuments({ uploadedBy: teacher._id }),
+            TeacherPerformance.findOne({ teacherId: teacher._id }).sort({ createdAt: -1 })
+          ]);
+
+          return {
+            teacherId: teacher._id,
+            name: teacher.name,
+            employeeId: teacher.employeeId,
+            resultsUploaded: resultsCount,
+            rating: latestPerf?.ratings?.adminRating || 0,
+            classAverage: latestPerf?.metrics?.classAveragePercentage || 0
+          };
+        } catch (innerError) {
+          console.error(`❌ Error fetching stats for teacher ${teacher.name}:`, innerError.message);
+          return {
+            teacherId: teacher._id,
+            name: teacher.name,
+            employeeId: teacher.employeeId,
+            resultsUploaded: 0,
+            rating: 0,
+            classAverage: 0
+          };
+        }
       })
     );
 
     // Sort teachers by performance
     teacherStats.sort((a, b) => b.classAverage - a.classAverage);
+    console.log('✅ Admin dashboard data prepared');
 
     res.status(200).json({
       overview: {
@@ -343,13 +367,13 @@ const getAdminDashboard = async (req, res) => {
         totalTeachers,
         totalResults
       },
-      recentResults,
+      recentResults: recentResults || [],
       topTeachers: teacherStats.slice(0, 5),
       allTeachers: teacherStats
     });
   } catch (error) {
-    console.error('Error fetching admin dashboard:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('❌ Error fetching admin dashboard:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
@@ -380,7 +404,7 @@ const createStudent = async (req, res) => {
 
     await student.save();
 
-    res.status(201).json({ 
+    res.status(201).json({
       message: 'Student account created successfully',
       student: {
         id: student._id,
