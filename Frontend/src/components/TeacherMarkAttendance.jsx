@@ -13,7 +13,7 @@ const TeacherMarkAttendance = () => {
   const [locationError, setLocationError] = useState(null);
   const [distanceFromSchool, setDistanceFromSchool] = useState(null);
   const [showDebugModal, setShowDebugModal] = useState(false);
-  
+
   // School location from environment variables  
   const SCHOOL_LOCATION = {
     latitude: parseFloat(import.meta.env.VITE_SCHOOL_LATITUDE) || 22.81713251852116,
@@ -46,7 +46,8 @@ const TeacherMarkAttendance = () => {
     if (!token) return;
 
     try {
-      const response = await fetch('http://localhost:5000/api/teacher-attendance/today', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://result-portal-tkom.onrender.com/api';
+      const response = await fetch(`${apiUrl}/teacher-attendance/today`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -79,9 +80,9 @@ const TeacherMarkAttendance = () => {
           longitude: position.coords.longitude,
           accuracy: position.coords.accuracy
         };
-        
+
         setLocation(newLocation);
-        
+
         // Calculate distance from school
         const distance = calculateDistance(
           newLocation.latitude,
@@ -89,10 +90,10 @@ const TeacherMarkAttendance = () => {
           SCHOOL_LOCATION.latitude,
           SCHOOL_LOCATION.longitude
         );
-        
+
         setDistanceFromSchool(distance);
         setLoadingLocation(false);
-        
+
         if (distance <= SCHOOL_LOCATION.maxDistance) {
           toast.success(`Location verified! You are ${distance.toFixed(2)}km from school.`);
         } else {
@@ -102,7 +103,7 @@ const TeacherMarkAttendance = () => {
       (error) => {
         setLoadingLocation(false);
         let errorMessage = 'Unable to get location: ';
-        
+
         switch (error.code) {
           case error.PERMISSION_DENIED:
             errorMessage += 'Permission denied. Please allow location access.';
@@ -117,7 +118,7 @@ const TeacherMarkAttendance = () => {
             errorMessage += 'Unknown error.';
             break;
         }
-        
+
         setLocationError(errorMessage);
         toast.error(errorMessage);
       },
@@ -131,7 +132,7 @@ const TeacherMarkAttendance = () => {
 
   const submitAttendance = async (e) => {
     e.preventDefault();
-    
+
     if (status !== 'Leave' && (!location || distanceFromSchool > SCHOOL_LOCATION.maxDistance)) {
       toast.error(`You must be within ${SCHOOL_LOCATION.maxDistance}km of school to mark attendance`);
       return;
@@ -141,7 +142,8 @@ const TeacherMarkAttendance = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/teacher-attendance/mark', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://result-portal-tkom.onrender.com/api';
+      const response = await fetch(`${apiUrl}/teacher-attendance/mark`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -188,8 +190,8 @@ const TeacherMarkAttendance = () => {
   const getLocationStatusIcon = () => {
     if (loadingLocation) return <Loader2 className="w-5 h-5 animate-spin" />;
     if (!location) return <MapPin className="w-5 h-5" />;
-    return distanceFromSchool <= SCHOOL_LOCATION.maxDistance ? 
-      <CheckCircle className="w-5 h-5" /> : 
+    return distanceFromSchool <= SCHOOL_LOCATION.maxDistance ?
+      <CheckCircle className="w-5 h-5" /> :
       <AlertTriangle className="w-5 h-5" />;
   };
 
@@ -290,9 +292,9 @@ const TeacherMarkAttendance = () => {
                     {!loadingLocation && locationError && locationError}
                     {location && distanceFromSchool !== null && (
                       <>
-                        Distance from school: {distanceFromSchool.toFixed(2)}km 
-                        {distanceFromSchool <= SCHOOL_LOCATION.maxDistance ? 
-                          ' (Within allowed range)' : 
+                        Distance from school: {distanceFromSchool.toFixed(2)}km
+                        {distanceFromSchool <= SCHOOL_LOCATION.maxDistance ?
+                          ' (Within allowed range)' :
                           ` (Must be within ${SCHOOL_LOCATION.maxDistance}km)`
                         }
                       </>
@@ -331,11 +333,10 @@ const TeacherMarkAttendance = () => {
                         key={s}
                         type="button"
                         onClick={() => setStatus(s)}
-                        className={`p-3 rounded-lg border-2 transition-all duration-200 ${
-                          status === s
+                        className={`p-3 rounded-lg border-2 transition-all duration-200 ${status === s
                             ? 'border-blue-500 bg-blue-50 text-blue-700'
                             : 'border-gray-300 hover:border-gray-400'
-                        }`}
+                          }`}
                       >
                         {s}
                       </button>
@@ -388,8 +389,8 @@ const TeacherMarkAttendance = () => {
                     <div className="flex items-center gap-2 text-amber-800">
                       <AlertTriangle className="w-5 h-5" />
                       <span className="font-medium">
-                        {!location ? 'Please get your location to mark attendance' : 
-                         `You must be within ${SCHOOL_LOCATION.maxDistance}km of school to mark attendance`}
+                        {!location ? 'Please get your location to mark attendance' :
+                          `You must be within ${SCHOOL_LOCATION.maxDistance}km of school to mark attendance`}
                       </span>
                     </div>
                   </div>
@@ -473,9 +474,9 @@ const TeacherMarkAttendance = () => {
         </div>
 
         {/* Debug Modal */}
-        <AttendanceTestModal 
-          isOpen={showDebugModal} 
-          onClose={() => setShowDebugModal(false)} 
+        <AttendanceTestModal
+          isOpen={showDebugModal}
+          onClose={() => setShowDebugModal(false)}
         />
       </div>
     </div>
