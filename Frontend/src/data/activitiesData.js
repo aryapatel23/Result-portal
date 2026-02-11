@@ -41,8 +41,8 @@ export const activities = [
     date: "2025-01-15",
     images: [
       "https://res.cloudinary.com/dzsvjyg2c/image/upload/v1755156148/WhatsApp_Image_2025-08-14_at_11.45.51_a66db836_ca5en4.jpg",
-      "https://via.placeholder.com/600x400?text=Sports+2",
-      "https://via.placeholder.com/600x400?text=Sports+3",
+      "https://placehold.co/600x400/e5e7eb/6b7280?text=Sports+2",
+      "https://placehold.co/600x400/e5e7eb/6b7280?text=Sports+3",
     ],
   },
   {
@@ -50,8 +50,8 @@ export const activities = [
     description: "Students presented innovative science projects.",
     date: "2025-02-10",
     images: [
-      "https://via.placeholder.com/600x400?text=Science+1",
-      "https://via.placeholder.com/600x400?text=Science+2",
+      "https://placehold.co/600x400/e5e7eb/6b7280?text=Science+1",
+      "https://placehold.co/600x400/e5e7eb/6b7280?text=Science+2",
     ],
   },
   {
@@ -59,9 +59,9 @@ export const activities = [
     description: "Celebrating diversity with music, dance, and food.",
     date: "2025-03-05",
     images: [
-      "https://via.placeholder.com/600x400?text=Culture+1",
-      "https://via.placeholder.com/600x400?text=Culture+2",
-      "https://via.placeholder.com/600x400?text=Culture+3",
+      "https://placehold.co/600x400/e5e7eb/6b7280?text=Culture+1",
+      "https://placehold.co/600x400/e5e7eb/6b7280?text=Culture+2",
+      "https://placehold.co/600x400/e5e7eb/6b7280?text=Culture+3",
     ],
   },
 ];
