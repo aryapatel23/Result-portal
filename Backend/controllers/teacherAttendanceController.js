@@ -50,9 +50,11 @@ exports.markAttendance = async (req, res) => {
       return res.status(403).json({ message: `Access denied. Your role is ${teacher.role}.` });
     }
 
-    // Check if attendance already marked today
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Check if attendance already marked today (IST)
+    const now = new Date();
+    const istDateString = now.toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata' });
+    const today = new Date(istDateString); // Normalized to 00:00:00 of the IST day
+
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
@@ -107,7 +109,8 @@ exports.markAttendance = async (req, res) => {
     const checkInTime = new Date().toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
-      hour12: true
+      hour12: true,
+      timeZone: 'Asia/Kolkata'
     });
 
     const attendance = new TeacherAttendance({
@@ -155,8 +158,10 @@ exports.getTodayStatus = async (req, res) => {
   try {
     const teacherId = req.user.id || req.user._id;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const now = new Date();
+    const istDateString = now.toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata' });
+    const today = new Date(istDateString);
+
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
