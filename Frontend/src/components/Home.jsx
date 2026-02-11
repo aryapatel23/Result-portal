@@ -63,9 +63,8 @@ const Home = () => {
                 key={index}
                 src={src}
                 alt={`School ${index + 1}`}
-                className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-in-out ${
-                  index === currentIndex ? 'opacity-100 z-10 scale-100' : 'opacity-0 z-0 scale-105'
-                }`}
+                className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-in-out ${index === currentIndex ? 'opacity-100 z-10 scale-100' : 'opacity-0 z-0 scale-105'
+                  }`}
                 loading="lazy"
               />
             ))}
@@ -76,14 +75,14 @@ const Home = () => {
 
             <button
               onClick={prevSlide}
-              className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-20 backdrop-blur-sm p-3 rounded-full text-white hover:bg-opacity-30 transition-all duration-300 z-40 group"
+              className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-transparent bg-opacity-20 backdrop-blur-sm p-3 rounded-full text-white hover:bg-opacity-30 transition-all duration-300 z-40 group"
             >
               <ChevronLeft className="w-6 h-6 group-hover:scale-110 transition-transform" />
             </button>
 
             <button
               onClick={nextSlide}
-              className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-20 backdrop-blur-sm p-3 rounded-full text-white hover:bg-opacity-30 transition-all duration-300 z-40 group"
+              className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-transparent bg-opacity-20 backdrop-blur-sm p-3 rounded-full text-white hover:bg-opacity-30 transition-all duration-300 z-40 group"
             >
               <ChevronRight className="w-6 h-6 group-hover:scale-110 transition-transform" />
             </button>
@@ -93,17 +92,16 @@ const Home = () => {
                 <button
                   key={index}
                   onClick={() => goToSlide(index)}
-                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                    currentIndex === index 
-                      ? 'bg-white w-8' 
+                  className={`w-3 h-3 rounded-full transition-all duration-300 ${currentIndex === index
+                      ? 'bg-white w-8'
                       : 'bg-white bg-opacity-50 hover:bg-opacity-75'
-                  }`}
+                    }`}
                 />
               ))}
             </div>
           </div>
         </div>
-        
+
 
         {/* Portal Cards */}
         <div className="mt-20">
@@ -184,9 +182,9 @@ const Home = () => {
             <div className="grid md:grid-cols-3 gap-8">
               {activities.slice(0, 3).map((activity, index) => (
                 <div key={index} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-105">
-                  <img 
-                    src={activity.images && activity.images.length > 0 ? activity.images[0] : 'https://via.placeholder.com/600x400?text=Activity'}
-                    alt={activity.title} 
+                  <img
+                    src={activity.images && activity.images.length > 0 ? activity.images[0] : 'https://placehold.co/600x400/e5e7eb/6b7280?text=Activity'}
+                    alt={activity.title}
                     className="w-full h-48 object-cover"
                   />
                   <div className="p-6">
