@@ -17,7 +17,8 @@ const AttendanceTestModal = ({ isOpen, onClose }) => {
   const testBackendConnection = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/teacher-attendance/today', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://result-portal-tkom.onrender.com/api';
+      const response = await fetch(`${apiUrl}/teacher-attendance/today`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
