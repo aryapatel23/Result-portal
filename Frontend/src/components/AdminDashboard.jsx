@@ -13,11 +13,14 @@ import {
   Star,
   BarChart3,
   Clock,
+  Settings, // Added Settings Icon
 } from 'lucide-react';
+import LeaveConfigModal from './LeaveConfigModal';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [showSettingsModal, setShowSettingsModal] = useState(false); // Modal State
   const [dashboardData, setDashboardData] = useState({
     totalStudents: 0,
     totalTeachers: 0,
@@ -255,6 +258,16 @@ const AdminDashboard = () => {
               </div>
               <p className="mt-3 text-sm font-semibold text-gray-900">Teacher Attendance</p>
             </button>
+
+            <button
+              onClick={() => setShowSettingsModal(true)}
+              className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-500 hover:bg-gray-50 transition-all group"
+            >
+              <div className="bg-gray-100 rounded-full p-4 group-hover:bg-gray-200 transition-colors">
+                <Settings className="h-8 w-8 text-gray-600" />
+              </div>
+              <p className="mt-3 text-sm font-semibold text-gray-900">System Settings</p>
+            </button>
           </div>
         </div>
 
@@ -463,6 +476,12 @@ const AdminDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Settings Modal */}
+      <LeaveConfigModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+      />
     </div>
   );
 };
