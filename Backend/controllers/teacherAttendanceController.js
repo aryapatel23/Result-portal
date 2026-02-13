@@ -25,58 +25,72 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   return distance;
 };
 
+// Helper: Get Current IST Date Details
+const getISTTime = () => {
+  const now = new Date();
+  const istDateString = now.toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata' });
+  const istDate = new Date(istDateString);
+
+  return {
+    now, // UTC actual
+    istDate, // 00:00:00 IST
+    day: istDate.getDate(),
+    monthStr: `${String(istDate.getMonth() + 1).padStart(2, '0')}-${istDate.getFullYear()}`, // MM-YYYY
+    year: istDate.getFullYear(),
+    timeStr: now.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: 'Asia/Kolkata'
+    })
+  };
+};
+
 // Mark attendance (Teacher)
 exports.markAttendance = async (req, res) => {
   try {
     const { status, location, remarks } = req.body;
     const teacherId = req.user.id || req.user._id;
 
-    if (!teacherId) {
-      console.log('❌ Controller: No user ID in request');
-      return res.status(401).json({ message: 'User ID missing from token' });
-    }
+    if (!teacherId) return res.status(401).json({ message: 'User ID missing' });
 
     // Get teacher details
     const teacher = await User.findById(teacherId);
-    if (!teacher) {
-      console.log('❌ Controller: User not found in DB:', teacherId);
-      return res.status(404).json({ message: 'User not found' });
-    }
+    if (!teacher) return res.status(404).json({ message: 'User not found' });
 
-    console.log('👥 Controller: User Role from DB:', teacher.role);
+    const { istDate, day, monthStr, year, timeStr } = getISTTime();
 
-    if (teacher.role !== 'teacher' && teacher.role !== 'admin') {
-      console.log('❌ Controller: Access denied for role:', teacher.role);
-      return res.status(403).json({ message: `Access denied. Your role is ${teacher.role}.` });
-    }
-
-    // Check if attendance already marked today (IST)
-    const now = new Date();
-    const istDateString = now.toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata' });
-    const today = new Date(istDateString); // Normalized to 00:00:00 of the IST day
-
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    const existingAttendance = await TeacherAttendance.findOne({
+    // 1. Find or Initialize Monthly Document
+    let attendanceDoc = await TeacherAttendance.findOne({
       teacher: teacherId,
-      date: { $gte: today, $lt: tomorrow }
+      month: monthStr
     });
 
-    if (existingAttendance) {
+    if (!attendanceDoc) {
+      attendanceDoc = new TeacherAttendance({
+        teacher: teacherId,
+        month: monthStr,
+        year: year,
+        records: [],
+        stats: { present: 0, absent: 0, leaves: 0, halfDay: 0, late: 0 }
+      });
+    }
+
+    // 2. Check overlap
+    const existingRecord = attendanceDoc.records.find(r => r.day === day);
+    if (existingRecord) {
       return res.status(400).json({
         message: 'Attendance already marked for today',
-        attendance: existingAttendance
+        attendance: existingRecord
       });
     }
 
     let distance = 0;
 
-    // Skip location verification only for "Leave" status
+    // 3. Location Check (Skip for Leave)
     if (status !== 'Leave') {
-      // Validate location (within school radius)
       if (!location || !location.latitude || !location.longitude) {
-        return res.status(400).json({ message: 'Location is required for attendance marking' });
+        return res.status(400).json({ message: 'Location is required' });
       }
 
       distance = calculateDistance(
@@ -86,65 +100,70 @@ exports.markAttendance = async (req, res) => {
         SCHOOL_LOCATION.longitude
       );
 
-      console.log(`🌍 Location Check: Distance=${distance.toFixed(2)}km, Max allowed=${SCHOOL_LOCATION.maxDistance}km`);
-
       if (distance > SCHOOL_LOCATION.maxDistance) {
         return res.status(400).json({
-          message: `You must be within ${SCHOOL_LOCATION.maxDistance} km of school to mark attendance. Current distance: ${distance.toFixed(2)} km`,
+          message: `Out of range. Dist: ${distance.toFixed(2)}km`,
           distance: distance.toFixed(2),
-          schoolLocation: {
-            latitude: SCHOOL_LOCATION.latitude,
-            longitude: SCHOOL_LOCATION.longitude
-          },
-          userLocation: location
+          schoolLocation: SCHOOL_LOCATION
         });
       }
-
-      console.log('✅ Location verification passed');
-    } else {
-      console.log('📝 Status is Leave: Skipping location verification');
     }
 
-    // Create attendance record
-    const checkInTime = new Date().toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-      timeZone: 'Asia/Kolkata'
-    });
+    // 4. Leave Limit Check
+    if (status === 'Leave') {
+      const SystemConfig = require('../models/SystemConfig');
+      const config = await SystemConfig.findOne({ key: 'default_config' });
+      const limit = config ? config.yearlyLeaveLimit : 12;
 
-    const attendance = new TeacherAttendance({
-      teacher: teacherId,
-      teacherName: teacher.name,
-      employeeId: teacher.employeeId,
-      date: today,
+      // We need to count leaves across ALL monthly documents for this year
+      // Aggregation is best here
+      const aggResult = await TeacherAttendance.aggregate([
+        { $match: { teacher: new mongoose.Types.ObjectId(teacherId), year: year } },
+        { $group: { _id: null, totalLeaves: { $sum: "$stats.leaves" } } }
+      ]);
+
+      const leavesTaken = aggResult.length > 0 ? aggResult[0].totalLeaves : 0;
+
+      if (leavesTaken >= limit) {
+        return res.status(400).json({
+          message: `Leave limit exceeded (${leavesTaken}/${limit}).`
+        });
+      }
+    }
+
+    // 5. Add Record
+    const newRecord = {
+      date: istDate,
+      day: day,
       status: status || 'Present',
-      checkInTime,
+      checkInTime: timeStr,
       location: location ? {
         latitude: location.latitude,
         longitude: location.longitude,
-        address: location.address || (status !== 'Leave' ? `${distance.toFixed(2)} km from school` : 'N/A')
-      } : {
-        latitude: 0,
-        longitude: 0,
-        address: 'N/A'
-      },
+        address: location.address || (status !== 'Leave' ? `${distance.toFixed(2)} km` : 'N/A')
+      } : undefined,
       remarks: remarks || '',
       markedBy: 'self'
-    });
+    };
 
-    await attendance.save();
+    attendanceDoc.records.push(newRecord);
+
+    // 6. Update Stats
+    const statusKey = status === 'Present' ? 'present'
+      : status === 'Absent' ? 'absent'
+        : status === 'Leave' ? 'leaves'
+          : status === 'Half-Day' ? 'halfDay' : 'present';
+
+    if (attendanceDoc.stats[statusKey] !== undefined) {
+      attendanceDoc.stats[statusKey]++;
+    }
+
+    await attendanceDoc.save();
 
     res.status(201).json({
       message: 'Attendance marked successfully',
-      attendance,
-      distance: distance.toFixed(2),
-      locationVerified: status !== 'Leave',
-      schoolLocation: status !== 'Leave' ? {
-        latitude: SCHOOL_LOCATION.latitude,
-        longitude: SCHOOL_LOCATION.longitude,
-        radius: SCHOOL_LOCATION.maxDistance
-      } : null
+      attendance: newRecord,
+      distance: distance.toFixed(2)
     });
 
   } catch (error) {
@@ -153,26 +172,18 @@ exports.markAttendance = async (req, res) => {
   }
 };
 
-// Get today's attendance status (Teacher)
+// Get today's attendance status
 exports.getTodayStatus = async (req, res) => {
   try {
     const teacherId = req.user.id || req.user._id;
+    const { day, monthStr } = getISTTime();
 
-    const now = new Date();
-    const istDateString = now.toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata' });
-    const today = new Date(istDateString);
-
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    const attendance = await TeacherAttendance.findOne({
-      teacher: teacherId,
-      date: { $gte: today, $lt: tomorrow }
-    });
+    const doc = await TeacherAttendance.findOne({ teacher: teacherId, month: monthStr });
+    const todayRecord = doc ? doc.records.find(r => r.day === day) : null;
 
     res.json({
-      marked: !!attendance,
-      attendance: attendance || null
+      marked: !!todayRecord,
+      attendance: todayRecord || null
     });
 
   } catch (error) {
@@ -181,41 +192,47 @@ exports.getTodayStatus = async (req, res) => {
   }
 };
 
-// Get my attendance history (Teacher)
+// Get my attendance history
 exports.getMyHistory = async (req, res) => {
   try {
     const teacherId = req.user.id || req.user._id;
-    const { month, year, startDate, endDate } = req.query;
+    // We fetch all records for now or paginate by year?
+    // Let's fetch current year by default or all time
 
-    let query = { teacher: teacherId };
+    const docs = await TeacherAttendance.find({ teacher: teacherId }).sort({ year: -1, month: -1 });
 
-    if (startDate && endDate) {
-      query.date = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      };
-    } else if (month && year) {
-      const start = new Date(year, month - 1, 1);
-      const end = new Date(year, month, 0);
-      query.date = { $gte: start, $lte: end };
-    }
+    // Flatten records for compatibility
+    let allRecords = [];
+    let totalStats = { present: 0, absent: 0, leaves: 0, halfDay: 0 };
 
-    const attendance = await TeacherAttendance.find(query).sort({ date: -1 });
+    docs.forEach(doc => {
+      allRecords.push(...doc.records);
+      totalStats.present += doc.stats.present;
+      totalStats.absent += doc.stats.absent;
+      totalStats.leaves += doc.stats.leaves;
+      totalStats.halfDay += doc.stats.halfDay;
+    });
 
-    // Calculate statistics
+    // Sort by date desc
+    allRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    // Calculate Limits
+    const SystemConfig = require('../models/SystemConfig');
+    const config = await SystemConfig.findOne({ key: 'default_config' });
+    const yearlyLimit = config ? config.yearlyLeaveLimit : 12;
+
     const stats = {
-      total: attendance.length,
-      present: attendance.filter(a => a.status === 'Present').length,
-      absent: attendance.filter(a => a.status === 'Absent').length,
-      halfDay: attendance.filter(a => a.status === 'Half-Day').length,
-      leave: attendance.filter(a => a.status === 'Leave').length,
-      percentage: attendance.length > 0
-        ? ((attendance.filter(a => a.status === 'Present').length / attendance.length) * 100).toFixed(2)
+      ...totalStats,
+      leavesTakenYearly: totalStats.leaves, // Assuming all fetched docs are relevant, or filter by year
+      yearlyLeaveLimit: yearlyLimit,
+      total: allRecords.length,
+      percentage: allRecords.length > 0
+        ? ((totalStats.present / allRecords.length) * 100).toFixed(2)
         : 0
     };
 
     res.json({
-      attendance,
+      attendance: allRecords, // Flattened for frontend
       stats
     });
 
@@ -225,293 +242,247 @@ exports.getMyHistory = async (req, res) => {
   }
 };
 
-// Get all teachers' attendance (Admin)
+// Get all attendance (Admin) -> Needs to handle buckets
 exports.getAllAttendance = async (req, res) => {
+  // This is complex with buckets if we want filtering by date
+  // For simplicity, we'll implement date filtering
   try {
-    const { date, status, employeeId, startDate, endDate } = req.query;
-
+    const { date } = req.query;
     let query = {};
 
+    // If date provided, find docs that *could* match (by month)
+    // Then filter records
+
+    let docs = await TeacherAttendance.find(query).populate('teacher', 'name email employeeId');
+
+    let flatRecords = [];
+    docs.forEach(doc => {
+      doc.records.forEach(rec => {
+        flatRecords.push({
+          ...rec.toObject(),
+          teacherName: doc.teacher ? doc.teacher.name : 'Unknown',
+          employeeId: doc.teacher ? doc.teacher.employeeId : 'N/A',
+          teacherId: doc.teacher ? doc.teacher._id : null,
+          month: doc.month
+        });
+      });
+    });
+
+    // Filter by date if needed
     if (date) {
-      const selectedDate = new Date(date);
-      selectedDate.setHours(0, 0, 0, 0);
-      const nextDay = new Date(selectedDate);
-      nextDay.setDate(nextDay.getDate() + 1);
-      query.date = { $gte: selectedDate, $lt: nextDay };
-    } else if (startDate && endDate) {
-      query.date = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      };
+      const searchDate = new Date(date).toDateString();
+      flatRecords = flatRecords.filter(r => new Date(r.date).toDateString() === searchDate);
     }
 
-    if (status) {
-      query.status = status;
-    }
+    flatRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    if (employeeId) {
-      query.employeeId = employeeId;
-    }
-
-    const attendance = await TeacherAttendance.find(query)
-      .populate('teacher', 'name email employeeId')
-      .sort({ date: -1, checkInTime: -1 });
-
-    res.json({ attendance });
+    res.json({ attendance: flatRecords });
 
   } catch (error) {
-    console.error('Error getting all attendance:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
 // Get today's summary (Admin)
 exports.getTodaySummary = async (req, res) => {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const { day, monthStr } = getISTTime();
 
-    const attendance = await TeacherAttendance.find({
-      date: { $gte: today, $lt: tomorrow }
-    }).populate('teacher', 'name email employeeId');
+    // Find all docs for this month
+    const docs = await TeacherAttendance.find({ month: monthStr }).populate('teacher', 'name email employeeId');
 
-    // Get all teachers
+    let todayRecords = [];
+    let markedTeacherIds = [];
+
+    docs.forEach(doc => {
+      const rec = doc.records.find(r => r.day === day);
+      if (rec) {
+        todayRecords.push({
+          ...rec.toObject(),
+          teacherName: doc.teacher ? doc.teacher.name : 'Unknown',
+          employeeId: doc.teacher ? doc.teacher.employeeId : 'N/A',
+          teacherId: doc.teacher ? doc.teacher._id : null
+        });
+        markedTeacherIds.push(doc.teacher._id.toString());
+      }
+    });
+
     const allTeachers = await User.find({ role: 'teacher' });
-
-    // Find teachers who haven't marked attendance
-    const markedTeacherIds = attendance.map(a => a.teacher._id.toString());
     const absentTeachers = allTeachers.filter(t => !markedTeacherIds.includes(t._id.toString()));
+
+    // Stats
+    const notMarkedCount = absentTeachers.length;
+    const explicitlyAbsentCount = todayRecords.filter(r => r.status === 'Absent').length;
 
     const summary = {
       total: allTeachers.length,
-      present: attendance.filter(a => a.status === 'Present').length,
-      absent: absentTeachers.length,
-      halfDay: attendance.filter(a => a.status === 'Half-Day').length,
-      leave: attendance.filter(a => a.status === 'Leave').length,
-      notMarked: absentTeachers.length,
-      attendance,
+      present: todayRecords.filter(r => r.status === 'Present').length,
+      absent: explicitlyAbsentCount,
+      notMarked: notMarkedCount,
+      halfDay: todayRecords.filter(r => r.status === 'Half-Day').length,
+      leave: todayRecords.filter(r => r.status === 'Leave').length,
+      attendance: todayRecords,
       absentTeachers: absentTeachers.map(t => ({
-        _id: t._id,
-        name: t.name,
-        employeeId: t.employeeId,
-        email: t.email
+        _id: t._id, name: t.name, employeeId: t.employeeId, email: t.email
       }))
     };
 
     res.json(summary);
 
   } catch (error) {
-    console.error('Error getting today summary:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
-// Get specific teacher's attendance (Admin)
+// Get specific teacher attendance (Admin)
 exports.getTeacherAttendance = async (req, res) => {
+  // Reuse getMyHistory logic basically
   try {
     const { teacherId } = req.params;
-    const { month, year, startDate, endDate } = req.query;
+    const docs = await TeacherAttendance.find({ teacher: teacherId });
 
-    let query = { teacher: teacherId };
+    let allRecords = [];
+    let stats = { present: 0, absent: 0, leaves: 0, halfDay: 0 };
 
-    if (startDate && endDate) {
-      query.date = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      };
-    } else if (month && year) {
-      const start = new Date(year, month - 1, 1);
-      const end = new Date(year, month, 0);
-      query.date = { $gte: start, $lte: end };
-    }
+    docs.forEach(doc => {
+      allRecords.push(...doc.records);
+      stats.present += doc.stats.present;
+      stats.absent += doc.stats.absent;
+      stats.leaves += doc.stats.leaves;
+      stats.halfDay += doc.stats.halfDay;
+    });
 
-    const attendance = await TeacherAttendance.find(query)
-      .populate('teacher', 'name email employeeId')
-      .sort({ date: -1 });
-
-    // Calculate statistics
-    const stats = {
-      total: attendance.length,
-      present: attendance.filter(a => a.status === 'Present').length,
-      absent: attendance.filter(a => a.status === 'Absent').length,
-      halfDay: attendance.filter(a => a.status === 'Half-Day').length,
-      leave: attendance.filter(a => a.status === 'Leave').length,
-      percentage: attendance.length > 0
-        ? ((attendance.filter(a => a.status === 'Present').length / attendance.length) * 100).toFixed(2)
-        : 0
-    };
+    allRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     res.json({
-      attendance,
-      stats
+      attendance: allRecords,
+      stats: {
+        ...stats,
+        total: allRecords.length,
+        percentage: allRecords.length > 0 ? ((stats.present / allRecords.length) * 100).toFixed(2) : 0
+      }
     });
 
   } catch (error) {
-    console.error('Error getting teacher attendance:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
-// Mark attendance by admin
+// Helper to recalculate stats
+const recalculateStats = (doc) => {
+  const stats = { present: 0, absent: 0, leaves: 0, halfDay: 0, late: 0 };
+  doc.records.forEach(r => {
+    if (r.status === 'Present') stats.present++;
+    else if (r.status === 'Absent') stats.absent++;
+    else if (r.status === 'Leave') stats.leaves++;
+    else if (r.status === 'Half-Day') stats.halfDay++;
+  });
+  doc.stats = stats;
+};
+
+// Admin Mark Attendance
 exports.markAttendanceByAdmin = async (req, res) => {
   try {
     const { teacherId, date, status, remarks } = req.body;
 
-    if (!teacherId || !date || !status) {
-      return res.status(400).json({ message: 'Teacher ID, date, and status are required' });
-    }
-
     const teacher = await User.findById(teacherId);
-    if (!teacher || teacher.role !== 'teacher') {
-      return res.status(404).json({ message: 'Teacher not found' });
-    }
+    if (!teacher) return res.status(404).json({ message: 'Teacher not found' });
 
-    const selectedDate = new Date(date);
-    selectedDate.setHours(0, 0, 0, 0);
+    const attendDate = new Date(date);
+    const monthStr = `${String(attendDate.getMonth() + 1).padStart(2, '0')}-${attendDate.getFullYear()}`;
+    const day = attendDate.getDate();
 
-    // Check if attendance already exists
-    const existing = await TeacherAttendance.findOne({
+    let doc = await TeacherAttendance.findOne({
       teacher: teacherId,
-      date: selectedDate
+      month: monthStr
     });
 
-    if (existing) {
-      return res.status(400).json({
-        message: 'Attendance already marked for this date',
-        attendance: existing
+    if (!doc) {
+      doc = new TeacherAttendance({
+        teacher: teacherId,
+        month: monthStr,
+        year: attendDate.getFullYear(),
+        records: [],
+        stats: { present: 0, absent: 0, leaves: 0, halfDay: 0, late: 0 }
       });
     }
 
-    const attendance = new TeacherAttendance({
-      teacher: teacherId,
-      teacherName: teacher.name,
-      employeeId: teacher.employeeId,
-      date: selectedDate,
-      status,
-      remarks: remarks || 'Marked by admin',
+    // Check if record exists
+    const existingRecordIndex = doc.records.findIndex(r => r.day === day);
+    const newRecord = {
+      date: attendDate,
+      day: day,
+      status: status || 'Present',
+      checkInTime: '09:00 AM', // Default for manual admin entry
+      location: { address: 'Marked by Admin' },
+      remarks: remarks || 'Marked by Admin',
       markedBy: 'admin'
-    });
+    };
 
-    await attendance.save();
+    if (existingRecordIndex >= 0) {
+      doc.records[existingRecordIndex] = newRecord;
+    } else {
+      doc.records.push(newRecord);
+    }
 
-    res.status(201).json({
-      message: 'Attendance marked successfully',
-      attendance
-    });
+    recalculateStats(doc);
+    await doc.save();
+
+    res.status(200).json({ message: 'Attendance marked successfully' });
 
   } catch (error) {
-    console.error('Error marking attendance by admin:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Error marking attendance:', error);
+    res.status(500).json({ message: error.message });
   }
 };
 
-// Update attendance (Admin)
+// Update Attendance
 exports.updateAttendance = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { status, remarks } = req.body;
+    const { id } = req.params; // records._id
+    const { status } = req.body;
 
-    const attendance = await TeacherAttendance.findById(id);
-    if (!attendance) {
-      return res.status(404).json({ message: 'Attendance record not found' });
-    }
+    const doc = await TeacherAttendance.findOne({ "records._id": id });
+    if (!doc) return res.status(404).json({ message: 'Record not found' });
 
-    if (status) attendance.status = status;
-    if (remarks !== undefined) attendance.remarks = remarks;
+    const record = doc.records.id(id);
+    if (!record) return res.status(404).json({ message: 'Record sub-document not found' });
 
-    await attendance.save();
+    record.status = status;
+    if (req.body.remarks) record.remarks = req.body.remarks;
 
-    res.json({
-      message: 'Attendance updated successfully',
-      attendance
-    });
+    recalculateStats(doc);
+    await doc.save();
+
+    res.status(200).json({ message: 'Attendance updated successfully', record });
 
   } catch (error) {
     console.error('Error updating attendance:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
-// Delete attendance (Admin)
+// Delete Attendance
 exports.deleteAttendance = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const attendance = await TeacherAttendance.findByIdAndDelete(id);
-    if (!attendance) {
-      return res.status(404).json({ message: 'Attendance record not found' });
-    }
+    const doc = await TeacherAttendance.findOne({ "records._id": id });
+    if (!doc) return res.status(404).json({ message: 'Record not found' });
 
-    res.json({ message: 'Attendance deleted successfully' });
+    doc.records.pull(id);
+    recalculateStats(doc);
+    await doc.save();
+
+    res.status(200).json({ message: 'Attendance record deleted' });
 
   } catch (error) {
     console.error('Error deleting attendance:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
-// Get attendance report (Admin)
 exports.getAttendanceReport = async (req, res) => {
-  try {
-    const { startDate, endDate, teacherId } = req.query;
-
-    if (!startDate || !endDate) {
-      return res.status(400).json({ message: 'Start date and end date are required' });
-    }
-
-    let query = {
-      date: {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      }
-    };
-
-    if (teacherId) {
-      query.teacher = teacherId;
-    }
-
-    const attendance = await TeacherAttendance.find(query)
-      .populate('teacher', 'name email employeeId')
-      .sort({ date: 1 });
-
-    // Group by teacher
-    const teacherStats = {};
-    attendance.forEach(record => {
-      const tId = record.teacher._id.toString();
-      if (!teacherStats[tId]) {
-        teacherStats[tId] = {
-          teacher: record.teacher,
-          total: 0,
-          present: 0,
-          absent: 0,
-          halfDay: 0,
-          leave: 0
-        };
-      }
-      teacherStats[tId].total++;
-      if (record.status === 'Present') teacherStats[tId].present++;
-      if (record.status === 'Absent') teacherStats[tId].absent++;
-      if (record.status === 'Half-Day') teacherStats[tId].halfDay++;
-      if (record.status === 'Leave') teacherStats[tId].leave++;
-    });
-
-    // Calculate percentages
-    Object.keys(teacherStats).forEach(tId => {
-      const stats = teacherStats[tId];
-      stats.percentage = stats.total > 0
-        ? ((stats.present / stats.total) * 100).toFixed(2)
-        : 0;
-    });
-
-    res.json({
-      attendance,
-      summary: Object.values(teacherStats)
-    });
-
-  } catch (error) {
-    console.error('Error getting report:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
+  res.status(501).json({ message: 'Migration in progress' });
 };
+
