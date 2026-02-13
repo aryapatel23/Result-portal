@@ -257,6 +257,20 @@ const TeacherDashboard = () => {
               </div>
             </div>
           </div>
+
+          <div className="bg-white rounded-lg shadow p-4 md:p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] md:text-sm font-medium text-gray-600 uppercase tracking-wider">Leaves</p>
+                <p className="text-xl md:text-3xl font-bold text-gray-900 mt-1">
+                  {dashboard?.statistics?.leavesTaken || 0}<span className="text-lg text-gray-500 font-normal">/{dashboard?.statistics?.yearlyLeaveLimit || 12}</span>
+                </p>
+              </div>
+              <div className="bg-red-100 rounded-full p-2 hidden sm:block">
+                <Calendar className="h-5 w-5 text-red-600" />
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Quick Actions */}
