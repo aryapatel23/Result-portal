@@ -2,10 +2,14 @@ const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const connectDB = require("./config/db"); // ✅ Ensure the path is correct
+const initAttendanceCron = require("./cron/attendanceCron"); // Import Cron Job
 
 dotenv.config();
 
 connectDB();
+
+// Start Automated Attendance Cron Job
+initAttendanceCron();
 
 const app = express();
 
@@ -29,6 +33,7 @@ app.use("/api/teacher-attendance", require("./routes/teacherAttendanceRoutes"));
 app.use("/api/admin/attendance", require("./routes/adminAttendanceRoutes"));
 app.use("/api/face", require("./routes/faceRegistrationRoutes"));
 app.use("/api/profile", require("./routes/profileRoutes"));
+app.use("/api/config", require("./routes/systemConfigRoutes"));
 
 console.log('✅ All routes registered including timetable routes');
 
