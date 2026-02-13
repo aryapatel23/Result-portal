@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect , useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Calendar,
@@ -172,9 +172,32 @@ const AdminAttendanceView = () => {
       case 'Absent': return 'bg-red-100 text-red-800 border-red-300';
       case 'Half-Day': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
       case 'Leave': return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'Not Marked': return 'bg-orange-100 text-orange-800 border-orange-300';
       default: return 'bg-gray-100 text-gray-800 border-gray-300';
     }
   };
+
+  // Merge pending teachers if viewing today
+  const displayedAttendance = useMemo(() => {
+    let records = [...attendance];
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    if (selectedDate === todayStr && todaySummary?.absentTeachers) {
+      const pendingRecords = todaySummary.absentTeachers.map(t => ({
+        _id: `pending-${t._id}`,
+        teacherId: t._id,
+        teacherName: t.name,
+        employeeId: t.employeeId,
+        status: 'Not Marked',
+        date: new Date().toISOString(),
+        location: { address: 'Pending' },
+        markedBy: '-',
+        isPending: true
+      }));
+      records = [...records, ...pendingRecords];
+    }
+    return records;
+  }, [attendance, todaySummary, selectedDate]);
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
@@ -196,14 +219,14 @@ const AdminAttendanceView = () => {
 
         {/* Today's Summary Cards */}
         {todaySummary && selectedDate === new Date().toISOString().split('T')[0] && (
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4 mb-6">
             <div className="bg-white rounded-lg shadow p-4 md:p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[10px] md:text-sm text-gray-600 uppercase tracking-wider">Total</p>
                   <p className="text-xl md:text-3xl font-bold text-gray-900">{todaySummary.total}</p>
                 </div>
-                <Users className="h-6 w-6 md:h-10 md:w-10 text-blue-600 opacity-50" />
+                <Users className="h-6 w-6 md:h-10 md:w-10 text-gray-400 opacity-50" />
               </div>
             </div>
 
@@ -220,10 +243,20 @@ const AdminAttendanceView = () => {
             <div className="bg-white rounded-lg shadow p-4 md:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] md:text-sm text-gray-600 uppercase tracking-wider">Not Marked</p>
-                  <p className="text-xl md:text-3xl font-bold text-red-600">{todaySummary.notMarked}</p>
+                  <p className="text-[10px] md:text-sm text-gray-600 uppercase tracking-wider">Absent</p>
+                  <p className="text-xl md:text-3xl font-bold text-red-600">{todaySummary.absent}</p>
                 </div>
                 <XCircle className="h-6 w-6 md:h-10 md:w-10 text-red-600 opacity-50" />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-4 md:p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] md:text-sm text-gray-600 uppercase tracking-wider">Not Marked</p>
+                  <p className="text-xl md:text-3xl font-bold text-orange-600">{todaySummary.notMarked}</p>
+                </div>
+                <AlertCircle className="h-6 w-6 md:h-10 md:w-10 text-orange-600 opacity-50" />
               </div>
             </div>
 
@@ -278,8 +311,9 @@ const AdminAttendanceView = () => {
                 <option value="">All Status</option>
                 <option value="Present">Present</option>
                 <option value="Absent">Absent</option>
-                <option value="Half-Day">Half Day</option>
+                <option value="Half-Day">Half-Day</option>
                 <option value="Leave">On Leave</option>
+                <option value="Not Marked">Not Marked</option>
               </select>
             </div>
 
@@ -329,7 +363,7 @@ const AdminAttendanceView = () => {
                       </div>
                     </td>
                   </tr>
-                ) : attendance.length === 0 ? (
+                ) : displayedAttendance.length === 0 ? (
                   <tr>
                     <td colSpan="7" className="px-6 py-12 text-center">
                       <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-2" />
@@ -337,7 +371,7 @@ const AdminAttendanceView = () => {
                     </td>
                   </tr>
                 ) : (
-                  attendance.map((record) => (
+                  displayedAttendance.map((record) => (
                     <tr key={record._id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {record.employeeId}
@@ -352,29 +386,49 @@ const AdminAttendanceView = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <div className="flex space-x-2">
-                          <button
-                            onClick={() => setViewingDetails(record)}
-                            className="text-blue-600 hover:text-blue-900"
-                            title="View Details"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
-                          {record.faceImage && (
+                          {!record.isPending && (
+                            <>
+                              <button
+                                onClick={() => setViewingDetails(record)}
+                                className="text-blue-600 hover:text-blue-900"
+                                title="View Details"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
+                              {record.faceImage && (
+                                <button
+                                  onClick={() => setViewingImage(record.faceImage)}
+                                  className="text-purple-600 hover:text-purple-900"
+                                  title="View Photo"
+                                >
+                                  <ImageIcon className="h-4 w-4" />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleDelete(record._id)}
+                                className="text-red-600 hover:text-red-900"
+                                title="Delete"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </>
+                          )}
+                          {record.isPending && (
                             <button
-                              onClick={() => setViewingImage(record.faceImage)}
-                              className="text-purple-600 hover:text-purple-900"
-                              title="View Photo"
+                              onClick={() => {
+                                setManualAttendance(prev => ({
+                                  ...prev,
+                                  teacherId: record.teacherId,
+                                  status: 'Present'
+                                }));
+                                setShowMarkModal(true);
+                              }}
+                              className="text-indigo-600 hover:text-indigo-900 font-medium flex items-center"
+                              title="Mark Attendance"
                             >
-                              <ImageIcon className="h-4 w-4" />
+                              <Edit className="h-4 w-4 mr-1" /> Mark
                             </button>
                           )}
-                          <button
-                            onClick={() => handleDelete(record._id)}
-                            className="text-red-600 hover:text-red-900"
-                            title="Delete"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
                         </div>
                       </td>
                     </tr>
