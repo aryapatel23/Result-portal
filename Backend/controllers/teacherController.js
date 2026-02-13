@@ -2,6 +2,7 @@ const Result = require('../models/Result');
 const User = require('../models/User');
 const TeacherPerformance = require('../models/Teacher');
 const Timetable = require('../models/Timetable');
+const mongoose = require('mongoose');
 
 // Get teacher dashboard data
 const getTeacherDashboard = async (req, res) => {
@@ -62,6 +63,30 @@ const getTeacherDashboard = async (req, res) => {
       }
     }
 
+    // Calculate leave stats
+    const SystemConfig = require('../models/SystemConfig');
+    const TeacherAttendance = require('../models/TeacherAttendance');
+
+    const config = await SystemConfig.findOne({ key: 'default_config' });
+    const yearlyLimit = config ? config.yearlyLeaveLimit : 12;
+
+    const startOfYear = new Date(new Date().getFullYear(), 0, 1);
+    const endOfYear = new Date(new Date().getFullYear(), 11, 31);
+
+    const leavesTakenAgg = await TeacherAttendance.aggregate([
+      { $match: { teacher: new mongoose.Types.ObjectId(teacherId) } },
+      { $unwind: "$records" },
+      {
+        $match: {
+          "records.status": "Leave",
+          "records.date": { $gte: startOfYear, $lte: endOfYear }
+        }
+      },
+      { $count: "count" }
+    ]);
+
+    const leavesTaken = leavesTakenAgg.length > 0 ? leavesTakenAgg[0].count : 0;
+
     res.status(200).json({
       teacher: {
         name: teacher.name,
@@ -75,7 +100,9 @@ const getTeacherDashboard = async (req, res) => {
         totalStudents: studentCount,
         classesTaught: classesTaught.length,
         classes: classesTaught,
-        averagePercentage: avgPercentage
+        averagePercentage: avgPercentage,
+        leavesTaken,
+        yearlyLeaveLimit: yearlyLimit
       },
       recentResults,
       nextClass
