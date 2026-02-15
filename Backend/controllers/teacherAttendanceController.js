@@ -486,3 +486,32 @@ exports.getAttendanceReport = async (req, res) => {
   res.status(501).json({ message: 'Migration in progress' });
 };
 
+// Trigger Auto-Attendance (Manual Admin Trigger)
+exports.triggerAutoAttendance = async (req, res) => {
+  try {
+    const { autoMarkAbsentTeachers } = require('../cron/attendanceCron');
+    const forceRun = req.body.force === true || req.query.force === 'true';
+    
+    console.log('🔄 Admin triggered auto-attendance marking...');
+    if (forceRun) {
+      console.log('⚠️  FORCE MODE: Running even on weekends');
+    }
+    const result = await autoMarkAbsentTeachers(forceRun);
+
+    if (result.success) {
+      res.status(200).json({
+        message: 'Auto-attendance completed successfully',
+        ...result
+      });
+    } else {
+      res.status(500).json({
+        message: 'Auto-attendance failed',
+        error: result.error
+      });
+    }
+  } catch (error) {
+    console.error('Error triggering auto-attendance:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
