@@ -2,7 +2,7 @@ const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const connectDB = require("./config/db"); // ✅ Ensure the path is correct
-const initAttendanceCron = require("./cron/attendanceCron"); // Import Cron Job
+const { initAttendanceCron } = require("./cron/attendanceCron"); // Import Cron Job
 
 dotenv.config();
 
@@ -34,6 +34,8 @@ app.use("/api/admin/attendance", require("./routes/adminAttendanceRoutes"));
 app.use("/api/face", require("./routes/faceRegistrationRoutes"));
 app.use("/api/profile", require("./routes/profileRoutes"));
 app.use("/api/config", require("./routes/systemConfigRoutes"));
+app.use("/api/admin/holidays", require("./routes/holidayRoutes")); // Public holidays management
+app.use("/api/test", require("./routes/testRoutes")); // Test endpoints for cron jobs
 
 console.log('✅ All routes registered including timetable routes');
 
