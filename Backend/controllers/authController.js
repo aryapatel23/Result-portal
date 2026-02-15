@@ -74,7 +74,7 @@ exports.loginUser = async (req, res) => {
     if (inputEmail === adminEmail && inputPass === adminPass) {
       console.log("Admin Login Successful via Hardcoded Check");
       const token = jwt.sign(
-        { email, role: "admin", name: "Admin" },
+        { id: "admin-static-id", email, role: "admin", name: "Admin" },
         process.env.JWT_SECRET,
         { expiresIn: "7d" }
       );
