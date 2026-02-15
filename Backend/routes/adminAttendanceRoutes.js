@@ -7,7 +7,8 @@ const {
   markAttendanceByAdmin,
   updateAttendance,
   deleteAttendance,
-  getAttendanceReport
+  getAttendanceReport,
+  triggerAutoAttendance
 } = require('../controllers/teacherAttendanceController');
 const { protectAdmin } = require('../middleware/authMiddleware');
 
@@ -19,5 +20,6 @@ router.get('/report', protectAdmin, getAttendanceReport);
 router.post('/mark', protectAdmin, markAttendanceByAdmin);
 router.put('/update/:id', protectAdmin, updateAttendance);
 router.delete('/delete/:id', protectAdmin, deleteAttendance);
+router.post('/auto-mark-leaves', protectAdmin, triggerAutoAttendance); // Manual trigger for auto-attendance
 
 module.exports = router;
