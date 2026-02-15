@@ -17,18 +17,30 @@ const protect = (req, res, next) => {
 
 // Admin-only access
 const protectAdmin = (req, res, next) => {
+  console.log('🔐 protectAdmin: Checking authentication...');
+  console.log('📝 Headers:', req.headers.authorization);
+  
   const token = req.headers.authorization?.split(" ")[1];
-  if (!token) return res.status(401).json({ message: 'Unauthorized' });
+  if (!token) {
+    console.log('❌ protectAdmin: No token provided');
+    return res.status(401).json({ message: 'Unauthorized - No token provided', success: false });
+  }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('✅ protectAdmin: Token decoded, Role:', decoded.role, 'User ID:', decoded.id);
+    
     if (decoded.role !== 'admin') {
-      return res.status(403).json({ message: 'Admin access required' });
+      console.log('❌ protectAdmin: Not an admin, role is:', decoded.role);
+      return res.status(403).json({ message: 'Admin access required', success: false });
     }
+    
     req.user = decoded;
+    console.log('✅ protectAdmin: Admin authenticated successfully');
     next();
   } catch (error) {
-    return res.status(401).json({ message: 'Token is invalid or expired' });
+    console.log('❌ protectAdmin: Token verification failed:', error.message);
+    return res.status(401).json({ message: 'Token is invalid or expired', success: false });
   }
 };
 
