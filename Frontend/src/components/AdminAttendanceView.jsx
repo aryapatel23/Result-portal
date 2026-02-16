@@ -13,11 +13,13 @@ import {
   Trash2,
   MapPin,
   Image as ImageIcon,
-  AlertCircle
+  AlertCircle,
+  Settings
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import axios from '../api/axios';
 import * as XLSX from 'xlsx';
+import AttendanceSettingsModal from './AttendanceSettingsModal';
 
 const AdminAttendanceView = () => {
   const navigate = useNavigate();
@@ -29,6 +31,7 @@ const AdminAttendanceView = () => {
   const [viewingImage, setViewingImage] = useState(null);
   const [viewingDetails, setViewingDetails] = useState(null);
   const [showMarkModal, setShowMarkModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [teachers, setTeachers] = useState([]);
   const [manualAttendance, setManualAttendance] = useState({
     teacherId: '',
@@ -208,13 +211,22 @@ const AdminAttendanceView = () => {
             <h1 className="text-3xl font-bold text-gray-900">Teacher Attendance</h1>
             <p className="text-gray-600 mt-1">Manage and monitor teacher attendance</p>
           </div>
-          <button
-            onClick={() => setShowMarkModal(true)}
-            className="flex items-center justify-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold transition shadow-md"
-          >
-            <Edit className="h-5 w-5 mr-2" />
-            Mark Manual Attendance
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowSettingsModal(true)}
+              className="flex items-center justify-center px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-black font-semibold transition"
+            >
+              <Settings className="h-5 w-5 mr-2" />
+              Automation Settings
+            </button>
+            <button
+              onClick={() => setShowMarkModal(true)}
+              className="flex items-center justify-center px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-400 font-semibold transition"
+            >
+              <Edit className="h-5 w-5 mr-2" />
+              Mark Manual Attendance
+            </button>
+          </div>
         </div>
 
         {/* Today's Summary Cards */}
@@ -633,6 +645,12 @@ const AdminAttendanceView = () => {
             </div>
           </div>
         )}
+
+        {/* Attendance Settings Modal */}
+        <AttendanceSettingsModal
+          isOpen={showSettingsModal}
+          onClose={() => setShowSettingsModal(false)}
+        />
       </div>
     </div>
   );

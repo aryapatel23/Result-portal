@@ -14,8 +14,9 @@ import {
   BarChart3,
   Clock,
   Settings, // Added Settings Icon
+  Calendar,
 } from 'lucide-react';
-import LeaveConfigModal from './LeaveConfigModal';
+import SystemSettingsModal from './SystemSettingsModal';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -260,6 +261,16 @@ const AdminDashboard = () => {
             </button>
 
             <button
+              onClick={() => navigate('/admin/holidays')}
+              className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-pink-300 rounded-lg hover:border-pink-500 hover:bg-pink-50 transition-all group"
+            >
+              <div className="bg-pink-100 rounded-full p-4 group-hover:bg-pink-200 transition-colors">
+                <Calendar className="h-8 w-8 text-pink-600" />
+              </div>
+              <p className="mt-3 text-sm font-semibold text-gray-900">Holidays</p>
+            </button>
+
+            <button
               onClick={() => setShowSettingsModal(true)}
               className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-500 hover:bg-gray-50 transition-all group"
             >
@@ -477,8 +488,8 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Settings Modal */}
-      <LeaveConfigModal
+      {/* System Settings Modal */}
+      <SystemSettingsModal
         isOpen={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
       />
