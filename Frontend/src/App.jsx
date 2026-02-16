@@ -43,6 +43,7 @@ import AdminTeacherDetail from './components/AdminTeacherDetail';
 import AdminEditTeacher from './components/AdminEditTeacher';
 import TeacherTimetable from './components/TeacherTimetable';
 import AdminAttendanceView from './components/AdminAttendanceView';
+import AdminHolidaysView from './components/AdminHolidaysView';
 
 // Loading fallback component
 const PageLoader = () => (
@@ -114,6 +115,7 @@ function App() {
                   <Route path="/admin/login" element={<AdminLogin />} />
                   <Route path="/admin/dashboard" element={<AdminDashboard />} />
                   <Route path="/admin/attendance" element={<AdminAttendanceView />} />
+                  <Route path="/admin/holidays" element={<AdminHolidaysView />} />
                   <Route path="/admin/create-teacher" element={<AdminCreateTeacher />} />
                   <Route path="/admin/create-student" element={<AdminCreateStudent />} />
                   <Route path="/admin/bulk-upload-students" element={<BulkStudentUpload />} />
