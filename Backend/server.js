@@ -2,14 +2,18 @@ const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const connectDB = require("./config/db"); // ✅ Ensure the path is correct
-const { initAttendanceCron } = require("./cron/attendanceCron"); // Import Cron Job
+const { initAttendanceCron } = require("./cron/attendanceCron"); // Import Student Attendance Cron
+const { startTeacherAttendanceCron } = require("./cron/teacherAttendanceCron"); // Import Teacher Attendance Cron
 
 dotenv.config();
 
 connectDB();
 
-// Start Automated Attendance Cron Job
-initAttendanceCron();
+// Start Automated Attendance Cron Jobs
+console.log('🚀 Initializing Automated Cron Jobs...\n');
+initAttendanceCron(); // Student attendance (8:00 PM IST)
+startTeacherAttendanceCron(); // Teacher attendance (6:05 PM IST)
+console.log('✅ All Cron Jobs Started!\n');
 
 const app = express();
 
@@ -33,7 +37,7 @@ app.use("/api/teacher-attendance", require("./routes/teacherAttendanceRoutes"));
 app.use("/api/admin/attendance", require("./routes/adminAttendanceRoutes"));
 app.use("/api/face", require("./routes/faceRegistrationRoutes"));
 app.use("/api/profile", require("./routes/profileRoutes"));
-app.use("/api/config", require("./routes/systemConfigRoutes"));
+app.use("/api/system-config", require("./routes/systemConfigRoutes")); // System configuration
 app.use("/api/admin/holidays", require("./routes/holidayRoutes")); // Public holidays management
 app.use("/api/test", require("./routes/testRoutes")); // Test endpoints for cron jobs
 
