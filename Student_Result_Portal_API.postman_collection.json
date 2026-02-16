@@ -1,0 +1,2054 @@
+{
+	"info": {
+		"_postman_id": "student-result-portal-api",
+		"name": "Student Result Portal API",
+		"description": "Complete API documentation for Student Result Portal - includes Authentication, Results Management, Student Management, Teacher Management, Attendance, Timetable, and more.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5000",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "adminToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "teacherToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "studentToken",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Authentication",
+			"description": "Authentication endpoints for Admin, Teacher, and Student login/registration",
+			"item": [
+				{
+					"name": "Login - Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('adminToken', jsonData.token);",
+									"    pm.collectionVariables.set('token', jsonData.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"role\": \"admin\",\n    \"email\": \"admin@school.com\",\n    \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "login"]
+						},
+						"description": "Login as Admin using email and password"
+					}
+				},
+				{
+					"name": "Login - Teacher",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('teacherToken', jsonData.token);",
+									"    pm.collectionVariables.set('token', jsonData.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"role\": \"teacher\",\n    \"email\": \"teacher@school.com\",\n    \"password\": \"teacher123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "login"]
+						},
+						"description": "Login as Teacher using email and password"
+					}
+				},
+				{
+					"name": "Login - Student",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('studentToken', jsonData.token);",
+									"    pm.collectionVariables.set('token', jsonData.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"role\": \"student\",\n    \"grNumber\": \"GR001\",\n    \"dateOfBirth\": \"2010-05-15\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "login"]
+						},
+						"description": "Login as Student using GR Number and Date of Birth"
+					}
+				},
+				{
+					"name": "Register Student",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"John Doe\",\n    \"grNumber\": \"GR001\",\n    \"dateOfBirth\": \"2010-05-15\",\n    \"standard\": \"10\",\n    \"email\": \"john.doe@school.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register/student",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "register", "student"]
+						},
+						"description": "Register a new student account"
+					}
+				},
+				{
+					"name": "Register Teacher",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Jane Smith\",\n    \"email\": \"jane.smith@school.com\",\n    \"password\": \"teacher123\",\n    \"employeeId\": \"EMP001\",\n    \"subjects\": [\"Mathematics\", \"Science\"],\n    \"assignedClasses\": [\"10\", \"11\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register/teacher",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "register", "teacher"]
+						},
+						"description": "Register a new teacher account"
+					}
+				}
+			]
+		},
+		{
+			"name": "Results Management",
+			"description": "Endpoints for managing student results - upload, view, update, delete",
+			"item": [
+				{
+					"name": "Upload Result",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"studentName\": \"John Doe\",\n    \"grNumber\": \"GR001\",\n    \"dateOfBirth\": \"2010-05-15\",\n    \"standard\": \"10\",\n    \"subjects\": [\n        {\n            \"name\": \"Mathematics\",\n            \"marks\": 85,\n            \"maxMarks\": 100,\n            \"grade\": \"A\"\n        },\n        {\n            \"name\": \"Science\",\n            \"marks\": 90,\n            \"maxMarks\": 100,\n            \"grade\": \"A+\"\n        },\n        {\n            \"name\": \"English\",\n            \"marks\": 78,\n            \"maxMarks\": 100,\n            \"grade\": \"B+\"\n        }\n    ],\n    \"remarks\": \"Excellent performance\",\n    \"academicYear\": \"2024-25\",\n    \"term\": \"Term-1\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/results",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "results"]
+						},
+						"description": "Upload a new result (Teacher/Admin only)"
+					}
+				},
+				{
+					"name": "Get Student Result (Public)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/results?grNumber=GR001&dateOfBirth=2010-05-15",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "results"],
+							"query": [
+								{
+									"key": "grNumber",
+									"value": "GR001"
+								},
+								{
+									"key": "dateOfBirth",
+									"value": "2010-05-15"
+								}
+							]
+						},
+						"description": "Fetch student result by GR Number and DOB (Public access)"
+					}
+				},
+				{
+					"name": "Get All Results for Admin",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/results/admin?standard=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "results", "admin"],
+							"query": [
+								{
+									"key": "standard",
+									"value": "10",
+									"description": "Optional: Filter by standard"
+								}
+							]
+						},
+						"description": "Get all results filtered by standard (Admin/Teacher)"
+					}
+				},
+				{
+					"name": "Get Result by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/results/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "results", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "result_id_here"
+								}
+							]
+						},
+						"description": "Get a specific result by its ID"
+					}
+				},
+				{
+					"name": "Update Result",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"subjects\": [\n        {\n            \"name\": \"Mathematics\",\n            \"marks\": 90,\n            \"maxMarks\": 100,\n            \"grade\": \"A+\"\n        },\n        {\n            \"name\": \"Science\",\n            \"marks\": 92,\n            \"maxMarks\": 100,\n            \"grade\": \"A+\"\n        }\n    ],\n    \"remarks\": \"Updated - Outstanding performance\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/results/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "results", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "result_id_here"
+								}
+							]
+						},
+						"description": "Update an existing result"
+					}
+				},
+				{
+					"name": "Delete Result",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/results/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "results", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "result_id_here"
+								}
+							]
+						},
+						"description": "Delete a result by ID"
+					}
+				}
+			]
+		},
+		{
+			"name": "Bulk Results",
+			"description": "Bulk upload results via Excel file",
+			"item": [
+				{
+					"name": "Bulk Upload Results",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "",
+									"description": "Excel file (.xlsx, .xls) with results data"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/bulk-results/upload",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "bulk-results", "upload"]
+						},
+						"description": "Upload multiple results via Excel file"
+					}
+				},
+				{
+					"name": "Download Result Template",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/bulk-results/template",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "bulk-results", "template"]
+						},
+						"description": "Download Excel template for bulk result upload"
+					}
+				}
+			]
+		},
+		{
+			"name": "Admin - Teacher Management",
+			"description": "Admin endpoints for managing teachers",
+			"item": [
+				{
+					"name": "Get Admin Dashboard",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/dashboard",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "dashboard"]
+						},
+						"description": "Get admin dashboard with overview statistics"
+					}
+				},
+				{
+					"name": "Get Results Activity",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/results-activity",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "results-activity"]
+						},
+						"description": "Get results upload activity by teachers"
+					}
+				},
+				{
+					"name": "Get Teachers List (Simple)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/teachers-list",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "teachers-list"]
+						},
+						"description": "Get simple list of all teachers (for result grouping)"
+					}
+				},
+				{
+					"name": "Get All Teachers",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/teachers",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "teachers"]
+						},
+						"description": "Get all teachers with performance overview"
+					}
+				},
+				{
+					"name": "Get Teacher Performance",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/teachers/:teacherId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "teachers", ":teacherId"],
+							"variable": [
+								{
+									"key": "teacherId",
+									"value": "teacher_id_here"
+								}
+							]
+						},
+						"description": "Get detailed teacher performance"
+					}
+				},
+				{
+					"name": "Create Teacher",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"New Teacher\",\n    \"email\": \"newteacher@school.com\",\n    \"password\": \"teacher123\",\n    \"employeeId\": \"EMP002\",\n    \"subjects\": [\"Mathematics\", \"Physics\"],\n    \"assignedClasses\": [\"9\", \"10\", \"11\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/teachers",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "teachers"]
+						},
+						"description": "Create a new teacher account"
+					}
+				},
+				{
+					"name": "Update Teacher",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Updated Teacher Name\",\n    \"subjects\": [\"Mathematics\", \"Physics\", \"Chemistry\"],\n    \"assignedClasses\": [\"10\", \"11\", \"12\"],\n    \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/teachers/:teacherId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "teachers", ":teacherId"],
+							"variable": [
+								{
+									"key": "teacherId",
+									"value": "teacher_id_here"
+								}
+							]
+						},
+						"description": "Update teacher details"
+					}
+				},
+				{
+					"name": "Delete Teacher",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/teachers/:teacherId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "teachers", ":teacherId"],
+							"variable": [
+								{
+									"key": "teacherId",
+									"value": "teacher_id_here"
+								}
+							]
+						},
+						"description": "Delete/Deactivate teacher"
+					}
+				},
+				{
+					"name": "Rate Teacher",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"rating\": 4.5,\n    \"feedback\": \"Excellent performance this semester\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/teachers/:teacherId/rate",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "teachers", ":teacherId", "rate"],
+							"variable": [
+								{
+									"key": "teacherId",
+									"value": "teacher_id_here"
+								}
+							]
+						},
+						"description": "Rate teacher performance"
+					}
+				},
+				{
+					"name": "Create Student (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"New Student\",\n    \"grNumber\": \"GR002\",\n    \"dateOfBirth\": \"2010-08-20\",\n    \"standard\": \"10\",\n    \"email\": \"newstudent@school.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/students",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "students"]
+						},
+						"description": "Create student account (Admin only)"
+					}
+				}
+			]
+		},
+		{
+			"name": "Teacher",
+			"description": "Teacher-specific endpoints",
+			"item": [
+				{
+					"name": "Get Teacher Dashboard",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/teacher/dashboard",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "teacher", "dashboard"]
+						},
+						"description": "Get teacher dashboard"
+					}
+				},
+				{
+					"name": "Upload Result (Teacher)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"studentName\": \"Student Name\",\n    \"grNumber\": \"GR003\",\n    \"dateOfBirth\": \"2010-05-15\",\n    \"standard\": \"10\",\n    \"subjects\": [\n        {\n            \"name\": \"Mathematics\",\n            \"marks\": 85,\n            \"maxMarks\": 100,\n            \"grade\": \"A\"\n        }\n    ],\n    \"remarks\": \"Good performance\",\n    \"academicYear\": \"2024-25\",\n    \"term\": \"Term-1\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/teacher/results",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "teacher", "results"]
+						},
+						"description": "Upload result (teacher can only upload for assigned classes)"
+					}
+				},
+				{
+					"name": "Get My Results",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/teacher/results",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "teacher", "results"]
+						},
+						"description": "Get results uploaded by this teacher"
+					}
+				},
+				{
+					"name": "Get Result by ID (Teacher)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/teacher/results/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "teacher", "results", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "result_id_here"
+								}
+							]
+						},
+						"description": "Get single result by ID (only if uploaded by this teacher)"
+					}
+				},
+				{
+					"name": "Edit Result (Teacher)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"subjects\": [\n        {\n            \"name\": \"Mathematics\",\n            \"marks\": 88,\n            \"maxMarks\": 100,\n            \"grade\": \"A\"\n        }\n    ],\n    \"remarks\": \"Updated remarks\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/teacher/results/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "teacher", "results", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "result_id_here"
+								}
+							]
+						},
+						"description": "Edit result (only if uploaded by this teacher)"
+					}
+				},
+				{
+					"name": "Delete Result (Teacher)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/teacher/results/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "teacher", "results", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "result_id_here"
+								}
+							]
+						},
+						"description": "Delete result (only if uploaded by this teacher)"
+					}
+				},
+				{
+					"name": "Get My Performance",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/teacher/performance",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "teacher", "performance"]
+						},
+						"description": "Get teacher's own performance metrics"
+					}
+				}
+			]
+		},
+		{
+			"name": "Student",
+			"description": "Student-specific endpoints",
+			"item": [
+				{
+					"name": "Student Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('studentToken', jsonData.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"grNumber\": \"GR001\",\n    \"dateOfBirth\": \"2010-05-15\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/student/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "student", "login"]
+						},
+						"description": "Student login with GR number and DOB"
+					}
+				},
+				{
+					"name": "Get Latest Result (Public)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/student/latest-result?grNumber=GR001&dateOfBirth=2010-05-15",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "student", "latest-result"],
+							"query": [
+								{
+									"key": "grNumber",
+									"value": "GR001"
+								},
+								{
+									"key": "dateOfBirth",
+									"value": "2010-05-15"
+								}
+							]
+						},
+						"description": "View latest result without login (public access)"
+					}
+				},
+				{
+					"name": "Get Student by GR Number",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/student/gr/:grNumber",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "student", "gr", ":grNumber"],
+							"variable": [
+								{
+									"key": "grNumber",
+									"value": "GR001"
+								}
+							]
+						},
+						"description": "Get student info by GR Number (for result upload auto-fill)"
+					}
+				},
+				{
+					"name": "Get My Results",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{studentToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/student/results",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "student", "results"]
+						},
+						"description": "Get student's own results"
+					}
+				},
+				{
+					"name": "Get My Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{studentToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/student/profile",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "student", "profile"]
+						},
+						"description": "Get student profile and statistics"
+					}
+				},
+				{
+					"name": "View Specific Result",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{studentToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/student/results/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "student", "results", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "result_id_here"
+								}
+							]
+						},
+						"description": "View specific result by ID"
+					}
+				}
+			]
+		},
+		{
+			"name": "Student Management",
+			"description": "Endpoints for managing students (Admin/Teacher)",
+			"item": [
+				{
+					"name": "Get All Students",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/student-management?standard=10&search=john&page=1&limit=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "student-management"],
+							"query": [
+								{
+									"key": "standard",
+									"value": "10",
+									"description": "Filter by standard"
+								},
+								{
+									"key": "search",
+									"value": "john",
+									"description": "Search by name or GR number"
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Items per page"
+								}
+							]
+						},
+						"description": "Get all students with filters"
+					}
+				},
+				{
+					"name": "Get Student Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/student-management/stats/overview",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "student-management", "stats", "overview"]
+						},
+						"description": "Get student statistics overview"
+					}
+				},
+				{
+					"name": "Export Students",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/student-management/export?standard=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "student-management", "export"],
+							"query": [
+								{
+									"key": "standard",
+									"value": "10",
+									"description": "Filter by standard"
+								}
+							]
+						},
+						"description": "Export students to Excel"
+					}
+				},
+				{
+					"name": "Get Student by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/student-management/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "student-management", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "student_id_here"
+								}
+							]
+						},
+						"description": "Get student by ID with results"
+					}
+				},
+				{
+					"name": "Update Student",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Updated Student Name\",\n    \"standard\": \"11\",\n    \"email\": \"updated@school.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/student-management/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "student-management", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "student_id_here"
+								}
+							]
+						},
+						"description": "Update student details"
+					}
+				},
+				{
+					"name": "Delete Student",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/student-management/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "student-management", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "student_id_here"
+								}
+							]
+						},
+						"description": "Delete student and their results"
+					}
+				},
+				{
+					"name": "Bulk Delete Students",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"studentIds\": [\n        \"student_id_1\",\n        \"student_id_2\",\n        \"student_id_3\"\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/student-management/bulk-delete",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "student-management", "bulk-delete"]
+						},
+						"description": "Bulk delete multiple students"
+					}
+				}
+			]
+		},
+		{
+			"name": "Bulk Students",
+			"description": "Bulk student registration endpoints",
+			"item": [
+				{
+					"name": "Bulk Upload Students",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "",
+									"description": "Excel file (.xlsx, .xls) with student data"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/bulk-students/upload",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "bulk-students", "upload"]
+						},
+						"description": "Bulk upload students via Excel file"
+					}
+				},
+				{
+					"name": "Register Single Student",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Single Student\",\n    \"grNumber\": \"GR005\",\n    \"dateOfBirth\": \"2010-06-20\",\n    \"standard\": \"10\",\n    \"email\": \"single.student@school.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/bulk-students/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "bulk-students", "register"]
+						},
+						"description": "Register a single student"
+					}
+				},
+				{
+					"name": "Download Student Template",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/bulk-students/template",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "bulk-students", "template"]
+						},
+						"description": "Download Excel template for bulk student upload"
+					}
+				}
+			]
+		},
+		{
+			"name": "Student Promotion",
+			"description": "Student promotion endpoints",
+			"item": [
+				{
+					"name": "Get Students by Standard",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/student-promotion/by-standard/:standard",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "student-promotion", "by-standard", ":standard"],
+							"variable": [
+								{
+									"key": "standard",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get all students in a specific standard"
+					}
+				},
+				{
+					"name": "Promote Single Student",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"studentId\": \"student_id_here\",\n    \"newStandard\": \"11\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/student-promotion/single",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "student-promotion", "single"]
+						},
+						"description": "Promote single student to next standard"
+					}
+				},
+				{
+					"name": "Bulk Promote Students",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"studentIds\": [\n        \"student_id_1\",\n        \"student_id_2\",\n        \"student_id_3\"\n    ],\n    \"fromStandard\": \"10\",\n    \"toStandard\": \"11\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/student-promotion/bulk",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "student-promotion", "bulk"]
+						},
+						"description": "Bulk promote multiple students"
+					}
+				}
+			]
+		},
+		{
+			"name": "Timetable",
+			"description": "Timetable management endpoints",
+			"item": [
+				{
+					"name": "Get Teacher Timetable (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/timetable/admin/timetable/:teacherId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "timetable", "admin", "timetable", ":teacherId"],
+							"variable": [
+								{
+									"key": "teacherId",
+									"value": "teacher_id_here"
+								}
+							]
+						},
+						"description": "Admin: Get any teacher's timetable"
+					}
+				},
+				{
+					"name": "Save Teacher Timetable (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"timetable\": [\n        {\n            \"day\": \"Monday\",\n            \"periods\": [\n                {\n                    \"period\": 1,\n                    \"subject\": \"Mathematics\",\n                    \"class\": \"10A\",\n                    \"startTime\": \"08:00\",\n                    \"endTime\": \"08:45\"\n                },\n                {\n                    \"period\": 2,\n                    \"subject\": \"Physics\",\n                    \"class\": \"11B\",\n                    \"startTime\": \"08:45\",\n                    \"endTime\": \"09:30\"\n                }\n            ]\n        },\n        {\n            \"day\": \"Tuesday\",\n            \"periods\": [\n                {\n                    \"period\": 1,\n                    \"subject\": \"Mathematics\",\n                    \"class\": \"10B\",\n                    \"startTime\": \"08:00\",\n                    \"endTime\": \"08:45\"\n                }\n            ]\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/timetable/admin/timetable/:teacherId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "timetable", "admin", "timetable", ":teacherId"],
+							"variable": [
+								{
+									"key": "teacherId",
+									"value": "teacher_id_here"
+								}
+							]
+						},
+						"description": "Admin: Save/update teacher's timetable"
+					}
+				},
+				{
+					"name": "Delete Teacher Timetable (Admin)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/timetable/admin/timetable/:teacherId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "timetable", "admin", "timetable", ":teacherId"],
+							"variable": [
+								{
+									"key": "teacherId",
+									"value": "teacher_id_here"
+								}
+							]
+						},
+						"description": "Admin: Delete teacher's timetable"
+					}
+				},
+				{
+					"name": "Get My Timetable (Teacher)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/timetable/teacher/timetable",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "timetable", "teacher", "timetable"]
+						},
+						"description": "Teacher: View own timetable"
+					}
+				},
+				{
+					"name": "Get Student Timetable",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{studentToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/timetable/student/timetable",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "timetable", "student", "timetable"]
+						},
+						"description": "Student: View class timetable"
+					}
+				}
+			]
+		},
+		{
+			"name": "Teacher Attendance",
+			"description": "Teacher attendance marking endpoints",
+			"item": [
+				{
+					"name": "Mark Attendance",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"present\",\n    \"location\": {\n        \"latitude\": 23.0225,\n        \"longitude\": 72.5714\n    },\n    \"faceDescriptor\": [0.1, 0.2, 0.3]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/teacher-attendance/mark",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "teacher-attendance", "mark"]
+						},
+						"description": "Teacher marks their own attendance"
+					}
+				},
+				{
+					"name": "Get Today Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/teacher-attendance/today",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "teacher-attendance", "today"]
+						},
+						"description": "Get today's attendance status"
+					}
+				},
+				{
+					"name": "Get My Attendance History",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/teacher-attendance/my-history?startDate=2024-01-01&endDate=2024-12-31",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "teacher-attendance", "my-history"],
+							"query": [
+								{
+									"key": "startDate",
+									"value": "2024-01-01",
+									"description": "Start date for history"
+								},
+								{
+									"key": "endDate",
+									"value": "2024-12-31",
+									"description": "End date for history"
+								}
+							]
+						},
+						"description": "Get teacher's attendance history"
+					}
+				}
+			]
+		},
+		{
+			"name": "Admin Attendance",
+			"description": "Admin attendance management endpoints",
+			"item": [
+				{
+					"name": "Get All Attendance",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/attendance/all?date=2024-01-15&status=present",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "attendance", "all"],
+							"query": [
+								{
+									"key": "date",
+									"value": "2024-01-15",
+									"description": "Filter by date"
+								},
+								{
+									"key": "status",
+									"value": "present",
+									"description": "Filter by status (present/absent/late)"
+								}
+							]
+						},
+						"description": "Get all attendance records"
+					}
+				},
+				{
+					"name": "Get Today Summary",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/attendance/today-summary",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "attendance", "today-summary"]
+						},
+						"description": "Get today's attendance summary"
+					}
+				},
+				{
+					"name": "Get Teacher Attendance",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/attendance/teacher/:teacherId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "attendance", "teacher", ":teacherId"],
+							"variable": [
+								{
+									"key": "teacherId",
+									"value": "teacher_id_here"
+								}
+							]
+						},
+						"description": "Get attendance records for a specific teacher"
+					}
+				},
+				{
+					"name": "Get Attendance Report",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/attendance/report?startDate=2024-01-01&endDate=2024-12-31",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "attendance", "report"],
+							"query": [
+								{
+									"key": "startDate",
+									"value": "2024-01-01"
+								},
+								{
+									"key": "endDate",
+									"value": "2024-12-31"
+								}
+							]
+						},
+						"description": "Get attendance report"
+					}
+				},
+				{
+					"name": "Mark Attendance by Admin",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"teacherId\": \"teacher_id_here\",\n    \"date\": \"2024-01-15\",\n    \"status\": \"present\",\n    \"remarks\": \"Manually marked by admin\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/attendance/mark",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "attendance", "mark"]
+						},
+						"description": "Admin marks attendance for a teacher"
+					}
+				},
+				{
+					"name": "Update Attendance",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"late\",\n    \"remarks\": \"Updated by admin\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/attendance/update/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "attendance", "update", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "attendance_id_here"
+								}
+							]
+						},
+						"description": "Update attendance record"
+					}
+				},
+				{
+					"name": "Delete Attendance",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/attendance/delete/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "admin", "attendance", "delete", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "attendance_id_here"
+								}
+							]
+						},
+						"description": "Delete attendance record"
+					}
+				}
+			]
+		},
+		{
+			"name": "Face Registration",
+			"description": "Face registration endpoints for attendance",
+			"item": [
+				{
+					"name": "Register Face",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"faceDescriptor\": [0.1, 0.2, 0.3, 0.4, 0.5],\n    \"faceImage\": \"base64_encoded_image_string\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/face/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "face", "register"]
+						},
+						"description": "Register face for a teacher"
+					}
+				},
+				{
+					"name": "Get Face Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/face/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "face", "status"]
+						},
+						"description": "Get face registration status"
+					}
+				},
+				{
+					"name": "Get Face Descriptor",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/face/descriptor",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "face", "descriptor"]
+						},
+						"description": "Get face descriptor for verification"
+					}
+				},
+				{
+					"name": "Update Face",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"faceDescriptor\": [0.2, 0.3, 0.4, 0.5, 0.6],\n    \"faceImage\": \"base64_encoded_updated_image\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/face/update",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "face", "update"]
+						},
+						"description": "Update/Re-register face"
+					}
+				}
+			]
+		},
+		{
+			"name": "PDF Generation",
+			"description": "PDF generation endpoints",
+			"item": [
+				{
+					"name": "Generate Report Card",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{teacherToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/pdf/report-card/:grNumber",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "pdf", "report-card", ":grNumber"],
+							"variable": [
+								{
+									"key": "grNumber",
+									"value": "GR001"
+								}
+							]
+						},
+						"description": "Generate full report card PDF (Teacher/Admin)"
+					}
+				},
+				{
+					"name": "Generate Latest Result PDF",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/pdf/latest-result/:grNumber",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "pdf", "latest-result", ":grNumber"],
+							"variable": [
+								{
+									"key": "grNumber",
+									"value": "GR001"
+								}
+							]
+						},
+						"description": "Generate PDF for latest result (Public access)"
+					}
+				},
+				{
+					"name": "Generate Result PDF by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/pdf/result/:resultId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "pdf", "result", ":resultId"],
+							"variable": [
+								{
+									"key": "resultId",
+									"value": "result_id_here"
+								}
+							]
+						},
+						"description": "Generate PDF for specific result by ID"
+					}
+				}
+			]
+		},
+		{
+			"name": "Profile",
+			"description": "User profile management endpoints",
+			"item": [
+				{
+					"name": "Get My Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/profile/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "profile", "me"]
+						},
+						"description": "Get current user's profile"
+					}
+				},
+				{
+					"name": "Update Profile",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Updated Name\",\n    \"email\": \"updated.email@school.com\",\n    \"phone\": \"1234567890\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/profile/update",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "profile", "update"]
+						},
+						"description": "Update user profile"
+					}
+				},
+				{
+					"name": "Change Password",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"currentPassword\": \"oldpassword123\",\n    \"newPassword\": \"newpassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/profile/change-password",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "profile", "change-password"]
+						},
+						"description": "Change user password"
+					}
+				}
+			]
+		},
+		{
+			"name": "System Config",
+			"description": "System configuration endpoints",
+			"item": [
+				{
+					"name": "Get Config",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/config",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "config"]
+						},
+						"description": "Get system configuration (Public)"
+					}
+				},
+				{
+					"name": "Update Config",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"schoolName\": \"Demo School\",\n    \"schoolAddress\": \"123 School Street\",\n    \"schoolLogo\": \"logo_url\",\n    \"academicYear\": \"2024-25\",\n    \"attendanceRadius\": 500,\n    \"attendanceStartTime\": \"08:00\",\n    \"attendanceEndTime\": \"10:00\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/config",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "config"]
+						},
+						"description": "Update system configuration (Admin only)"
+					}
+				}
+			]
+		},
+		{
+			"name": "User (Legacy)",
+			"description": "Legacy user endpoints",
+			"item": [
+				{
+					"name": "View Result",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/user/view?grNumber=GR001&standard=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "user", "view"],
+							"query": [
+								{
+									"key": "grNumber",
+									"value": "GR001"
+								},
+								{
+									"key": "standard",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Student views result using GR number and standard"
+					}
+				},
+				{
+					"name": "Get Student by GR",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/user/student/:grNumber",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "user", "student", ":grNumber"],
+							"variable": [
+								{
+									"key": "grNumber",
+									"value": "GR001"
+								}
+							]
+						},
+						"description": "Get student info by GR Number"
+					}
+				}
+			]
+		},
+		{
+			"name": "Health Check",
+			"description": "API health check",
+			"item": [
+				{
+					"name": "API Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/",
+							"host": ["{{baseUrl}}"],
+							"path": [""]
+						},
+						"description": "Check if API is running"
+					}
+				}
+			]
+		}
+	]
+}
