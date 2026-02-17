@@ -7,7 +7,16 @@ const { sendTeacherWelcomeEmail, sendEmailUpdateNotification } = require('../uti
 // Get all teachers with performance overview
 const getAllTeachers = async (req, res) => {
   try {
-    const teachers = await User.find({ role: 'teacher' })
+    // Support filtering by active status for attendance operations
+    const { activeOnly } = req.query;
+    const query = { role: 'teacher' };
+    
+    // Filter for active teachers only if requested
+    if (activeOnly === 'true') {
+      query.isActive = { $ne: false };
+    }
+    
+    const teachers = await User.find(query)
       .select('-password')
       .sort({ createdAt: -1 });
 

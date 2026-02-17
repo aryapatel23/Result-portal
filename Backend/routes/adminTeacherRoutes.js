@@ -19,7 +19,16 @@ const User = require('../models/User');
 // @access  Public
 router.get('/teachers-list', async (req, res) => {
   try {
-    const teachers = await User.find({ role: 'teacher' })
+    // Support filtering by active status
+    const { activeOnly } = req.query;
+    const query = { role: 'teacher' };
+    
+    // Filter for active teachers only if requested
+    if (activeOnly === 'true') {
+      query.isActive = { $ne: false };
+    }
+    
+    const teachers = await User.find(query)
       .select('_id name employeeId email isActive')
       .sort({ name: 1 });
     res.status(200).json(teachers);

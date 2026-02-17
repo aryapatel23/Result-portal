@@ -34,8 +34,12 @@ const teacherAttendanceSchema = new mongoose.Schema({
     },
     faceImage: { type: String, default: null },
     remarks: { type: String, default: '' },
-    markedBy: { type: String, enum: ['self', 'admin'], default: 'self' },
-    workingHours: { type: Number, default: 0 }
+    markedBy: { type: String, enum: ['self', 'admin', 'auto'], default: 'self' },
+    workingHours: { type: Number, default: 0 },
+    // Auto-marking fields
+    autoMarked: { type: Boolean, default: false },
+    autoMarkedReason: { type: String, default: null },
+    autoMarkedAt: { type: Date, default: null }
   }],
 
   // Aggregated Stats for the Month (for quick dashboards)

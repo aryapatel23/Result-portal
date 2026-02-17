@@ -57,6 +57,14 @@ exports.markAttendance = async (req, res) => {
     // Get teacher details
     const teacher = await User.findById(teacherId);
     if (!teacher) return res.status(404).json({ message: 'User not found' });
+    
+    // Check if teacher is active
+    if (teacher.isActive === false) {
+      return res.status(403).json({ 
+        message: 'Attendance marking is disabled for inactive teachers',
+        reason: 'Your account has been deactivated. Please contact admin.'
+      });
+    }
 
     const { istDate, day, monthStr, year, timeStr } = getISTTime();
 
@@ -242,44 +250,130 @@ exports.getMyHistory = async (req, res) => {
   }
 };
 
-// Get all attendance (Admin) -> Needs to handle buckets
+// Get all attendance (Admin) -> Enhanced to show all teachers for selected date
 exports.getAllAttendance = async (req, res) => {
-  // This is complex with buckets if we want filtering by date
-  // For simplicity, we'll implement date filtering
   try {
-    const { date } = req.query;
-    let query = {};
-
-    // If date provided, find docs that *could* match (by month)
-    // Then filter records
-
-    let docs = await TeacherAttendance.find(query).populate('teacher', 'name email employeeId');
-
-    let flatRecords = [];
-    docs.forEach(doc => {
-      doc.records.forEach(rec => {
-        flatRecords.push({
-          ...rec.toObject(),
-          teacherName: doc.teacher ? doc.teacher.name : 'Unknown',
-          employeeId: doc.teacher ? doc.teacher.employeeId : 'N/A',
-          teacherId: doc.teacher ? doc.teacher._id : null,
-          month: doc.month
-        });
+    const { date, status } = req.query;
+    
+    if (!date) {
+      // If no date provided, return error
+      return res.status(400).json({ 
+        message: 'Date parameter is required',
+        attendance: []
       });
-    });
-
-    // Filter by date if needed
-    if (date) {
-      const searchDate = new Date(date).toDateString();
-      flatRecords = flatRecords.filter(r => new Date(r.date).toDateString() === searchDate);
     }
 
-    flatRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
+    // Parse the requested date
+    const requestedDate = new Date(date);
+    const day = requestedDate.getDate();
+    const monthStr = `${String(requestedDate.getMonth() + 1).padStart(2, '0')}-${requestedDate.getFullYear()}`;
+    const year = requestedDate.getFullYear();
 
-    res.json({ attendance: flatRecords });
+    // Get all active teachers
+    const allTeachers = await User.find({ 
+      role: 'teacher',
+      isActive: { $ne: false }
+    }).select('name email employeeId');
+
+    // Find attendance documents for this month
+    const docs = await TeacherAttendance.find({ month: monthStr })
+      .populate('teacher', 'name email employeeId');
+
+    // Build attendance records for each teacher
+    const attendanceRecords = [];
+    const markedTeacherIds = new Set();
+
+    // Process existing attendance records
+    docs.forEach(doc => {
+      if (!doc.teacher) return; // Skip if teacher was deleted
+      
+      const record = doc.records.find(r => r.day === day);
+      if (record) {
+        markedTeacherIds.add(doc.teacher._id.toString());
+        attendanceRecords.push({
+          _id: record._id,
+          teacherId: doc.teacher._id,
+          teacherName: doc.teacher.name,
+          employeeId: doc.teacher.employeeId,
+          email: doc.teacher.email,
+          status: record.status,
+          date: record.date,
+          day: record.day,
+          checkInTime: record.checkInTime || null,
+          checkOutTime: record.checkOutTime || null,
+          location: record.location || null,
+          faceImage: record.faceImage || null,
+          remarks: record.remarks || '',
+          markedBy: record.markedBy || 'self',
+          workingHours: record.workingHours || 0,
+          autoMarked: record.autoMarked || false,
+          autoMarkedReason: record.autoMarkedReason || null,
+          month: doc.month
+        });
+      }
+    });
+
+    // Add "Not Marked" status for teachers without attendance
+    allTeachers.forEach(teacher => {
+      if (!markedTeacherIds.has(teacher._id.toString())) {
+        attendanceRecords.push({
+          _id: null,
+          teacherId: teacher._id,
+          teacherName: teacher.name,
+          employeeId: teacher.employeeId,
+          email: teacher.email,
+          status: 'Not Marked',
+          date: requestedDate,
+          day: day,
+          checkInTime: null,
+          checkOutTime: null,
+          location: null,
+          faceImage: null,
+          remarks: '',
+          markedBy: null,
+          workingHours: 0,
+          autoMarked: false,
+          autoMarkedReason: null,
+          month: monthStr
+        });
+      }
+    });
+
+    // Filter by status if provided
+    let filteredRecords = attendanceRecords;
+    if (status) {
+      // Handle "On Leave" filter
+      if (status === 'On Leave' || status === 'Leave') {
+        filteredRecords = attendanceRecords.filter(r => r.status === 'Leave');
+      } else if (status === 'Not Marked') {
+        filteredRecords = attendanceRecords.filter(r => r.status === 'Not Marked');
+      } else {
+        filteredRecords = attendanceRecords.filter(r => r.status === status);
+      }
+    }
+
+    // Sort by employee ID
+    filteredRecords.sort((a, b) => {
+      if (!a.employeeId) return 1;
+      if (!b.employeeId) return -1;
+      return a.employeeId.localeCompare(b.employeeId);
+    });
+
+    res.json({ 
+      attendance: filteredRecords,
+      summary: {
+        total: allTeachers.length,
+        present: attendanceRecords.filter(r => r.status === 'Present').length,
+        absent: attendanceRecords.filter(r => r.status === 'Absent').length,
+        leave: attendanceRecords.filter(r => r.status === 'Leave').length,
+        halfDay: attendanceRecords.filter(r => r.status === 'Half-Day').length,
+        notMarked: attendanceRecords.filter(r => r.status === 'Not Marked').length
+      }
+    });
 
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error in getAllAttendance:', error);
+    res.status(500).json({ message: error.message, attendance: [] });
   }
 };
 
@@ -307,7 +401,7 @@ exports.getTodaySummary = async (req, res) => {
       }
     });
 
-    const allTeachers = await User.find({ role: 'teacher' });
+    const allTeachers = await User.find({ role: 'teacher', isActive: { $ne: false } });
     const absentTeachers = allTeachers.filter(t => !markedTeacherIds.includes(t._id.toString()));
 
     // Stats
@@ -387,6 +481,14 @@ exports.markAttendanceByAdmin = async (req, res) => {
 
     const teacher = await User.findById(teacherId);
     if (!teacher) return res.status(404).json({ message: 'Teacher not found' });
+    
+    // Check if teacher is active
+    if (teacher.role === 'teacher' && teacher.isActive === false) {
+      return res.status(403).json({ 
+        message: 'Cannot mark attendance for inactive teacher',
+        teacherName: teacher.name
+      });
+    }
 
     const attendDate = new Date(date);
     const monthStr = `${String(attendDate.getMonth() + 1).padStart(2, '0')}-${attendDate.getFullYear()}`;

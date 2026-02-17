@@ -199,9 +199,14 @@ const autoMarkTeacherAttendance = async (forceRun = false) => {
             if (settings.autoMarkAsLeave) {
                 console.log('   ⚠️  Attendance NOT marked - Auto-marking as LEAVE');
                 
+                // Create the full date object for today
+                const todayDate = new Date(year, istDate.getMonth(), day);
+                
                 doc.records.push({
+                    date: todayDate,
                     day: day,
                     status: 'Leave',
+                    markedBy: 'auto',
                     autoMarked: true,
                     autoMarkedReason: `Not marked by deadline (${settings.deadlineTime})`,
                     autoMarkedAt: new Date()
@@ -248,9 +253,10 @@ const autoMarkTeacherAttendance = async (forceRun = false) => {
                             'Leave',
                             `You did not mark your attendance today by ${settings.deadlineTime}. It has been automatically marked as Leave. Please ensure to mark attendance on time in the future.`
                         );
-                        console.log(`   ✅ Notified: ${teacher.name}`);
+                        console.log(`   ✅ Email sent: ${teacher.name}`);
                     } catch (err) {
-                        console.log(`   ❌ Failed to notify ${teacher.name}: ${err.message}`);
+                        console.log(`   ⚠️  Failed to send email to ${teacher.name}: ${err.message}`);
+                        // Continue with other emails even if one fails
                     }
                 }
             }
@@ -273,37 +279,129 @@ const autoMarkTeacherAttendance = async (forceRun = false) => {
         console.error('\n❌ ERROR in auto-mark teacher attendance:');
         console.error(error);
         console.log('🎯 '.repeat(30) + '\n');
+        
+        // Don't throw - return error result to prevent server crash
         return {
             success: false,
-            error: error.message
+            error: error.message,
+            markedCount: 0,
+            alreadyMarkedCount: 0
         };
     }
 };
 
 /**
- * Schedule the cron job
- * Runs at 6:05 PM IST daily (5 minutes after default deadline)
+ * Schedule the cron job dynamically based on admin settings
+ * Default: Runs at deadline time + 5 minutes
  */
-const startTeacherAttendanceCron = () => {
-    console.log('🚀 Starting Teacher Attendance Auto-Mark Cron...');
-    console.log('⏰ Schedule: 18:05 IST (6:05 PM) - Daily');
-    console.log('📍 Timezone: Asia/Kolkata (IST)');
-    
-    // Schedule: Every day at 18:05 (6:05 PM) IST
-    const cronJob = cron.schedule('5 18 * * *', () => {
-        autoMarkTeacherAttendance(false);
-    }, {
-        scheduled: true,
-        timezone: 'Asia/Kolkata'
-    });
-    
-    console.log('✅ Teacher Attendance Cron Job Started!');
-    console.log('💡 Teachers must mark attendance by deadline or will be marked as Leave\n');
-    
-    return cronJob;
+let currentCronJob = null;
+
+const startTeacherAttendanceCron = async () => {
+    try {
+        console.log('🚀 Starting Teacher Attendance Auto-Mark Cron...');
+        
+        // Get system configuration for deadline time
+        let config = await SystemConfig.findOne({ key: 'default_config' });
+        
+        if (!config || !config.teacherAttendanceSettings) {
+            console.log('⚠️  No configuration found, using defaults');
+            config = {
+                teacherAttendanceSettings: {
+                    enabled: true,
+                    deadlineTime: '18:00'
+                }
+            };
+        }
+        
+        const settings = config.teacherAttendanceSettings;
+        const deadlineTime = settings.deadlineTime || '18:00';
+        
+        // Parse deadline time and add 5 minutes for cron execution
+        const [hours, minutes] = deadlineTime.split(':').map(Number);
+        let cronMinutes = minutes + 5;
+        let cronHours = hours;
+        
+        // Handle minute overflow
+        if (cronMinutes >= 60) {
+            cronMinutes -= 60;
+            cronHours += 1;
+        }
+        
+        // Handle hour overflow
+        if (cronHours >= 24) {
+            cronHours = 0;
+        }
+        
+        // Create cron expression (minute hour * * *)
+        const cronExpression = `${cronMinutes} ${cronHours} * * *`;
+        
+        console.log('⏰ Configuration:');
+        console.log(`   • Deadline Time: ${deadlineTime}`);
+        console.log(`   • Cron Schedule: ${cronHours}:${String(cronMinutes).padStart(2, '0')} IST`);
+        console.log(`   • Cron Expression: ${cronExpression}`);
+        console.log(`   • Enabled: ${settings.enabled ? 'Yes' : 'No'}`);
+        console.log('📍 Timezone: Asia/Kolkata (IST)');
+        
+        // Stop existing cron if running
+        if (currentCronJob) {
+            console.log('🔄 Stopping existing cron job...');
+            currentCronJob.stop();
+            currentCronJob = null;
+        }
+        
+        // Schedule new cron job
+        currentCronJob = cron.schedule(cronExpression, async () => {
+            try {
+                console.log('\n⏰ Cron triggered at scheduled time');
+                await autoMarkTeacherAttendance(false);
+            } catch (error) {
+                console.error('❌ Error in cron execution:', error);
+                // Don't crash - log error and continue
+            }
+        }, {
+            scheduled: true,
+            timezone: 'Asia/Kolkata'
+        });
+        
+        console.log('✅ Teacher Attendance Cron Job Started!');
+        console.log(`💡 Will run daily at ${cronHours}:${String(cronMinutes).padStart(2, '0')} IST`);
+        console.log('💡 Teachers must mark attendance by deadline or will be marked as Leave\n');
+        
+        return currentCronJob;
+        
+    } catch (error) {
+        console.error('❌ Error starting cron job:', error);
+        console.log('⚠️  Cron will retry with default settings (18:05 IST)');
+        
+        // Fallback to default schedule
+        currentCronJob = cron.schedule('5 18 * * *', async () => {
+            try {
+                await autoMarkTeacherAttendance(false);
+            } catch (error) {
+                console.error('❌ Error in cron execution:', error);
+            }
+        }, {
+            scheduled: true,
+            timezone: 'Asia/Kolkata'
+        });
+        
+        console.log('✅ Fallback cron started at 18:05 IST\n');
+        return currentCronJob;
+    }
+};
+
+/**
+ * Restart cron with new settings
+ * Call this when admin updates attendance settings
+ */
+const restartTeacherAttendanceCron = async () => {
+    console.log('🔄 Restarting cron with updated settings...');
+    await startTeacherAttendanceCron();
+    console.log('✅ Cron restarted successfully\n');
 };
 
 module.exports = {
     startTeacherAttendanceCron,
+    restartTeacherAttendanceCron,
     autoMarkTeacherAttendance // For manual testing
 };

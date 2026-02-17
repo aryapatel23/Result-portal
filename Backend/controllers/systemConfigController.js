@@ -1,5 +1,5 @@
 const SystemConfig = require('../models/SystemConfig');
-const { autoMarkTeacherAttendance } = require('../cron/teacherAttendanceCron');
+const { autoMarkTeacherAttendance, restartTeacherAttendanceCron } = require('../cron/teacherAttendanceCron');
 
 // Get current system config
 exports.getConfig = async (req, res) => {
@@ -102,6 +102,10 @@ exports.updateTeacherAttendanceSettings = async (req, res) => {
             config.teacherAttendanceSettings = {};
         }
 
+        // Track if deadline time changed
+        const oldDeadlineTime = config.teacherAttendanceSettings.deadlineTime;
+        const deadlineChanged = deadlineTime && deadlineTime !== oldDeadlineTime;
+
         // Update fields
         if (enabled !== undefined) config.teacherAttendanceSettings.enabled = enabled;
         if (deadlineTime) {
@@ -125,9 +129,22 @@ exports.updateTeacherAttendanceSettings = async (req, res) => {
 
         await config.save();
 
+        // Restart cron if deadline time changed
+        if (deadlineChanged) {
+            console.log('⚠️  Deadline time changed - Restarting cron job...');
+            try {
+                await restartTeacherAttendanceCron();
+                console.log('✅ Cron job restarted with new schedule');
+            } catch (error) {
+                console.error('❌ Error restarting cron:', error);
+                // Don't fail the request - settings are saved
+            }
+        }
+
         res.json({
             message: 'Teacher attendance settings updated successfully',
-            settings: config.teacherAttendanceSettings
+            settings: config.teacherAttendanceSettings,
+            cronRestarted: deadlineChanged
         });
     } catch (error) {
         console.error('Error updating teacher attendance settings:', error);
@@ -141,12 +158,33 @@ exports.testTeacherAttendanceAutoMark = async (req, res) => {
         console.log('🧪 Manual test triggered by admin');
         const result = await autoMarkTeacherAttendance(true); // Force run
         
-        res.json({
-            message: 'Test completed',
-            result
-        });
+        if (result.success) {
+            res.json({
+                success: true,
+                message: `Test completed! Marked: ${result.markedCount || 0}, Already marked: ${result.alreadyMarkedCount || 0}`,
+                details: {
+                    totalTeachers: result.totalTeachers || 0,
+                    markedCount: result.markedCount || 0,
+                    alreadyMarkedCount: result.alreadyMarkedCount || 0,
+                    notifiedCount: result.notifiedCount || 0,
+                    markedTeachers: result.markedTeachers || []
+                },
+                result
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                message: 'Test failed',
+                error: result.error || 'Unknown error',
+                result
+            });
+        }
     } catch (error) {
         console.error('Error in test auto-mark:', error);
-        res.status(500).json({ message: 'Server error', error: error.message });
+        res.status(500).json({ 
+            success: false,
+            message: 'Server error during test', 
+            error: error.message 
+        });
     }
 };
