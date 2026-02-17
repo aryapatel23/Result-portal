@@ -18,6 +18,8 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+.ATTENDANCE_AUTOMATION_FIX.md
+.CRON_SERVER_REQUIREMENTS.md
 
 # Build
 dist/
