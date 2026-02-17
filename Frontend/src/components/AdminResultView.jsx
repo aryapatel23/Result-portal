@@ -766,8 +766,14 @@ const AdminResultView = () => {
       )}
 
       {showModal && selectedStudent && (
-        <div className="fixed inset-0 flex justify-center items-center z-50 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white p-6 rounded-lg shadow-2xl w-full max-w-md text-center">
+        <div 
+          className="fixed inset-0 flex justify-center items-center z-50 bg-black/40 backdrop-blur-sm"
+          onClick={() => setShowModal(false)}
+        >
+          <div 
+            className="bg-white p-6 rounded-lg shadow-2xl w-full max-w-md text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 className="text-lg font-semibold text-gray-800 mb-4">
               Are you sure?
             </h3>

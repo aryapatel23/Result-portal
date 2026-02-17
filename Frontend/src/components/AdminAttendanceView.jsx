@@ -49,7 +49,8 @@ const AdminAttendanceView = () => {
   const fetchTeachers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('/admin/teachers', {
+      // Fetch only active teachers for attendance marking
+      const response = await axios.get('/admin/teachers?activeOnly=true', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setTeachers(response.data);
@@ -453,8 +454,14 @@ const AdminAttendanceView = () => {
 
         {/* View Details Modal */}
         {viewingDetails && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={() => setViewingDetails(null)}
+          >
+            <div 
+              className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-2xl font-bold text-gray-900">Attendance Details</h3>
@@ -532,8 +539,14 @@ const AdminAttendanceView = () => {
 
         {/* View Image Modal */}
         {viewingImage && (
-          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-            <div className="relative max-w-4xl w-full">
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+            onClick={() => setViewingImage(null)}
+          >
+            <div 
+              className="relative max-w-4xl w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
               <button
                 onClick={() => setViewingImage(null)}
                 className="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75"
@@ -549,42 +562,71 @@ const AdminAttendanceView = () => {
           </div>
         )}
 
-        {/* Manual Mark Modal */}
+        {/* Manual Mark Modal - Clean White Theme */}
         {showMarkModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-gray-900">Mark Manual Attendance</h3>
-                <button
-                  onClick={() => setShowMarkModal(false)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <XCircle className="h-6 w-6" />
-                </button>
+          <div 
+            className="fixed inset-0 bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn"
+            onClick={() => setShowMarkModal(false)}
+          >
+            <div 
+              className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-gray-200 transform transition-all animate-slideUp"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="relative bg-white border-b border-gray-200 px-6 py-4 rounded-t-2xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-gray-900 p-2 rounded-lg">
+                      <Edit className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900">Mark Attendance</h3>
+                      <p className="text-gray-500 text-xs mt-0.5">Record teacher attendance manually</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowMarkModal(false)}
+                    className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1.5 rounded-lg transition-all"
+                  >
+                    <XCircle className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
 
-              <form onSubmit={handleManualMarkSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Select Teacher
+              {/* Modal Body */}
+              <form onSubmit={handleManualMarkSubmit} className="p-6 space-y-4">
+                {/* Teacher Selection */}
+                <div className="space-y-1.5">
+                  <label className="flex items-center text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                    <Users className="h-3.5 w-3.5 mr-1.5 text-gray-900" />
+                    Teacher
                   </label>
-                  <select
-                    required
-                    value={manualAttendance.teacherId}
-                    onChange={(e) => setManualAttendance({ ...manualAttendance, teacherId: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select a teacher</option>
-                    {teachers.map((teacher) => (
-                      <option key={teacher._id} value={teacher._id}>
-                        {teacher.name} ({teacher.employeeId})
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      required
+                      value={manualAttendance.teacherId}
+                      onChange={(e) => setManualAttendance({ ...manualAttendance, teacherId: e.target.value })}
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all appearance-none bg-white text-gray-900 text-sm font-medium cursor-pointer hover:border-gray-400"
+                    >
+                      <option value="" className="text-gray-500">Select teacher...</option>
+                      {teachers.map((teacher) => (
+                        <option key={teacher._id} value={teacher._id}>
+                          {teacher.name} • {teacher.employeeId}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                {/* Date Selection */}
+                <div className="space-y-1.5">
+                  <label className="flex items-center text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                    <Calendar className="h-3.5 w-3.5 mr-1.5 text-gray-900" />
                     Date
                   </label>
                   <input
@@ -592,53 +634,179 @@ const AdminAttendanceView = () => {
                     required
                     value={manualAttendance.date}
                     onChange={(e) => setManualAttendance({ ...manualAttendance, date: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all text-sm font-medium"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Status
+                {/* Status Selection - Visual Cards */}
+                <div className="space-y-2">
+                  <label className="flex items-center text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                    <CheckCircle className="h-3.5 w-3.5 mr-1.5 text-gray-900" />
+                    Attendance Status
                   </label>
-                  <select
-                    required
-                    value={manualAttendance.status}
-                    onChange={(e) => setManualAttendance({ ...manualAttendance, status: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="Present">Present</option>
-                    <option value="Absent">Absent</option>
-                    <option value="Half-Day">Half Day</option>
-                    <option value="Leave">On Leave</option>
-                  </select>
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Present */}
+                    <label className={`relative flex items-center p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                      manualAttendance.status === 'Present' 
+                        ? 'border-green-500 bg-green-50 shadow-md' 
+                        : 'border-gray-200 hover:border-green-300 hover:bg-green-50'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="status"
+                        value="Present"
+                        checked={manualAttendance.status === 'Present'}
+                        onChange={(e) => setManualAttendance({ ...manualAttendance, status: e.target.value })}
+                        className="sr-only"
+                      />
+                      <div className="flex items-center space-x-2 w-full">
+                        <div className={`p-1.5 rounded-lg ${
+                          manualAttendance.status === 'Present' ? 'bg-green-500' : 'bg-gray-200'
+                        }`}>
+                          <CheckCircle className={`h-4 w-4 ${
+                            manualAttendance.status === 'Present' ? 'text-white' : 'text-gray-500'
+                          }`} />
+                        </div>
+                        <div className="flex-1">
+                          <p className={`text-sm font-semibold ${
+                            manualAttendance.status === 'Present' ? 'text-green-700' : 'text-gray-700'
+                          }`}>Present</p>
+                          <p className="text-xs text-gray-500">Full day</p>
+                        </div>
+                      </div>
+                    </label>
+
+                    {/* Absent */}
+                    <label className={`relative flex items-center p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                      manualAttendance.status === 'Absent' 
+                        ? 'border-red-500 bg-red-50 shadow-md' 
+                        : 'border-gray-200 hover:border-red-300 hover:bg-red-50'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="status"
+                        value="Absent"
+                        checked={manualAttendance.status === 'Absent'}
+                        onChange={(e) => setManualAttendance({ ...manualAttendance, status: e.target.value })}
+                        className="sr-only"
+                      />
+                      <div className="flex items-center space-x-2 w-full">
+                        <div className={`p-1.5 rounded-lg ${
+                          manualAttendance.status === 'Absent' ? 'bg-red-500' : 'bg-gray-200'
+                        }`}>
+                          <XCircle className={`h-4 w-4 ${
+                            manualAttendance.status === 'Absent' ? 'text-white' : 'text-gray-500'
+                          }`} />
+                        </div>
+                        <div className="flex-1">
+                          <p className={`text-sm font-semibold ${
+                            manualAttendance.status === 'Absent' ? 'text-red-700' : 'text-gray-700'
+                          }`}>Absent</p>
+                          <p className="text-xs text-gray-500">Not present</p>
+                        </div>
+                      </div>
+                    </label>
+
+                    {/* Half-Day */}
+                    <label className={`relative flex items-center p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                      manualAttendance.status === 'Half-Day' 
+                        ? 'border-yellow-500 bg-yellow-50 shadow-md' 
+                        : 'border-gray-200 hover:border-yellow-300 hover:bg-yellow-50'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="status"
+                        value="Half-Day"
+                        checked={manualAttendance.status === 'Half-Day'}
+                        onChange={(e) => setManualAttendance({ ...manualAttendance, status: e.target.value })}
+                        className="sr-only"
+                      />
+                      <div className="flex items-center space-x-2 w-full">
+                        <div className={`p-1.5 rounded-lg ${
+                          manualAttendance.status === 'Half-Day' ? 'bg-yellow-500' : 'bg-gray-200'
+                        }`}>
+                          <Clock className={`h-4 w-4 ${
+                            manualAttendance.status === 'Half-Day' ? 'text-white' : 'text-gray-500'
+                          }`} />
+                        </div>
+                        <div className="flex-1">
+                          <p className={`text-sm font-semibold ${
+                            manualAttendance.status === 'Half-Day' ? 'text-yellow-700' : 'text-gray-700'
+                          }`}>Half-Day</p>
+                          <p className="text-xs text-gray-500">Partial</p>
+                        </div>
+                      </div>
+                    </label>
+
+                    {/* Leave */}
+                    <label className={`relative flex items-center p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                      manualAttendance.status === 'Leave' 
+                        ? 'border-gray-500 bg-gray-50 shadow-md' 
+                        : 'border-gray-200 hover:border-gray-400 hover:bg-gray-50'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="status"
+                        value="Leave"
+                        checked={manualAttendance.status === 'Leave'}
+                        onChange={(e) => setManualAttendance({ ...manualAttendance, status: e.target.value })}
+                        className="sr-only"
+                      />
+                      <div className="flex items-center space-x-2 w-full">
+                        <div className={`p-1.5 rounded-lg ${
+                          manualAttendance.status === 'Leave' ? 'bg-gray-700' : 'bg-gray-200'
+                        }`}>
+                          <Calendar className={`h-4 w-4 ${
+                            manualAttendance.status === 'Leave' ? 'text-white' : 'text-gray-500'
+                          }`} />
+                        </div>
+                        <div className="flex-1">
+                          <p className={`text-sm font-semibold ${
+                            manualAttendance.status === 'Leave' ? 'text-gray-700' : 'text-gray-700'
+                          }`}>On Leave</p>
+                          <p className="text-xs text-gray-500">Approved</p>
+                        </div>
+                      </div>
+                    </label>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Remarks
+                {/* Remarks */}
+                <div className="space-y-1.5">
+                  <label className="flex items-center text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                    <Edit className="h-3.5 w-3.5 mr-1.5 text-gray-900" />
+                    Remarks <span className="text-gray-400 font-normal normal-case ml-1">(Optional)</span>
                   </label>
                   <textarea
                     value={manualAttendance.remarks}
                     onChange={(e) => setManualAttendance({ ...manualAttendance, remarks: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all resize-none text-sm"
                     placeholder="Reason for manual entry..."
-                    rows="3"
+                    rows="2"
                   />
                 </div>
 
-                <div className="flex gap-4 mt-6">
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-3 border-t border-gray-200">
                   <button
                     type="button"
                     onClick={() => setShowMarkModal(false)}
-                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold"
+                    className="flex-1 px-4 py-2.5 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-400 font-semibold transition-all text-sm flex items-center justify-center"
                   >
+                    <XCircle className="h-4 w-4 mr-1.5" />
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold"
+                    disabled={!manualAttendance.teacherId}
+                    className={`flex-1 px-4 py-2.5 rounded-lg font-semibold transition-all text-sm flex items-center justify-center ${
+                      manualAttendance.teacherId
+                        ? 'bg-gray-900 text-white hover:bg-black shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
                   >
-                    Mark Attendance
+                    <CheckCircle className="h-4 w-4 mr-1.5" />
+                    Save Attendance
                   </button>
                 </div>
               </form>
