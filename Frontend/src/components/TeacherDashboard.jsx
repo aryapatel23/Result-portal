@@ -48,8 +48,10 @@ const TeacherDashboard = () => {
   // const [results, setResults] = useState([]); // Removed local results state
   const [students, setStudents] = useState([]);
   const [timetable, setTimetable] = useState(null);
+  const [attendance, setAttendance] = useState({ records: [], stats: null });
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
@@ -107,6 +109,26 @@ const TeacherDashboard = () => {
     }
   };
 
+  const fetchAttendanceHistory = async (token) => {
+    setAttendanceLoading(true);
+    try {
+      const response = await axios.get('/teacher-attendance/my-history', {
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 15000
+      });
+      
+      setAttendance({
+        records: response.data.attendance || [],
+        stats: response.data.stats || null
+      });
+    } catch (error) {
+      console.error('Error fetching attendance:', error);
+      toast.error('Failed to load attendance history');
+    } finally {
+      setAttendanceLoading(false);
+    }
+  };
+
   // Process unique students when reduxResults change
   useEffect(() => {
     if (reduxResults.length > 0) {
@@ -128,6 +150,16 @@ const TeacherDashboard = () => {
       setStudents(uniqueStudents);
     }
   }, [reduxResults]);
+
+  // Fetch attendance when attendance tab is activated
+  useEffect(() => {
+    if (activeTab === 'attendance' && attendance.records.length === 0) {
+      const token = localStorage.getItem('token');
+      if (token) {
+        fetchAttendanceHistory(token);
+      }
+    }
+  }, [activeTab]);
 
   const handleLogout = () => {
     localStorage.removeItem('user');
@@ -201,7 +233,7 @@ const TeacherDashboard = () => {
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-4 md:p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -395,6 +427,15 @@ const TeacherDashboard = () => {
                   }`}
               >
                 Timetable
+              </button>
+              <button
+                onClick={() => setActiveTab('attendance')}
+                className={`px-4 sm:px-6 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'attendance'
+                  ? 'border-indigo-600 text-indigo-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+              >
+                My Attendance
               </button>
             </nav>
           </div>
@@ -682,6 +723,170 @@ const TeacherDashboard = () => {
                 )}
               </div>
             )}
+
+            {/* Attendance Tab */}
+            {activeTab === 'attendance' && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-6">My Attendance History</h3>
+                
+                {attendanceLoading ? (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Loading attendance...</p>
+                  </div>
+                ) : attendance.stats ? (
+                  <div>
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+                      <div className="bg-white border-2 border-green-200 rounded-lg shadow-sm p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs font-medium text-gray-600 uppercase tracking-wider">Present</p>
+                            <p className="text-2xl font-bold text-green-600 mt-1">
+                              {attendance.stats.present || 0}
+                            </p>
+                          </div>
+                          <div className="bg-green-100 rounded-full p-3">
+                            <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-white border-2 border-red-200 rounded-lg shadow-sm p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs font-medium text-gray-600 uppercase tracking-wider">Absent</p>
+                            <p className="text-2xl font-bold text-red-600 mt-1">
+                              {attendance.stats.absent || 0}
+                            </p>
+                          </div>
+                          <div className="bg-red-100 rounded-full p-3">
+                            <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-white border-2 border-yellow-200 rounded-lg shadow-sm p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs font-medium text-gray-600 uppercase tracking-wider">Half-Day</p>
+                            <p className="text-2xl font-bold text-yellow-600 mt-1">
+                              {attendance.stats.halfDay || 0}
+                            </p>
+                          </div>
+                          <div className="bg-yellow-100 rounded-full p-3">
+                            <Clock className="h-6 w-6 text-yellow-600" />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-white border-2 border-gray-200 rounded-lg shadow-sm p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs font-medium text-gray-600 uppercase tracking-wider">Leaves</p>
+                            <p className="text-2xl font-bold text-gray-600 mt-1">
+                              {attendance.stats.leaves || 0}
+                              <span className="text-sm text-gray-400 font-normal">/{attendance.stats.yearlyLeaveLimit || 12}</span>
+                            </p>
+                          </div>
+                          <div className="bg-gray-100 rounded-full p-3">
+                            <Calendar className="h-6 w-6 text-gray-600" />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-white border-2 border-indigo-200 rounded-lg shadow-sm p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs font-medium text-gray-600 uppercase tracking-wider">Percentage</p>
+                            <p className="text-2xl font-bold text-indigo-600 mt-1">
+                              {attendance.stats.percentage || 0}%
+                            </p>
+                          </div>
+                          <div className="bg-indigo-100 rounded-full p-3">
+                            <TrendingUp className="h-6 w-6 text-indigo-600" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Attendance Records Table */}
+                    {attendance.records.length > 0 ? (
+                      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead className="bg-gray-50 border-b border-gray-200">
+                              <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Date
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Status
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Time
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Remarks
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              {attendance.records.map((record, index) => (
+                                <tr key={index} className="hover:bg-gray-50 transition-colors">
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {new Date(record.date).toLocaleDateString('en-IN', {
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric'
+                                    })}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                      record.status === 'Present'
+                                        ? 'bg-green-100 text-green-800'
+                                        : record.status === 'Absent'
+                                        ? 'bg-red-100 text-red-800'
+                                        : record.status === 'Half-Day'
+                                        ? 'bg-yellow-100 text-yellow-800'
+                                        : 'bg-gray-100 text-gray-800'
+                                    }`}>
+                                      {record.status}
+                                    </span>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                    {record.time || '-'}
+                                  </td>
+                                  <td className="px-6 py-4 text-sm text-gray-600">
+                                    {record.remarks || (record.autoMarked ? 'Auto-marked' : '-')}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                        <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                        <p className="text-gray-600 font-medium mb-2">No Attendance Records</p>
+                        <p className="text-sm text-gray-500">Your attendance records will appear here</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                    <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-600 font-medium mb-2">No Attendance Data</p>
+                    <p className="text-sm text-gray-500">Start marking your attendance to see your history</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -690,3 +895,4 @@ const TeacherDashboard = () => {
 };
 
 export default TeacherDashboard;
+

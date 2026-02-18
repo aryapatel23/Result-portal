@@ -16,6 +16,9 @@ import {
   Calendar,
   CheckCircle,
   XCircle,
+  Clock,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 // Utility function to format standard display consistently
@@ -43,9 +46,13 @@ const AdminTeacherDetail = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [teacherData, setTeacherData] = useState(null);
+  const [attendance, setAttendance] = useState({ records: [], stats: null });
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
+  const [showAttendance, setShowAttendance] = useState(false);
 
   useEffect(() => {
     fetchTeacherDetails();
+    fetchAttendanceHistory();
   }, [teacherId]);
 
   const fetchTeacherDetails = async () => {
@@ -60,6 +67,26 @@ const AdminTeacherDetail = () => {
       console.error('Error fetching teacher details:', error);
       toast.error('Failed to load teacher details');
       setLoading(false);
+    }
+  };
+
+  const fetchAttendanceHistory = async () => {
+    setAttendanceLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`/admin/attendance/teacher/${teacherId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      setAttendance({
+        records: response.data.attendance || [],
+        stats: response.data.stats || null
+      });
+    } catch (error) {
+      console.error('Error fetching attendance:', error);
+      // Don't show error toast for attendance, just log it
+    } finally {
+      setAttendanceLoading(false);
     }
   };
 
@@ -254,6 +281,198 @@ const AdminTeacherDetail = () => {
           </div>
         </div>
 
+        {/* Attendance History */}
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm mb-6">
+          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+              <Calendar className="h-5 w-5 mr-2 text-gray-700" />
+              Attendance History
+            </h2>
+            <button
+              onClick={() => setShowAttendance(!showAttendance)}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-lg transition-colors"
+            >
+              {showAttendance ? (
+                <>
+                  <span>Hide Details</span>
+                  <ChevronUp className="h-4 w-4" />
+                </>
+              ) : (
+                <>
+                  <span>View Details</span>
+                  <ChevronDown className="h-4 w-4" />
+                </>
+              )}
+            </button>
+          </div>
+
+          {attendanceLoading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+              <p className="mt-4 text-gray-600">Loading attendance history...</p>
+            </div>
+          ) : attendance.stats ? (
+            <div className="p-6">
+              {/* Stats Overview */}
+              <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
+                <div className="bg-white border-2 border-green-200 rounded-lg shadow-sm p-4 text-center">
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+                    Present
+                  </p>
+                  <p className="text-3xl font-bold text-green-600">
+                    {attendance.stats.present || 0}
+                  </p>
+                </div>
+
+                <div className="bg-white border-2 border-red-200 rounded-lg shadow-sm p-4 text-center">
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+                    Absent
+                  </p>
+                  <p className="text-3xl font-bold text-red-600">
+                    {attendance.stats.absent || 0}
+                  </p>
+                </div>
+
+                <div className="bg-white border-2 border-yellow-200 rounded-lg shadow-sm p-4 text-center">
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+                    Half-Day
+                  </p>
+                  <p className="text-3xl font-bold text-yellow-600">
+                    {attendance.stats.halfDay || 0}
+                  </p>
+                </div>
+
+                <div className="bg-white border-2 border-gray-200 rounded-lg shadow-sm p-4 text-center">
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+                    Leaves
+                  </p>
+                  <p className="text-3xl font-bold text-gray-600">
+                    {attendance.stats.leaves || 0}
+                  </p>
+                </div>
+
+                <div className="bg-white border-2 border-gray-300 rounded-lg shadow-sm p-4 text-center">
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+                    Total Days
+                  </p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {attendance.stats.total || 0}
+                  </p>
+                </div>
+
+                <div className="bg-white border-2 border-gray-700 rounded-lg shadow-sm p-4 text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <TrendingUp className="h-4 w-4 text-gray-700 mr-1" />
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Percentage
+                    </p>
+                  </div>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {attendance.stats.percentage || 0}%
+                  </p>
+                </div>
+              </div>
+
+              {/* Attendance Records Table - Collapsible */}
+              {showAttendance && (
+                attendance.records.length > 0 ? (
+                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="overflow-x-auto" style={{ maxHeight: '400px' }}>
+                      <table className="w-full">
+                        <thead className="bg-gray-50 sticky top-0 z-10">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                              Date
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                              Status
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                              Time
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                              Marked By
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                              Remarks
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {attendance.records.map((record, index) => (
+                            <tr key={index} className="hover:bg-gray-50 transition-colors">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {new Date(record.date).toLocaleDateString('en-IN', {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  weekday: 'short'
+                                })}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                  record.status === 'Present'
+                                    ? 'bg-green-100 text-green-800 border border-green-200'
+                                    : record.status === 'Absent'
+                                    ? 'bg-red-100 text-red-800 border border-red-200'
+                                    : record.status === 'Half-Day'
+                                    ? 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                                    : 'bg-gray-100 text-gray-800 border border-gray-200'
+                                }`}>
+                                  {record.status}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                <div className="flex items-center">
+                                  <Clock className="h-3 w-3 mr-1 text-gray-400" />
+                                  {record.time || '-'}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                {record.autoMarked ? (
+                                  <span className="text-gray-500 italic flex items-center">
+                                    <span className="w-2 h-2 bg-gray-400 rounded-full mr-2"></span>
+                                    Auto-marked
+                                  </span>
+                                ) : record.markedByAdmin ? (
+                                  <span className="text-gray-700 font-medium flex items-center">
+                                    <span className="w-2 h-2 bg-gray-700 rounded-full mr-2"></span>
+                                    Admin
+                                  </span>
+                                ) : (
+                                  <span className="text-green-600 font-medium flex items-center">
+                                    <span className="w-2 h-2 bg-green-600 rounded-full mr-2"></span>
+                                    Self
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
+                                {record.remarks || '-'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                    <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-600 font-medium mb-2">No Attendance Records</p>
+                    <p className="text-sm text-gray-500">This teacher has not marked any attendance yet</p>
+                  </div>
+                )
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-gray-50 border-t border-gray-200">
+              <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-600 font-medium mb-2">No Attendance Data</p>
+              <p className="text-sm text-gray-500">Attendance history will appear here once the teacher starts marking attendance</p>
+            </div>
+          )}
+        </div>
+
         {/* Performance Graph */}
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Performance Overview</h2>
@@ -431,9 +650,12 @@ const AdminTeacherDetail = () => {
             </table>
           </div>
         </div>
+
+
       </div>
     </div>
   );
 };
 
 export default AdminTeacherDetail;
+
