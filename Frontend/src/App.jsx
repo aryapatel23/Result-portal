@@ -8,10 +8,10 @@ import { store } from './redux/store';
 import Navbar from './components/Navbar';
 import LoadingSpinner from './components/LoadingSpinner';
 import ErrorBoundary from './components/ErrorBoundary';
+import ScrollToTop from './components/ScrollToTop';
 
 // Main Routes
 import ViewResult from './components/ViewResult';
-import AdminLogin from './components/AdminLogin';
 import UploadResult from './components/UploadResult';
 import Home from './components/Home';
 import AdminResultView from './components/AdminResultView';
@@ -28,7 +28,6 @@ import RegisterStudent from './components/RegisterStudent';
 import PromoteStudents from './components/PromoteStudents';
 
 // Teacher Components
-import TeacherLogin from './components/TeacherLogin';
 import TeacherDashboard from './components/TeacherDashboard';
 import TeacherEditResult from './components/TeacherEditResult';
 import BulkResultUpload from './components/BulkResultUpload';
@@ -57,6 +56,7 @@ function App() {
     <Provider store={store}>
       <ErrorBoundary>
         <BrowserRouter>
+          <ScrollToTop />
           <div className="min-h-screen bg-gray-50">
             {/* Enhanced Toaster with custom styling */}
             <Toaster 
@@ -100,7 +100,6 @@ function App() {
                   <Route path="/student/view" element={<ViewResult />} />
 
                   {/* Teacher Routes */}
-                  <Route path="/teacher/login" element={<TeacherLogin />} />
                   <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
                   <Route path="/teacher/mark-attendance" element={<TeacherMarkAttendance />} />
                   <Route path="/teacher/upload-result" element={<UploadResult />} />
@@ -112,7 +111,6 @@ function App() {
                   <Route path="/teacher/view-result" element={<AdminResultView />} />
 
                   {/* Admin Routes */}
-                  <Route path="/admin/login" element={<AdminLogin />} />
                   <Route path="/admin/dashboard" element={<AdminDashboard />} />
                   <Route path="/admin/attendance" element={<AdminAttendanceView />} />
                   <Route path="/admin/holidays" element={<AdminHolidaysView />} />
