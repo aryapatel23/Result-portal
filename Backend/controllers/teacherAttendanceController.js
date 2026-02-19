@@ -591,14 +591,14 @@ exports.getAttendanceReport = async (req, res) => {
 // Trigger Auto-Attendance (Manual Admin Trigger)
 exports.triggerAutoAttendance = async (req, res) => {
   try {
-    const { autoMarkAbsentTeachers } = require('../cron/attendanceCron');
+    const { autoMarkTeacherAttendance } = require('../cron/teacherAttendanceCron');
     const forceRun = req.body.force === true || req.query.force === 'true';
     
     console.log('🔄 Admin triggered auto-attendance marking...');
     if (forceRun) {
-      console.log('⚠️  FORCE MODE: Running even on weekends');
+      console.log('⚠️  FORCE MODE: Running even on weekends/holidays');
     }
-    const result = await autoMarkAbsentTeachers(forceRun);
+    const result = await autoMarkTeacherAttendance(forceRun);
 
     if (result.success) {
       res.status(200).json({
