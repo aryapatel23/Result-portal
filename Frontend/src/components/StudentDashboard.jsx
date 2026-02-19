@@ -71,7 +71,7 @@ const StudentDashboard = () => {
   const handleLogout = () => {
     localStorage.clear();
     toast.success('Logged out successfully');
-    navigate('/student/login');
+    navigate('/student/login', { replace: true });
   };
 
   const calculatePercentage = (result) => {

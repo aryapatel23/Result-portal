@@ -55,13 +55,13 @@ const AdminHolidaysView = () => {
     
     if (!token) {
       toast.error('Not authenticated. Please login as admin.');
-      navigate('/admin/login');
+      navigate('/');
       return;
     }
     
     if (role !== 'admin') {
       toast.error('Admin access required. Your role: ' + role);
-      navigate('/admin/login');
+      navigate('/');
       return;
     }
     

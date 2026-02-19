@@ -33,10 +33,12 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     // Check if user is admin
-    const role = localStorage.getItem('role');
-    if (role !== 'admin') {
-      toast.error('Access denied. Admin only.');
-      navigate('/admin/login');
+    const user = JSON.parse(localStorage.getItem('user'));
+    const token = localStorage.getItem('token');
+    
+    if (!user || !token || user.role !== 'admin') {
+      toast.error('Please login as admin');
+      navigate('/');
       return;
     }
 

@@ -29,6 +29,7 @@ const formatStandard = (standard) => {
 
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchResults, deleteResult } from '../redux/slices/resultSlice';
+import { logoutUser } from '../redux/slices/authSlice';
 
 // ... other imports ...
 
@@ -59,7 +60,7 @@ const TeacherDashboard = () => {
 
     if (!user || !token || user.role !== 'teacher') {
       toast.error('Please login first');
-      navigate('/teacher/login');
+      navigate('/');
       return;
     }
 
@@ -161,11 +162,26 @@ const TeacherDashboard = () => {
     }
   }, [activeTab]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    toast.success('Logged out successfully');
-    navigate('/teacher/login');
+  const handleLogout = async () => {
+    try {
+      // Dispatch Redux logout action to clear state
+      await dispatch(logoutUser()).unwrap();
+      
+      // Clear all localStorage
+      localStorage.clear();
+      
+      // Show success message
+      toast.success('Logged out successfully');
+      
+      // Navigate to home page
+      navigate('/', { replace: true });
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if Redux fails, clear localStorage and navigate
+      localStorage.clear();
+      toast.success('Logged out successfully');
+      navigate('/', { replace: true });
+    }
   };
 
   const handleDeleteResult = async (resultId) => {
