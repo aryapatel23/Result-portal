@@ -295,10 +295,14 @@ const autoMarkTeacherAttendance = async (forceRun = false) => {
  * Default: Runs at deadline time + 5 minutes
  */
 let currentCronJob = null;
+let lastRunTimestamp = null;
+let nextScheduledRun = null;
 
 const startTeacherAttendanceCron = async () => {
     try {
         console.log('🚀 Starting Teacher Attendance Auto-Mark Cron...');
+        console.log(`🕐 Server timezone: ${process.env.TZ || 'System Default'}`);
+        console.log(`🕐 Current server time: ${new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })}`);
         
         // Get system configuration for deadline time
         let config = await SystemConfig.findOne({ key: 'default_config' });
@@ -352,16 +356,38 @@ const startTeacherAttendanceCron = async () => {
         // Schedule new cron job
         currentCronJob = cron.schedule(cronExpression, async () => {
             try {
-                console.log('\n⏰ Cron triggered at scheduled time');
-                await autoMarkTeacherAttendance(false);
+                const runTime = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+                console.log('\n⏰ ========================================');
+                console.log(`⏰ CRON TRIGGERED at ${runTime}`);
+                console.log('⏰ ========================================\n');
+                
+                lastRunTimestamp = new Date();
+                const result = await autoMarkTeacherAttendance(false);
+                
+                if (result.success) {
+                    console.log(`\n✅ Cron execution completed successfully`);
+                    console.log(`📊 Result: ${result.markedCount} teachers marked as Leave`);
+                } else {
+                    console.error(`\n❌ Cron execution failed: ${result.error}`);
+                }
             } catch (error) {
                 console.error('❌ Error in cron execution:', error);
+                console.error('Stack trace:', error.stack);
                 // Don't crash - log error and continue
             }
         }, {
             scheduled: true,
             timezone: 'Asia/Kolkata'
         });
+        
+        // Calculate next run time for logging
+        const now = new Date();
+        const nextRun = new Date();
+        nextRun.setHours(cronHours, cronMinutes, 0, 0);
+        if (nextRun <= now) {
+            nextRun.setDate(nextRun.getDate() + 1);
+        }
+        nextScheduledRun = nextRun;
         
         console.log('✅ Teacher Attendance Cron Job Started!');
         console.log(`💡 Will run daily at ${cronHours}:${String(cronMinutes).padStart(2, '0')} IST`);
@@ -400,8 +426,22 @@ const restartTeacherAttendanceCron = async () => {
     console.log('✅ Cron restarted successfully\n');
 };
 
+/**
+ * Get cron job status (for monitoring/debugging)
+ */
+const getCronStatus = () => {
+    return {
+        isRunning: currentCronJob !== null,
+        lastRun: lastRunTimestamp ? lastRunTimestamp.toISOString() : 'Never',
+        nextScheduledRun: nextScheduledRun ? nextScheduledRun.toISOString() : 'Unknown',
+        timezone: 'Asia/Kolkata',
+        serverTimezone: process.env.TZ || 'System Default'
+    };
+};
+
 module.exports = {
     startTeacherAttendanceCron,
     restartTeacherAttendanceCron,
-    autoMarkTeacherAttendance // For manual testing
+    autoMarkTeacherAttendance, // For manual testing
+    getCronStatus // For monitoring
 };
