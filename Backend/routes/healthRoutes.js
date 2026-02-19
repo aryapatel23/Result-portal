@@ -39,7 +39,7 @@ router.get('/status', (req, res) => {
 });
 
 // Cron job status endpoint with detailed information
-router.get('/cron-status', (req, res) => {
+router.get('/cron-status', async (req, res) => {
   const currentTime = new Date();
   const istTime = currentTime.toLocaleString('en-US', { 
     timeZone: 'Asia/Kolkata',
@@ -47,13 +47,38 @@ router.get('/cron-status', (req, res) => {
     timeStyle: 'long'
   });
   
-  // Try to get teacher cron status
+  // Try to get teacher cron status and settings
   let teacherCronStatus = null;
+  let teacherSettings = null;
+  
   try {
     const { getCronStatus } = require('../cron/teacherAttendanceCron');
     teacherCronStatus = getCronStatus();
   } catch (error) {
     console.error('Error getting teacher cron status:', error);
+  }
+  
+  try {
+    const SystemConfig = require('../models/SystemConfig');
+    const config = await SystemConfig.findOne({ key: 'default_config' });
+    if (config && config.teacherAttendanceSettings) {
+      teacherSettings = config.teacherAttendanceSettings;
+    }
+  } catch (error) {
+    console.error('Error getting teacher settings:', error);
+  }
+  
+  // Calculate actual cron time from deadline
+  let cronScheduleTime = '18:05'; // default
+  if (teacherSettings && teacherSettings.deadlineTime) {
+    const [hours, minutes] = teacherSettings.deadlineTime.split(':').map(Number);
+    let cronMinutes = minutes + 5;
+    let cronHours = hours;
+    if (cronMinutes >= 60) {
+      cronMinutes -= 60;
+      cronHours += 1;
+    }
+    cronScheduleTime = `${String(cronHours).padStart(2, '0')}:${String(cronMinutes).padStart(2, '0')}`;
   }
   
   res.status(200).json({
@@ -66,11 +91,14 @@ router.get('/cron-status', (req, res) => {
         enabled: true,
         configured: true
       },
-      teacherAttendance: {
-        schedule: 'Daily at configured deadline + 5 minutes (default: 6:05 PM IST)',
-        description: 'Auto-marks absent teachers as Leave',
-        enabled: true,
+      teacherAttendanceCron: {
+        schedule: `Daily at ${cronScheduleTime} IST`,
+        deadlineTime: teacherSettings?.deadlineTime || '18:00',
+        calculatedRunTime: cronScheduleTime,
+        description: 'Auto-marks absent teachers as Leave (deadline + 5 min)',
+        enabled: teacherSettings?.enabled ?? true,
         configurable: true,
+        configured: teacherCronStatus?.isRunning ?? false,
         ...teacherCronStatus
       }
     },
