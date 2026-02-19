@@ -19,6 +19,7 @@ import {
 const AttendanceSettingsModal = ({ isOpen, onClose }) => {
   const [savingSettings, setSavingSettings] = useState(false);
   const [testingAutoMark, setTestingAutoMark] = useState(false);
+  const [runningNow, setRunningNow] = useState(false);
   
   const [settings, setSettings] = useState({
     enabled: true,
@@ -89,6 +90,32 @@ const AttendanceSettingsModal = ({ isOpen, onClose }) => {
     }
   };
 
+  const handleRunNow = async () => {
+    if (!window.confirm('This will mark all teachers who haven\'t filled attendance today as "Leave". Continue?')) {
+      return;
+    }
+    
+    try {
+      setRunningNow(true);
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        'http://localhost:5000/api/admin/attendance/auto-mark-leaves',
+        { force: true },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const result = response.data;
+      toast.success(
+        `✅ ${result.message}\nMarked: ${result.markedCount || 0}, Already marked: ${result.alreadyMarkedCount || 0}`,
+        { duration: 5000 }
+      );
+      setRunningNow(false);
+    } catch (error) {
+      console.error('Error running auto-mark:', error);
+      toast.error(error.response?.data?.message || 'Failed to run auto-mark');
+      setRunningNow(false);
+    }
+  };
+
   const toggleSetting = (key) => {
     setSettings(prev => ({ ...prev, [key]: !prev[key] }));
   };
@@ -132,10 +159,11 @@ const AttendanceSettingsModal = ({ isOpen, onClose }) => {
               <div className="text-sm text-gray-700">
                 <p className="font-semibold mb-2 text-gray-900">How Automation Works:</p>
                 <ul className="space-y-1 ml-4 list-disc text-gray-600">
-                  <li>System runs daily at <strong className="text-gray-900">6:05 PM IST</strong> automatically</li>
+                  <li>System runs daily at <strong className="text-gray-900">{settings.deadlineTime} + 5 minutes IST</strong> automatically</li>
                   <li>Teachers who haven't marked attendance will be marked as <strong className="text-gray-900">"Leave"</strong></li>
-                  <li>Automatically respects Sundays and public holidays</li>
+                  <li>Automatically respects Sundays (if enabled) and public holidays</li>
                   <li>Optional: Enable half-day marking for late submissions</li>
+                  <li>Email notifications sent to teachers who missed attendance</li>
                 </ul>
               </div>
             </div>
@@ -301,11 +329,12 @@ const AttendanceSettingsModal = ({ isOpen, onClose }) => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3 pt-6 mt-6 border-t border-gray-200">
+          <div className="space-y-3 pt-6 mt-6 border-t border-gray-200">
+            {/* Save Settings */}
             <button
               onClick={handleSaveSettings}
               disabled={savingSettings}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 bg-gray-900 text-white rounded-lg hover:bg-black transition-all font-semibold disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-gray-900 text-white rounded-lg hover:bg-black transition-all font-semibold disabled:opacity-50"
             >
               {savingSettings ? (
                 <>
@@ -320,23 +349,58 @@ const AttendanceSettingsModal = ({ isOpen, onClose }) => {
               )}
             </button>
             
-            <button
-              onClick={handleTestAutoMark}
-              disabled={testingAutoMark}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 bg-white border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all font-semibold disabled:opacity-50"
-            >
-              {testingAutoMark ? (
-                <>
-                  <RefreshCw className="w-5 h-5 animate-spin" />
-                  Testing...
-                </>
-              ) : (
-                <>
-                  <Play className="w-5 h-5" />
-                  Test Now
-                </>
-              )}
-            </button>
+            {/* Manual Actions */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Test Now - Dry Run */}
+              <button
+                onClick={handleTestAutoMark}
+                disabled={testingAutoMark}
+                className="flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all font-semibold disabled:opacity-50"
+                title="Dry run - doesn't actually mark attendance, just checks who would be marked"
+              >
+                {testingAutoMark ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Testing...
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4" />
+                    Test (Dry Run)
+                  </>
+                )}
+              </button>
+              
+              {/* Run Now - Actual Execution */}
+              <button
+                onClick={handleRunNow}
+                disabled={runningNow}
+                className="flex items-center justify-center gap-2 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all font-semibold disabled:opacity-50"
+                title="Actually marks absent teachers as Leave - use with caution!"
+              >
+                {runningNow ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Running...
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4" />
+                    Run Now (Live)
+                  </>
+                )}
+              </button>
+            </div>
+            
+            {/* Help Text */}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                <div className="text-xs text-yellow-800">
+                  <strong>Note:</strong> "Test" shows what would happen without making changes. "Run Now" actually marks absent teachers as Leave.
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
