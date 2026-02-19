@@ -16,6 +16,10 @@ const LoginModal = ({ isOpen, onClose, initialRole = 'student' }) => {
         if (isOpen) {
             dispatch(clearError());
             setActiveTab(initialRole);
+        } else {
+            // Clear all input fields when modal closes for security
+            setStudentData({ grNumber: '', dateOfBirth: '' });
+            setAuthData({ email: '', password: '' });
         }
     }, [isOpen, initialRole, dispatch]);
 

@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { UserCheck, User, ArrowRight, Search, GraduationCap, Users, BookOpen, Award, ChevronLeft, ChevronRight, Star, FileText, Clock } from 'lucide-react';
 import { activities } from "../data/activitiesData";
+import LoginModal from './LoginModal';
 
 const Home = () => {
   const [grNo, setGrNo] = useState('');
   const [dob, setDob] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const navigate = useNavigate();
 
   const images = [
@@ -133,7 +135,10 @@ const Home = () => {
 
             {/* Student Portal */}
             <div className="flex-1 bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-8 group border border-gray-100 hover:border-green-200 hover:scale-105">
-              <Link to="/student/login" className="block">
+              <div 
+                onClick={() => setShowLoginModal(true)} 
+                className="block cursor-pointer"
+              >
                 <div className="flex flex-col items-center text-center">
                   <div className="bg-green-50 group-hover:bg-green-100 p-6 rounded-2xl mb-6 transition-all duration-300">
                     <User className="h-12 w-12 text-green-600 group-hover:scale-110 transition-transform" />
@@ -146,7 +151,7 @@ const Home = () => {
                     Login <ArrowRight className="ml-2 h-5 w-5" />
                   </span>
                 </div>
-              </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -241,6 +246,13 @@ const Home = () => {
           </div>
         </section>
       </div>
+
+      {/* Login Modal */}
+      <LoginModal 
+        isOpen={showLoginModal} 
+        onClose={() => setShowLoginModal(false)} 
+        initialRole="student" 
+      />
     </div>
   );
 };
