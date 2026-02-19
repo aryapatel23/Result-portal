@@ -187,17 +187,23 @@ const AdminAttendanceView = () => {
     const todayStr = new Date().toISOString().split('T')[0];
 
     if (selectedDate === todayStr && todaySummary?.absentTeachers) {
-      const pendingRecords = todaySummary.absentTeachers.map(t => ({
-        _id: `pending-${t._id}`,
-        teacherId: t._id,
-        teacherName: t.name,
-        employeeId: t.employeeId,
-        status: 'Not Marked',
-        date: new Date().toISOString(),
-        location: { address: 'Pending' },
-        markedBy: '-',
-        isPending: true
-      }));
+      // Get existing teacher IDs to avoid duplicates
+      const existingTeacherIds = new Set(records.map(r => r.teacherId?.toString()));
+      
+      // Only add teachers that are not already in the records
+      const pendingRecords = todaySummary.absentTeachers
+        .filter(t => !existingTeacherIds.has(t._id?.toString()))
+        .map(t => ({
+          _id: `pending-${t._id}`,
+          teacherId: t._id,
+          teacherName: t.name,
+          employeeId: t.employeeId,
+          status: 'Not Marked',
+          date: new Date().toISOString(),
+          location: { address: 'Pending' },
+          markedBy: '-',
+          isPending: true
+        }));
       records = [...records, ...pendingRecords];
     }
     return records;
