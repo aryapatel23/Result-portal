@@ -1,3 +1,6 @@
 node_modules
 .env
 .env.example
+.RENDER_DEPLOYMENT.md
+.QUICK_FIX.md
+.DEPLOYMENT_CHECKLIST.md
