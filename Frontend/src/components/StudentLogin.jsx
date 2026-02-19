@@ -44,7 +44,7 @@ const StudentLogin = () => {
       localStorage.setItem('role', 'student');
       
       toast.success(`Welcome back, ${response.data.user.name || 'Student'}!`);
-      setTimeout(() => navigate('/student/dashboard'), 1500);
+      navigate('/student/dashboard', { replace: true });
     } catch (error) {
       toast.error(error.response?.data?.message || 'Invalid credentials. Please check your details.');
     } finally {
@@ -135,20 +135,16 @@ const StudentLogin = () => {
               <p className="text-gray-600 mb-4">
                 Don't have your GR Number? Contact your teacher or school administration.
               </p>
-              <div className="flex justify-center space-x-4 text-sm">
-                <Link 
-                  to="/teacher/login" 
-                  className="text-blue-600 hover:text-blue-800 transition-colors duration-300"
-                >
-                  Teacher Login
-                </Link>
-                <span className="text-gray-400">|</span>
-                <Link 
-                  to="/admin/login" 
-                  className="text-purple-600 hover:text-purple-800 transition-colors duration-300"
-                >
-                  Admin Login
-                </Link>
+              <div className="flex justify-center text-sm">
+                <p className="text-gray-600">
+                  Teacher or Admin?{' '}
+                  <Link 
+                    to="/" 
+                    className="text-indigo-600 hover:text-indigo-800 font-medium transition-colors duration-300"
+                  >
+                    Use the Login button in the navigation menu
+                  </Link>
+                </p>
               </div>
             </div>
           </div>

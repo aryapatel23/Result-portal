@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { AlertTriangle, Mail, Lock, Shield, ArrowRight, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import axios from '../api/axios';
 
 function AdminLogin() {
   const [email, setEmail] = useState('');
@@ -8,38 +11,59 @@ function AdminLogin() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
 
-  const handleLogin = async () => {
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated && user?.role === 'admin') {
+      navigate('/admin/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
+
+  const handleLogin = async (e) => {
+    if (e) e.preventDefault();
+    
+    if (!email || !password) {
+      setError('Please fill in all fields');
+      toast.error('Please fill in all fields');
+      return;
+    }
+
     try {
       setLoading(true);
       setError('');
-      const res = await fetch('https://result-portal-tkom.onrender.com/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+      
+      const response = await axios.post('/auth/login', {
+        email,
+        password
+      }, {
+        timeout: 10000
       });
-      const data = await res.json();
 
-      if (!res.ok) {
-        if (res.status === 401) {
-          throw new Error('Invalid email or password');
-        } else {
-          throw new Error(data.message || 'Something went wrong');
-        }
-      }
-
-      if (data.user.role !== 'admin') {
+      if (response.data.user.role !== 'admin') {
         throw new Error('Access denied. Admin only.');
       }
 
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      localStorage.setItem('role', data.user.role);
-      navigate('/admin/dashboard');
+      // Save to localStorage
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+      localStorage.setItem('role', response.data.user.role);
+      
+      toast.success('Login successful!');
+      navigate('/admin/dashboard', { replace: true });
     } catch (err) {
-      setError(err.message);
+      const errorMsg = err.response?.data?.message || err.message || 'Login failed';
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleLogin();
     }
   };
 
@@ -66,7 +90,7 @@ function AdminLogin() {
             </div>
 
             {/* Form */}
-            <div className="space-y-5">
+            <form onSubmit={handleLogin} className="space-y-5">
               <div className="group space-y-2">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Email Address</label>
                 <div className="relative">
@@ -78,7 +102,10 @@ function AdminLogin() {
                     placeholder="admin@school.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-white border border-gray-200 text-gray-900 placeholder:text-gray-300 rounded-2xl pl-12 pr-4 py-4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all duration-300"
+                    onKeyPress={handleKeyPress}
+                    required
+                    disabled={loading}
+                    className="w-full bg-white border border-gray-200 text-gray-900 placeholder:text-gray-300 rounded-2xl pl-12 pr-4 py-4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all duration-300 disabled:opacity-50"
                   />
                 </div>
               </div>
@@ -94,13 +121,16 @@ function AdminLogin() {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-white border border-gray-200 text-gray-900 placeholder:text-gray-300 rounded-2xl pl-12 pr-4 py-4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all duration-300"
+                    onKeyPress={handleKeyPress}
+                    required
+                    disabled={loading}
+                    className="w-full bg-white border border-gray-200 text-gray-900 placeholder:text-gray-300 rounded-2xl pl-12 pr-4 py-4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all duration-300 disabled:opacity-50"
                   />
                 </div>
               </div>
 
               <button
-                onClick={handleLogin}
+                type="submit"
                 disabled={loading}
                 className="group relative w-full bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-700 hover:to-sky-700 text-white font-bold py-4 rounded-2xl shadow-xl shadow-indigo-100 transition-all duration-300 transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -115,7 +145,7 @@ function AdminLogin() {
                   )}
                 </div>
               </button>
-            </div>
+            </form>
 
             {/* Error Message */}
             {error && (

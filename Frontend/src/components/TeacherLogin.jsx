@@ -1,16 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { LogIn, Mail, Lock, Briefcase } from 'lucide-react';
 import toast from 'react-hot-toast';
 import axios from '../api/axios';
 
 const TeacherLogin = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
   const [loading, setLoading] = useState(false);
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated && user?.role === 'teacher') {
+      navigate('/teacher/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -40,8 +51,8 @@ const TeacherLogin = () => {
       localStorage.setItem('user', JSON.stringify(response.data.user));
       localStorage.setItem('role', 'teacher');
       
-      toast.success('Login successful! Redirecting...');
-      navigate('/teacher/dashboard');
+      toast.success('Login successful!');
+      navigate('/teacher/dashboard', { replace: true });
     } catch (error) {
       console.error('Login error:', error);
       if (error.code === 'ECONNABORTED') {
