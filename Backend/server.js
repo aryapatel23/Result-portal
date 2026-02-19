@@ -7,19 +7,18 @@ const { startTeacherAttendanceCron } = require("./cron/teacherAttendanceCron"); 
 
 dotenv.config();
 
-connectDB();
+// Set timezone for cron jobs (important for cloud deployments)
+process.env.TZ = process.env.TZ || 'Asia/Kolkata';
 
-// Start Automated Attendance Cron Jobs
-console.log('🚀 Initializing Automated Cron Jobs...\n');
-initAttendanceCron(); // Student attendance (8:00 PM IST)
-startTeacherAttendanceCron(); // Teacher attendance (6:05 PM IST)
-console.log('✅ All Cron Jobs Started!\n');
+connectDB();
 
 const app = express();
 
-
 app.use(cors());
 app.use(express.json());
+
+// Health check routes (MUST be before other routes for monitoring services)
+app.use("/api/health", require("./routes/healthRoutes"));
 
 // Routes
 app.use("/api/auth", require("./routes/authRoutes"));
@@ -41,17 +40,55 @@ app.use("/api/system-config", require("./routes/systemConfigRoutes")); // System
 app.use("/api/admin/holidays", require("./routes/holidayRoutes")); // Public holidays management
 app.use("/api/test", require("./routes/testRoutes")); // Test endpoints for cron jobs
 
-console.log('✅ All routes registered including timetable routes');
-
+console.log('✅ All routes registered including health check routes');
 
 app.get("/", (req, res) => {
   res.send("📘 Student Result Portal API is running.");
 });
 
-
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Server running on port ${PORT}`);
   console.log(`📡 Access from this computer: http://localhost:${PORT}`);
-  console.log(`🌐 Access from network: http://172.29.112.1:${PORT}`);
+  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🕐 Timezone: ${process.env.TZ}`);
+  
+  // Start Automated Attendance Cron Jobs after server is running
+  console.log('\n🚀 Initializing Automated Cron Jobs...\n');
+  
+  try {
+    initAttendanceCron(); // Student attendance (8:00 PM IST)
+    console.log('✅ Student Attendance Cron initialized');
+  } catch (error) {
+    console.error('❌ Error initializing Student Attendance Cron:', error.message);
+  }
+  
+  try {
+    startTeacherAttendanceCron(); // Teacher attendance (6:05 PM IST)
+    console.log('✅ Teacher Attendance Cron initialized');
+  } catch (error) {
+    console.error('❌ Error initializing Teacher Attendance Cron:', error.message);
+  }
+  
+  console.log('\n✅ All Cron Jobs Started!');
+  console.log('💡 Using timezone:', process.env.TZ || 'System Default');
+  console.log('💡 Health check: /api/health/ping');
+  console.log('💡 Cron status: /api/health/cron-status\n');
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('🔴 SIGTERM received, shutting down gracefully...');
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('🔴 SIGINT received, shutting down gracefully...');
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
 });
