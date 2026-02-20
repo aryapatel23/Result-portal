@@ -3,48 +3,51 @@ const router = express.Router();
 
 /**
  * Health Check & Cron Status Routes
- * These endpoints help monitor the server and cron jobs on cloud platforms like Render
+ * OPTIMIZED for minimal CPU/memory usage on Render free tier
+ * These endpoints help monitor the server and cron jobs on cloud platforms
  */
 
-// Simple health check - keeps server alive on platforms with auto-sleep
+// Ultra-lightweight health check (minimal overhead)
+// Note: /ping is defined in server.js BEFORE middleware for maximum efficiency
 router.get('/health', (req, res) => {
+  // Set cache headers to reduce redundant requests
+  res.setHeader('Cache-Control', 'public, max-age=60'); // Cache for 1 minute
   res.status(200).json({
     status: 'OK',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    message: 'Server is running'
+    uptime: Math.floor(process.uptime())
   });
 });
 
-// Detailed health check with system info
+// Detailed health check with system info (cached for 30 seconds)
 router.get('/status', (req, res) => {
   const memoryUsage = process.memoryUsage();
   
+  // Cache this endpoint to reduce CPU usage
+  res.setHeader('Cache-Control', 'public, max-age=30');
+  
   res.status(200).json({
     status: 'OK',
-    timestamp: new Date().toISOString(),
     timezone: process.env.TZ || 'System Default',
-    uptime: {
-      seconds: Math.floor(process.uptime()),
-      formatted: formatUptime(process.uptime())
-    },
+    uptime: formatUptime(process.uptime()),
     memory: {
-      rss: `${Math.round(memoryUsage.rss / 1024 / 1024)}MB`,
-      heapUsed: `${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB`,
-      heapTotal: `${Math.round(memoryUsage.heapTotal / 1024 / 1024)}MB`
+      used: `${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB`,
+      total: `${Math.round(memoryUsage.heapTotal / 1024 / 1024)}MB`
     },
-    environment: process.env.NODE_ENV || 'development',
-    nodeVersion: process.version
+    environment: process.env.NODE_ENV || 'development'
   });
 });
 
-// Cron job status endpoint with detailed information
+// Cron job status endpoint (cached for 2 minutes to reduce DB queries)
 router.get('/cron-status', async (req, res) => {
+  // Cache to reduce database load
+  res.setHeader('Cache-Control', 'public, max-age=120');
+  
   const currentTime = new Date();
   const istTime = currentTime.toLocaleString('en-US', { 
     timeZone: 'Asia/Kolkata',
-    dateStyle: 'full',
-    timeStyle: 'long'
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit'
   });
   
   // Try to get teacher cron status and settings
@@ -55,17 +58,19 @@ router.get('/cron-status', async (req, res) => {
     const { getCronStatus } = require('../cron/teacherAttendanceCron');
     teacherCronStatus = getCronStatus();
   } catch (error) {
-    console.error('Error getting teacher cron status:', error);
+    // Silent fail - don't log on every request
   }
   
   try {
     const SystemConfig = require('../models/SystemConfig');
-    const config = await SystemConfig.findOne({ key: 'default_config' });
+    const config = await SystemConfig.findOne({ key: 'default_config' })
+      .select('teacherAttendanceSettings') // Only select needed fields
+      .lean(); // Use lean() for better performance
     if (config && config.teacherAttendanceSettings) {
       teacherSettings = config.teacherAttendanceSettings;
     }
   } catch (error) {
-    console.error('Error getting teacher settings:', error);
+    // Silent fail - don't log on every request
   }
   
   // Calculate actual cron time from deadline
@@ -83,45 +88,27 @@ router.get('/cron-status', async (req, res) => {
   
   res.status(200).json({
     status: 'OK',
-    message: 'Cron jobs are configured and running',
     cronJobs: {
       studentAttendance: {
-        schedule: 'Daily at 8:00 PM IST (20:00)',
-        description: 'Auto-marks absent students as Leave',
-        enabled: true,
-        configured: true
+        schedule: '20:00 IST',
+        enabled: true
       },
-      teacherAttendanceCron: {
-        schedule: `Daily at ${cronScheduleTime} IST`,
-        deadlineTime: teacherSettings?.deadlineTime || '18:00',
-        calculatedRunTime: cronScheduleTime,
-        description: 'Auto-marks absent teachers as Leave (deadline + 5 min)',
+      teacherAttendance: {
+        schedule: cronScheduleTime,
+        deadline: teacherSettings?.deadlineTime || '18:00',
         enabled: teacherSettings?.enabled ?? true,
-        configurable: true,
-        configured: teacherCronStatus?.isRunning ?? false,
-        ...teacherCronStatus
+        running: teacherCronStatus?.isRunning ?? false
       }
     },
-    serverTime: {
-      utc: currentTime.toISOString(),
-      ist: istTime,
-      timezone: process.env.TZ || 'System Default'
-    },
-    uptime: formatUptime(process.uptime()),
-    note: 'Cron jobs run automatically based on Asia/Kolkata timezone',
-    troubleshooting: {
-      uptimeLessThan1Hour: process.uptime() < 3600,
-      message: process.uptime() < 3600 
-        ? 'Server recently restarted. If this happens frequently, instance might be sleeping (use UptimeRobot to keep alive).' 
-        : 'Server uptime is healthy.'
+    server: {
+      time: istTime,
+      uptime: formatUptime(process.uptime())
     }
   });
 });
 
-// Ping endpoint for external monitoring services (UptimeRobot, etc.)
-router.get('/ping', (req, res) => {
-  res.status(200).send('pong');
-});
+// Note: /ping endpoint is defined in server.js BEFORE middleware
+// for maximum efficiency (bypasses JSON parser, CORS, compression)
 
 // Helper function to format uptime
 function formatUptime(seconds) {

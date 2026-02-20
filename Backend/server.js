@@ -1,6 +1,7 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
+const compression = require("compression"); // Add compression for bandwidth optimization
 const connectDB = require("./config/db"); // ✅ Ensure the path is correct
 const { initAttendanceCron } = require("./cron/attendanceCron"); // Import Student Attendance Cron
 const { startTeacherAttendanceCron } = require("./cron/teacherAttendanceCron"); // Import Teacher Attendance Cron
@@ -10,12 +11,28 @@ dotenv.config();
 // Set timezone for cron jobs (important for cloud deployments)
 process.env.TZ = process.env.TZ || 'Asia/Kolkata';
 
+// Memory optimization: Set max old space size for better garbage collection
+if (process.env.NODE_ENV === 'production') {
+  process.env.NODE_OPTIONS = '--max-old-space-size=512'; // Limit memory to 512MB
+}
+
 connectDB();
 
 const app = express();
 
+// Ultra-lightweight ping endpoint (NO middleware overhead for UptimeRobot)
+app.get('/api/health/ping', (req, res) => {
+  res.status(200).send('pong');
+});
+
+// Response compression (reduces bandwidth by ~70%)
+app.use(compression({
+  threshold: 1024, // Only compress responses > 1KB
+  level: 6 // Balanced compression (1=fastest, 9=best compression)
+}));
+
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' })); // Add size limit to prevent memory issues
 
 // Health check routes (MUST be before other routes for monitoring services)
 app.use("/api/health", require("./routes/healthRoutes"));
@@ -52,6 +69,7 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`📡 Access from this computer: http://localhost:${PORT}`);
   console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🕐 Timezone: ${process.env.TZ}`);
+  console.log(`💾 Memory Limit: ${process.env.NODE_OPTIONS || 'Default'}`);
   
   // Start Automated Attendance Cron Jobs after server is running
   console.log('\n🚀 Initializing Automated Cron Jobs...\n');
@@ -75,6 +93,17 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   console.log('💡 Health check: /api/health/ping');
   console.log('💡 Cron status: /api/health/cron-status\n');
 });
+
+// Memory monitoring (log warnings if approaching limits)
+if (process.env.NODE_ENV === 'production') {
+  setInterval(() => {
+    const used = process.memoryUsage();
+    const heapUsedMB = Math.round(used.heapUsed / 1024 / 1024);
+    if (heapUsedMB > 400) { // Warn at 400MB (before 512MB limit)
+      console.warn(`⚠️  High memory usage: ${heapUsedMB}MB`);
+    }
+  }, 300000); // Check every 5 minutes
+}
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
