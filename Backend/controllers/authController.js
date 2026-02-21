@@ -65,35 +65,17 @@ exports.loginUser = async (req, res) => {
 
     console.log(`Staff Login Attempt: Email="${email}"`);
 
-    // Dynamic Admin Check (Env vars + Fallback/Trim)
-    const adminEmail = (process.env.ADMIN_EMAIL || '').trim();
-    const adminPass = (process.env.ADMIN_PASSWORD || '').trim();
     const inputEmail = email.trim();
     const inputPass = password.trim();
 
-    if (inputEmail === adminEmail && inputPass === adminPass) {
-      console.log("Admin Login Successful via Hardcoded Check");
-      const token = jwt.sign(
-        { id: "admin-static-id", email, role: "admin", name: "Admin" },
-        process.env.JWT_SECRET,
-        { expiresIn: "7d" }
-      );
-      return res.json({
-        success: true,
-        message: "Login successful",
-        token,
-        user: { _id: "admin-static-id", email, role: "admin", name: "Admin" }
-      });
-    }
-
-    // DB Check for Teacher/Admin
+    // DB Check for Teacher/Admin (Database Authentication Only)
     const user = await User.findOne({ email: inputEmail });
     if (!user) {
       console.log("User not found in DB");
-      return res.status(401).json({ message: "User not found" });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    console.log(`User Found: Role=${user.role}`);
+    console.log(`User Found: Role=${user.role}, Name=${user.name}`);
 
     if (user.role === 'student') {
       return res.status(401).json({ message: "Students must login with GR Number" });
