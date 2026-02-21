@@ -56,6 +56,7 @@ app.use("/api/profile", require("./routes/profileRoutes"));
 app.use("/api/system-config", require("./routes/systemConfigRoutes")); // System configuration
 app.use("/api/admin/holidays", require("./routes/holidayRoutes")); // Public holidays management
 app.use("/api/test", require("./routes/testRoutes")); // Test endpoints for cron jobs
+app.use("/api/performance", require("./routes/teacherPerformanceRoutes")); // Teacher performance analytics
 
 console.log('✅ All routes registered including health check routes');
 

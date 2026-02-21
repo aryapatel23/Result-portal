@@ -10,11 +10,11 @@ import {
   Award,
   UserPlus,
   ChevronRight,
-  Star,
   BarChart3,
   Clock,
-  Settings, // Added Settings Icon
+  Settings,
   Calendar,
+  UserCheck,
 } from 'lucide-react';
 import SystemSettingsModal from './SystemSettingsModal';
 
@@ -30,6 +30,11 @@ const AdminDashboard = () => {
     teachers: [],
   });
   const [resultsActivity, setResultsActivity] = useState([]);
+  const [todayAttendance, setTodayAttendance] = useState({
+    present: 0,
+    total: 0,
+    presentTeachers: []
+  });
 
   useEffect(() => {
     // Check if user is admin
@@ -49,31 +54,35 @@ const AdminDashboard = () => {
     try {
       const token = localStorage.getItem('token');
 
-      // Fetch dashboard overview, teacher list, and results activity
-      const [dashboardResponse, teachersResponse, resultsResponse] = await Promise.all([
+      // Fetch dashboard overview, teacher performance, results activity, and today's attendance
+      const [dashboardResponse, performanceResponse, resultsResponse, attendanceResponse] = await Promise.all([
         axios.get('/admin/dashboard', {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        axios.get('/admin/teachers', {
+        axios.get('/performance/teachers', {
           headers: { Authorization: `Bearer ${token}` },
+        }).catch(err => {
+          console.error('Performance API Error:', err.response?.data || err.message);
+          return { data: { teachers: [] } }; // Fallback to empty array
         }),
         axios.get('/admin/results-activity', {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get('/admin/attendance/today-summary', {
           headers: { Authorization: `Bearer ${token}` },
         })
       ]);
 
-      // Map the teachers data to include performance
-      const teachersWithPerformance = teachersResponse.data.map(teacher => {
-        const stats = dashboardResponse.data.allTeachers?.find(t => t.teacherId === teacher._id);
-        return {
-          ...teacher,
-          performance: {
-            totalResultsUploaded: stats?.resultsUploaded || 0,
-            classAveragePercentage: stats?.classAverage || 0,
-            adminRating: stats?.rating || 0,
-          }
-        };
-      });
+      console.log('Performance Response:', performanceResponse.data);
+
+      // Use the new dynamic performance data
+      const teachersWithPerformance = performanceResponse.data.teachers || [];
+      
+      console.log('Teachers with performance:', teachersWithPerformance.length, teachersWithPerformance);
+      
+      if (teachersWithPerformance.length === 0) {
+        console.warn('No teachers returned from performance API');
+      }
 
       setDashboardData({
         totalStudents: dashboardResponse.data.overview?.totalStudents || 0,
@@ -83,6 +92,18 @@ const AdminDashboard = () => {
         teachers: teachersWithPerformance,
       });
       setResultsActivity(resultsResponse.data.activity || []);
+      
+      // Set today's attendance data
+      const presentTeachers = attendanceResponse.data.attendance?.filter(record => 
+        record.status === 'Present' || record.status === 'Half-Day'
+      ) || [];
+      
+      setTodayAttendance({
+        present: attendanceResponse.data.present || 0,
+        total: attendanceResponse.data.total || 0,
+        presentTeachers: presentTeachers
+      });
+      
       setLoading(false);
     } catch (error) {
       console.error('Error fetching dashboard:', error);
@@ -284,6 +305,110 @@ const AdminDashboard = () => {
           </div>
         </div>
 
+        {/* Today's Attendance Overview */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Today's Attendance</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                {todayAttendance.present} of {todayAttendance.total} teachers present
+              </p>
+            </div>
+            <button
+              onClick={() => navigate('/admin/attendance')}
+              className="text-sm text-indigo-600 hover:text-indigo-700 font-medium flex items-center"
+            >
+              View Details
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </button>
+          </div>
+
+          {/* Simple Stats Row */}
+          <div className="grid grid-cols-4 gap-4 mb-6">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+              <p className="text-2xl font-bold text-gray-900">{todayAttendance.present}</p>
+              <p className="text-xs text-gray-600 mt-1 uppercase tracking-wide">Present</p>
+            </div>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+              <p className="text-2xl font-bold text-gray-900">{todayAttendance.total}</p>
+              <p className="text-xs text-gray-600 mt-1 uppercase tracking-wide">Total</p>
+            </div>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+              <p className="text-2xl font-bold text-gray-900">
+                {todayAttendance.total - todayAttendance.present}
+              </p>
+              <p className="text-xs text-gray-600 mt-1 uppercase tracking-wide">Absent</p>
+            </div>
+            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 text-center">
+              <p className="text-2xl font-bold text-indigo-600">
+                {todayAttendance.total > 0 ? Math.round((todayAttendance.present / todayAttendance.total) * 100) : 0}%
+              </p>
+              <p className="text-xs text-indigo-700 mt-1 uppercase tracking-wide font-medium">Rate</p>
+            </div>
+          </div>
+
+          {/* Present Teachers List */}
+          {todayAttendance.presentTeachers.length > 0 ? (
+            <div className="overflow-hidden border border-gray-200 rounded-lg">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Teacher
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Employee ID
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Time
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {todayAttendance.presentTeachers.map((record, index) => (
+                    <tr key={index} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-8 w-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                            <span className="text-indigo-600 font-medium text-sm">
+                              {record.teacherName ? record.teacherName.charAt(0).toUpperCase() : 'T'}
+                            </span>
+                          </div>
+                          <div className="ml-3">
+                            <p className="text-sm font-medium text-gray-900">{record.teacherName}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                        {record.employeeId}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                        {record.time || '--'}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded ${
+                          record.status === 'Present' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {record.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-8 border border-gray-200 rounded-lg bg-gray-50">
+              <p className="text-gray-500 text-sm">No attendance marked yet</p>
+            </div>
+          )}
+        </div>
+
         {/* Results Upload Activity */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
@@ -373,8 +498,11 @@ const AdminDashboard = () => {
         <div className="bg-white rounded-lg shadow-md mb-8 overflow-hidden">
           <div className="p-4 md:p-6 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">All Teachers</h2>
-              <p className="text-sm text-gray-600 mt-1">Manage and monitor teacher performance</p>
+              <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                <BarChart3 className="h-6 w-6 mr-2 text-indigo-600" />
+                Teacher Performance Analytics
+              </h2>
+              <p className="text-sm text-gray-600 mt-1">Dynamic performance tracking based on real data</p>
             </div>
             <button
               onClick={handleCreateTeacher}
@@ -395,16 +523,16 @@ const AdminDashboard = () => {
                     Employee ID
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Subjects
+                    Performance
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Results Uploaded
+                    Results / Students
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Class Average
+                    Class Avg / Pass %
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Rating
+                    Attendance
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -414,62 +542,113 @@ const AdminDashboard = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {dashboardData.teachers && dashboardData.teachers.length > 0 ? (
                   dashboardData.teachers.map((teacher) => (
-                    <tr key={teacher._id} className="hover:bg-gray-50">
+                    <tr key={teacher.teacherId} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center">
-                            <Briefcase className="h-5 w-5 text-indigo-600" />
+                            <span className="text-indigo-600 font-semibold text-sm">
+                              {teacher.teacherName?.charAt(0).toUpperCase() || 'T'}
+                            </span>
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900">
-                              {teacher.name}
+                              {teacher.teacherName}
                             </div>
-                            <div className="text-sm text-gray-500">{teacher.email}</div>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {teacher.subjectsHandled?.slice(0, 2).map((subject, idx) => (
+                                <span
+                                  key={idx}
+                                  className="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded"
+                                >
+                                  {subject}
+                                </span>
+                              ))}
+                              {teacher.subjectsHandled?.length > 2 && (
+                                <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">
+                                  +{teacher.subjectsHandled.length - 2}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-mono">
                         {teacher.employeeId}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex flex-wrap gap-1">
-                          {teacher.subjects?.slice(0, 2).map((subject, idx) => (
-                            <span
-                              key={idx}
-                              className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded"
-                            >
-                              {subject}
-                            </span>
-                          ))}
-                          {teacher.subjects?.length > 2 && (
-                            <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
-                              +{teacher.subjects.length - 2}
+                        <div className="flex items-center space-x-2">
+                          {teacher.totalResultsUploaded > 0 ? (
+                            <>
+                              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${
+                                teacher.performanceGrade === 'A+' ? 'bg-green-100 text-green-800' :
+                                teacher.performanceGrade === 'A' ? 'bg-green-100 text-green-700' :
+                                teacher.performanceGrade === 'B+' ? 'bg-blue-100 text-blue-700' :
+                                teacher.performanceGrade === 'B' ? 'bg-blue-100 text-blue-600' :
+                                teacher.performanceGrade === 'C' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-red-100 text-red-700'
+                              }`}>
+                                {teacher.performanceGrade}
+                              </span>
+                              <span className="text-sm font-semibold text-gray-900">
+                                {teacher.overallScore}/100
+                              </span>
+                            </>
+                          ) : (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-500">
+                              Not Evaluated
                             </span>
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {teacher.performance?.totalResultsUploaded || 0}
-                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <span className="text-sm font-medium text-gray-900">
-                            {teacher.performance?.classAveragePercentage?.toFixed(1) || 0}%
-                          </span>
-                          <TrendingUp className="ml-2 h-4 w-4 text-green-500" />
+                        <div className="text-sm">
+                          <div className="font-semibold text-gray-900">
+                            {teacher.totalResultsUploaded || 0} results
+                          </div>
+                          <div className="text-gray-500">
+                            {teacher.totalStudentsTaught || 0} {teacher.totalStudentsTaught === 1 ? 'student' : 'students'}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                          <span className="ml-1 text-sm text-gray-900">
-                            {teacher.performance?.adminRating || 'N/A'}
-                          </span>
+                        <div className="text-sm">
+                          <div className="flex items-center">
+                            {teacher.classAveragePercentage > 0 ? (
+                              <>
+                                <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
+                                <span className="font-semibold text-gray-900">
+                                  {teacher.classAveragePercentage?.toFixed(1)}%
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-gray-400 font-medium">No data</span>
+                            )}
+                          </div>
+                          <div className={teacher.passPercentage > 0 ? "text-gray-500" : "text-gray-400"}>
+                            Pass: {teacher.passPercentage > 0 ? `${teacher.passPercentage?.toFixed(1)}%` : 'N/A'}
+                          </div>
                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {teacher.totalDays > 0 ? (
+                          <>
+                            <div className="flex items-center">
+                              <UserCheck className="h-4 w-4 text-indigo-500 mr-1" />
+                              <span className="text-sm font-medium text-gray-900">
+                                {teacher.attendanceRate?.toFixed(1)}%
+                              </span>
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {teacher.totalPresent}/{teacher.totalDays} days
+                            </div>
+                          </>
+                        ) : (
+                          <span className="text-sm text-gray-400 font-medium">No attendance</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <button
-                          onClick={() => handleViewTeacher(teacher._id)}
+                          onClick={() => handleViewTeacher(teacher.teacherId)}
                           className="text-indigo-600 hover:text-indigo-900 font-medium"
                         >
                           View Details
@@ -479,8 +658,17 @@ const AdminDashboard = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="7" className="px-6 py-8 text-center text-gray-500">
-                      No teachers found
+                    <td colSpan="7" className="px-6 py-8 text-center">
+                      <Briefcase className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                      <p className="text-gray-500 font-medium">No teachers found</p>
+                      <p className="text-sm text-gray-400 mt-1">Add teachers to see performance analytics</p>
+                      <button
+                        onClick={handleCreateTeacher}
+                        className="mt-4 inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition text-sm"
+                      >
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Add First Teacher
+                      </button>
                     </td>
                   </tr>
                 )}
