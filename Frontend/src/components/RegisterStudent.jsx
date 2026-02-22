@@ -12,6 +12,10 @@ const RegisterStudent = () => {
     name: '',
     dateOfBirth: '',
     standard: '',
+    penNo: '',
+    aadharNumber: '',
+    childUID: '',
+    mobile: '',
     email: '',
     parentContact: ''
   });
@@ -59,6 +63,10 @@ const RegisterStudent = () => {
         name: '',
         dateOfBirth: '',
         standard: '',
+        penNo: '',
+        aadharNumber: '',
+        childUID: '',
+        mobile: '',
         email: '',
         parentContact: ''
       });
@@ -180,25 +188,95 @@ const RegisterStudent = () => {
                   >
                     <option value="">Select Standard</option>
                     <option value="Balvatika">Balvatika</option>
-                    <option value="1">STD-1</option>
-                    <option value="2">STD-2</option>
-                    <option value="3">STD-3</option>
-                    <option value="4">STD-4</option>
-                    <option value="5">STD-5</option>
-                    <option value="6">STD-6</option>
-                    <option value="7">STD-7</option>
-                    <option value="8">STD-8</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
                   </select>
                 </div>
               </div>
             </div>
 
-            {/* Optional Fields Section */}
+            {/* Additional Required Fields Section */}
             <div className="mb-6 pt-6 border-t border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Optional Information
+                Additional Information
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* PEN No */}
+                <div>
+                  <label htmlFor="penNo" className="block text-sm font-medium text-gray-700 mb-2">
+                    <Hash className="inline h-4 w-4 mr-1" />
+                    PEN No.
+                  </label>
+                  <input
+                    type="text"
+                    id="penNo"
+                    name="penNo"
+                    value={formData.penNo}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-900 focus:border-gray-900 focus:outline-none"
+                    placeholder="Enter PEN number"
+                  />
+                </div>
+
+                {/* Aadhar Number */}
+                <div>
+                  <label htmlFor="aadharNumber" className="block text-sm font-medium text-gray-700 mb-2">
+                    <Hash className="inline h-4 w-4 mr-1" />
+                    Aadhar Number
+                  </label>
+                  <input
+                    type="text"
+                    id="aadharNumber"
+                    name="aadharNumber"
+                    value={formData.aadharNumber}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-900 focus:border-gray-900 focus:outline-none"
+                    placeholder="Enter 12-digit Aadhar"
+                    maxLength="12"
+                  />
+                </div>
+
+                {/* Child UID */}
+                <div>
+                  <label htmlFor="childUID" className="block text-sm font-medium text-gray-700 mb-2">
+                    <Hash className="inline h-4 w-4 mr-1" />
+                    Child UID
+                  </label>
+                  <input
+                    type="text"
+                    id="childUID"
+                    name="childUID"
+                    value={formData.childUID}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-900 focus:border-gray-900 focus:outline-none"
+                    placeholder="Enter Child UID"
+                  />
+                </div>
+
+                {/* Mobile */}
+                <div>
+                  <label htmlFor="mobile" className="block text-sm font-medium text-gray-700 mb-2">
+                    <Phone className="inline h-4 w-4 mr-1" />
+                    Mobile Number
+                  </label>
+                  <input
+                    type="tel"
+                    id="mobile"
+                    name="mobile"
+                    value={formData.mobile}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-900 focus:border-gray-900 focus:outline-none"
+                    placeholder="Enter mobile number"
+                    maxLength="10"
+                  />
+                </div>
+
                 {/* Email */}
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -229,7 +307,8 @@ const RegisterStudent = () => {
                     value={formData.parentContact}
                     onChange={handleChange}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-900 focus:border-gray-900 focus:outline-none"
-                    placeholder="9876543210"
+                    placeholder="Parent's mobile number"
+                    maxLength="10"
                   />
                 </div>
               </div>

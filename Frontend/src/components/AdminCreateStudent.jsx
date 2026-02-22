@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from '../api/axios';
 import toast from 'react-hot-toast';
-import { User, Calendar, Mail, Phone, GraduationCap, ArrowLeft } from 'lucide-react';
+import { User, Calendar, Mail, Phone, GraduationCap, ArrowLeft, Hash } from 'lucide-react';
 
 const AdminCreateStudent = () => {
   const navigate = useNavigate();
@@ -11,8 +11,12 @@ const AdminCreateStudent = () => {
     grNumber: '',
     dateOfBirth: '',
     standard: '',
+    penNo: '',
+    aadharNumber: '',
+    childUID: '',
+    mobile: '',
     email: '',
-    phone: '',
+    parentContact: '',
   });
   const [loading, setLoading] = useState(false);
 
@@ -30,7 +34,7 @@ const AdminCreateStudent = () => {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await axios.post('/admin/students', formData, {
+      const response = await axios.post('/bulk-students/register', formData, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -143,15 +147,96 @@ const AdminCreateStudent = () => {
                   >
                     <option value="">Select Standard</option>
                     <option value="Balvatika">Balvatika</option>
-                    <option value="1">STD-1</option>
-                    <option value="2">STD-2</option>
-                    <option value="3">STD-3</option>
-                    <option value="4">STD-4</option>
-                    <option value="5">STD-5</option>
-                    <option value="6">STD-6</option>
-                    <option value="7">STD-7</option>
-                    <option value="8">STD-8</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
                   </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Additional Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  PEN No.
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Hash className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    name="penNo"
+                    value={formData.penNo}
+                    onChange={handleChange}
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter PEN number"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Aadhar Number
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Hash className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    name="aadharNumber"
+                    value={formData.aadharNumber}
+                    onChange={handleChange}
+                    maxLength="12"
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="12-digit Aadhar"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Child UID
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Hash className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    name="childUID"
+                    value={formData.childUID}
+                    onChange={handleChange}
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter Child UID"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Mobile Number
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Phone className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="tel"
+                    name="mobile"
+                    value={formData.mobile}
+                    onChange={handleChange}
+                    maxLength="10"
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="10-digit mobile"
+                  />
                 </div>
               </div>
             </div>
@@ -179,7 +264,7 @@ const AdminCreateStudent = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Phone Number (Optional)
+                  Parent Contact (Optional)
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -187,11 +272,11 @@ const AdminCreateStudent = () => {
                   </div>
                   <input
                     type="tel"
-                    name="phone"
-                    value={formData.phone}
+                    name="parentContact"
+                    value={formData.parentContact}
                     onChange={handleChange}
                     className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="+91 1234567890"
+                    placeholder="Parent's phone number"
                   />
                 </div>
               </div>
