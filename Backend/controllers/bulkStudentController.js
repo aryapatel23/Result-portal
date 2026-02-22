@@ -117,6 +117,10 @@ const bulkUploadStudents = async (req, res) => {
           password: hashedPassword,
           dateOfBirth: parsedDateOfBirth,
           standard: standard.toString().trim(),
+          penNo: penNo ? penNo.toString().trim() : undefined,
+          aadharNumber: aadharNumber ? aadharNumber.toString().trim() : undefined,
+          childUID: childUID ? childUID.toString().trim() : undefined,
+          mobile: mobile ? mobile.toString().trim() : undefined,
           parentContact: mobile ? mobile.toString().trim() : undefined,
           role: 'student'
         });
@@ -237,7 +241,18 @@ const downloadTemplate = (req, res) => {
 // Single student registration
 const registerSingleStudent = async (req, res) => {
   try {
-    const { grNumber, name, dateOfBirth, standard, email, parentContact } = req.body;
+    const { 
+      grNumber, 
+      name, 
+      dateOfBirth, 
+      standard, 
+      penNo, 
+      aadharNumber, 
+      childUID, 
+      mobile, 
+      email, 
+      parentContact 
+    } = req.body;
 
     // Validate required fields
     if (!grNumber || !name || !dateOfBirth || !standard) {
@@ -282,6 +297,10 @@ const registerSingleStudent = async (req, res) => {
       password: hashedPassword,
       dateOfBirth: dob,
       standard: standard.trim(),
+      penNo: penNo ? penNo.trim() : undefined,
+      aadharNumber: aadharNumber ? aadharNumber.trim() : undefined,
+      childUID: childUID ? childUID.trim() : undefined,
+      mobile: mobile ? mobile.trim() : undefined,
       parentContact: parentContact ? parentContact.trim() : undefined,
       role: 'student'
     });
@@ -294,7 +313,11 @@ const registerSingleStudent = async (req, res) => {
         name: student.name,
         standard: student.standard,
         dateOfBirth: student.dateOfBirth,
-        email: student.email
+        email: student.email,
+        penNo: student.penNo,
+        aadharNumber: student.aadharNumber,
+        childUID: student.childUID,
+        mobile: student.mobile
       },
       defaultPassword: defaultPassword
     });
