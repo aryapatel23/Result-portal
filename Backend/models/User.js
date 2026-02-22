@@ -31,6 +31,24 @@ const userSchema = new mongoose.Schema({
   standard: {
     type: String
   },
+  penNo: {
+    type: String,
+    sparse: true // Only for students
+  },
+  aadharNumber: {
+    type: String,
+    sparse: true // Only for students
+  },
+  childUID: {
+    type: String,
+    sparse: true // Only for students
+  },
+  mobile: {
+    type: String
+  },
+  parentContact: {
+    type: String
+  },
   // Teacher-specific fields
   employeeId: {
     type: String,
