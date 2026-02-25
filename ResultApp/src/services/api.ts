@@ -69,18 +69,39 @@ class ApiService {
   }
 
   // Student endpoints
-  async getStudentDashboard() {
-    const response = await this.api.get('/student/dashboard');
+  async getStudentProfile() {
+    const response = await this.api.get('/student/profile');
     return response.data;
   }
 
-  async getStudentResults(grNumber: string) {
-    const response = await this.api.get(`/results/student/${grNumber}`);
+  async getStudentResults() {
+    const response = await this.api.get('/student/results');
     return response.data;
   }
 
-  async getResultById(resultId: string) {
-    const response = await this.api.get(`/results/${resultId}`);
+  async getStudentResultById(resultId: string) {
+    const response = await this.api.get(`/student/results/${resultId}`);
+    return response.data;
+  }
+
+  async getMyProfile() {
+    const response = await this.api.get('/profile/me');
+    return response.data;
+  }
+
+  async updateProfile(data: { name?: string; email?: string; phone?: string; parentPhone?: string }) {
+    const response = await this.api.put('/profile/update', data);
+    return response.data;
+  }
+
+  async changePassword(data: { oldPassword: string; newPassword: string }) {
+    const response = await this.api.put('/profile/change-password', data);
+    return response.data;
+  }
+
+  // Timetable endpoints
+  async getStudentTimetable() {
+    const response = await this.api.get('/timetable/student/timetable');
     return response.data;
   }
 
@@ -91,7 +112,7 @@ class ApiService {
   }
 
   async getTeacherStudents() {
-    const response = await this.api.get('/teacher/students');
+    const response = await this.api.get('/student-management');
     return response.data;
   }
 
@@ -122,7 +143,7 @@ class ApiService {
   }
 
   async getAllStudents() {
-    const response = await this.api.get('/admin/students');
+    const response = await this.api.get('/student-management');
     return response.data;
   }
 
@@ -147,7 +168,7 @@ class ApiService {
   }
 
   async updateStudent(studentId: string, studentData: any) {
-    const response = await this.api.put(`/admin/students/${studentId}`, studentData);
+    const response = await this.api.put(`/student-management/${studentId}`, studentData);
     return response.data;
   }
 
@@ -157,7 +178,7 @@ class ApiService {
   }
 
   async deleteStudent(studentId: string) {
-    const response = await this.api.delete(`/admin/students/${studentId}`);
+    const response = await this.api.delete(`/student-management/${studentId}`);
     return response.data;
   }
 
