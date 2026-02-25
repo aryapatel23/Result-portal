@@ -41,13 +41,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = async (credentials: LoginCredentials) => {
     try {
-      const response: AuthResponse = await apiService.login(
-        credentials.identifier,
-        credentials.password,
-        credentials.role
-      );
+      console.log('AuthContext login called with role:', credentials.role);
+      
+      // Build request based on role  
+      let loginRequest: any = { role: credentials.role };
+      
+      if (credentials.role === 'student') {
+        // Student login requires grNumber and dateOfBirth
+        loginRequest.grNumber = credentials.grNumber;
+        loginRequest.dateOfBirth = credentials.dateOfBirth;
+      } else {
+        // Teacher/Admin login requires email and password
+        loginRequest.email = credentials.email;
+        loginRequest.password = credentials.password;
+      }
+      
+      const response: AuthResponse = await apiService.login(loginRequest);
 
       if (response.success) {
+        console.log('Login successful, saving token and user');
         await AsyncStorage.setItem('authToken', response.token);
         await AsyncStorage.setItem('user', JSON.stringify(response.user));
         setUser(response.user);
@@ -55,7 +67,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         throw new Error(response.message || 'Login failed');
       }
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || error.message || 'Login failed');
+      console.error('Login error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Login failed';
+      throw new Error(errorMessage);
     }
   };
 

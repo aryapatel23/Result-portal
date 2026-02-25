@@ -1,10 +1,13 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
-// API Base URL - Update this based on your backend
-const API_BASE_URL = __DEV__ 
-  ? 'http://10.0.2.2:5000/api' // Android emulator
-  : 'https://result-portal-tkom.onrender.com/api'; // Production
+// API Base URL - Configure for real device access
+const API_BASE_URL = 'https://result-portal-tkom.onrender.com/api';
+
+// For local development on real device:
+// Replace 'localhost' with your computer's local IP address
+// Example: 'http://192.168.1.100:5000/api'
 
 class ApiService {
   private api: AxiosInstance;
@@ -18,6 +21,8 @@ class ApiService {
       },
     });
 
+    console.log('API initialized with base URL:', API_BASE_URL);
+
     // Request interceptor to add auth token
     this.api.interceptors.request.use(
       async (config) => {
@@ -25,6 +30,7 @@ class ApiService {
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
+        console.log('API Request:', config.method?.toUpperCase(), config.url);
         return config;
       },
       (error) => {
@@ -34,8 +40,12 @@ class ApiService {
 
     // Response interceptor for error handling
     this.api.interceptors.response.use(
-      (response) => response,
+      (response) => {
+        console.log('API Response:', response.config.url, response.status);
+        return response;
+      },
       async (error: AxiosError) => {
+        console.log('API Error:', error.message, error.response?.status);
         if (error.response?.status === 401) {
           // Token expired or invalid
           await AsyncStorage.removeItem('authToken');
@@ -46,13 +56,10 @@ class ApiService {
     );
   }
 
-  // Auth endpoints
-  async login(identifier: string, password: string, role: string) {
-    const response = await this.api.post('/auth/login', {
-      identifier,
-      password,
-      role,
-    });
+  // Auth endpoints - Updated to match backend exactly
+  async login(credentials: { role: string; email?: string; password?: string; grNumber?: string; dateOfBirth?: string }) {
+    console.log('Login request:', { ...credentials, password: '***' });
+    const response = await this.api.post('/auth/login', credentials);
     return response.data;
   }
 

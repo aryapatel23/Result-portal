@@ -20,9 +20,13 @@ export interface User {
 }
 
 export interface LoginCredentials {
-  identifier: string; // email or grNumber
-  password: string;
   role: 'student' | 'teacher' | 'admin';
+  // Student login fields
+  grNumber?: string;
+  dateOfBirth?: string;
+  // Staff login fields
+  email?: string;
+  password?: string;
 }
 
 export interface AuthResponse {
