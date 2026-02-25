@@ -6,19 +6,21 @@ import {
   Alert,
   StatusBar,
   TouchableOpacity,
+  StyleSheet,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import apiService from '../../services/api';
-import Loading from '../../components/Loading';
+import { useTheme } from '../../context/ThemeContext';
 import { Result } from '../../types';
 
 const ResultDetailScreen = ({ route, navigation }: any) => {
   const { resultId } = route.params;
+  const { theme } = useTheme();
   const [result, setResult] = useState<Result | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    fetchResultDetail();
-  }, []);
+  useEffect(() => { fetchResultDetail(); }, []);
 
   const fetchResultDetail = async () => {
     try {
@@ -32,178 +34,200 @@ const ResultDetailScreen = ({ route, navigation }: any) => {
     }
   };
 
+  const gradeColor = (pct: number) =>
+    pct >= 80 ? theme.colors.success :
+    pct >= 60 ? theme.colors.info :
+    pct >= 40 ? theme.colors.warning : theme.colors.error;
+
+  const gradeBg = (pct: number) =>
+    pct >= 80 ? theme.colors.successLight :
+    pct >= 60 ? theme.colors.infoLight :
+    pct >= 40 ? theme.colors.warningLight : theme.colors.errorLight;
+
   if (isLoading || !result) {
-    return <Loading />;
+    return (
+      <View style={[s.loadingWrap, { backgroundColor: theme.colors.background }]}>
+        <MaterialCommunityIcons name="loading" size={32} color={theme.colors.primary} />
+      </View>
+    );
   }
 
-  const getGradeColor = (grade: string) => {
-    switch (grade) {
-      case 'A+':
-      case 'A':
-        return 'bg-green-100 text-green-700';
-      case 'B+':
-      case 'B':
-        return 'bg-blue-100 text-blue-700';
-      case 'C+':
-      case 'C':
-        return 'bg-yellow-100 text-yellow-700';
-      default:
-        return 'bg-red-100 text-red-700';
-    }
-  };
-
   return (
-    <>
-      <StatusBar barStyle="light-content" backgroundColor="#1e40af" />
-      <View className="flex-1 bg-gray-50">
-        {/* Header */}
-        <View className="bg-blue-700 pt-12 pb-6 px-6 rounded-b-3xl">
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            className="mb-4"
-          >
-            <Text className="text-white text-base">← Back</Text>
-          </TouchableOpacity>
-          <Text className="text-white text-2xl font-bold">Result Details</Text>
-          <Text className="text-blue-100 text-sm mt-1">{result.examType}</Text>
+    <SafeAreaView style={[s.safe, { backgroundColor: theme.colors.background }]} edges={['top']}>
+      <StatusBar barStyle={theme.isDark ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
+
+      {/* Header */}
+      <View style={[s.header, { borderBottomColor: theme.colors.border }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
+          <MaterialCommunityIcons name="arrow-left" size={22} color={theme.colors.text} />
+        </TouchableOpacity>
+        <View style={s.headerCenter}>
+          <Text style={[s.headerTitle, { color: theme.colors.text }]}>Result Details</Text>
+          <Text style={[s.headerSub, { color: theme.colors.textTertiary }]}>{result.examType}</Text>
+        </View>
+        <View style={s.spacer} />
+      </View>
+
+      <ScrollView style={s.flex} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Score Card */}
+        <View style={[s.scoreCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.borderLight }]}>
+          <View style={[s.scoreCircle, { borderColor: gradeColor(result.percentage) }]}>
+            <Text style={[s.scorePct, { color: gradeColor(result.percentage) }]}>
+              {result.percentage.toFixed(1)}%
+            </Text>
+          </View>
+          <View style={[s.gradeBadge, { backgroundColor: gradeBg(result.percentage) }]}>
+            <Text style={[s.gradeText, { color: gradeColor(result.percentage) }]}>Grade {result.grade}</Text>
+          </View>
+
+          <View style={[s.statsRow, { borderTopColor: theme.colors.borderLight }]}>
+            <View style={s.statItem}>
+              <Text style={[s.statLabel, { color: theme.colors.textTertiary }]}>Obtained</Text>
+              <Text style={[s.statValue, { color: theme.colors.text }]}>{result.obtainedMarks}</Text>
+            </View>
+            <View style={[s.statDivider, { backgroundColor: theme.colors.borderLight }]} />
+            <View style={s.statItem}>
+              <Text style={[s.statLabel, { color: theme.colors.textTertiary }]}>Total</Text>
+              <Text style={[s.statValue, { color: theme.colors.text }]}>{result.totalMarks}</Text>
+            </View>
+            {result.rank && (
+              <>
+                <View style={[s.statDivider, { backgroundColor: theme.colors.borderLight }]} />
+                <View style={s.statItem}>
+                  <Text style={[s.statLabel, { color: theme.colors.textTertiary }]}>Rank</Text>
+                  <Text style={[s.statValue, { color: theme.colors.primary }]}>#{result.rank}</Text>
+                </View>
+              </>
+            )}
+          </View>
         </View>
 
-        <ScrollView className="flex-1 px-6 mt-4" showsVerticalScrollIndicator={false}>
-          {/* Summary Card */}
-          <View className="bg-white rounded-2xl p-6 mb-4 shadow-sm border border-gray-200">
-            <View className="items-center mb-4">
-              <Text className="text-gray-600 text-sm mb-2">Overall Performance</Text>
-              <Text className="text-blue-600 text-5xl font-bold">
-                {result.percentage.toFixed(1)}%
-              </Text>
-              <View className={`mt-3 px-6 py-2 rounded-full ${getGradeColor(result.grade)}`}>
-                <Text className="font-bold text-lg">Grade {result.grade}</Text>
-              </View>
-            </View>
-
-            <View className="flex-row justify-around pt-4 border-t border-gray-200">
-              <View className="items-center">
-                <Text className="text-gray-500 text-xs mb-1">Obtained</Text>
-                <Text className="text-gray-900 text-xl font-bold">
-                  {result.obtainedMarks}
-                </Text>
-              </View>
-              <View className="items-center">
-                <Text className="text-gray-500 text-xs mb-1">Total</Text>
-                <Text className="text-gray-900 text-xl font-bold">
-                  {result.totalMarks}
-                </Text>
-              </View>
-              {result.rank && (
-                <View className="items-center">
-                  <Text className="text-gray-500 text-xs mb-1">Rank</Text>
-                  <Text className="text-gray-900 text-xl font-bold">
-                    #{result.rank}
-                  </Text>
-                </View>
-              )}
-            </View>
+        {/* Exam Info */}
+        <View style={[s.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.borderLight }]}>
+          <View style={s.cardHeader}>
+            <MaterialCommunityIcons name="information-outline" size={20} color={theme.colors.accent} />
+            <Text style={[s.cardTitle, { color: theme.colors.text }]}>Exam Information</Text>
           </View>
-
-          {/* Exam Info */}
-          <View className="bg-white rounded-xl p-5 mb-4 shadow-sm border border-gray-200">
-            <Text className="text-gray-900 font-bold text-lg mb-4">
-              Exam Information
-            </Text>
-            <View className="space-y-3">
-              <View className="flex-row justify-between py-2 border-b border-gray-100">
-                <Text className="text-gray-600">Exam Type</Text>
-                <Text className="text-gray-900 font-semibold">{result.examType}</Text>
-              </View>
-              <View className="flex-row justify-between py-2 border-b border-gray-100">
-                <Text className="text-gray-600">Term</Text>
-                <Text className="text-gray-900 font-semibold">{result.term}</Text>
-              </View>
-              <View className="flex-row justify-between py-2 border-b border-gray-100">
-                <Text className="text-gray-600">Academic Year</Text>
-                <Text className="text-gray-900 font-semibold">{result.academicYear}</Text>
-              </View>
-              <View className="flex-row justify-between py-2">
-                <Text className="text-gray-600">Published On</Text>
-                <Text className="text-gray-900 font-semibold">
-                  {new Date(result.createdAt).toLocaleDateString('en-IN', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                  })}
-                </Text>
-              </View>
+          {[
+            ['Exam Type', result.examType],
+            ['Term', result.term],
+            ['Academic Year', result.academicYear],
+            ['Published', new Date(result.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })],
+          ].map(([label, val], idx) => (
+            <View key={idx} style={[s.infoRow, idx < 3 && { borderBottomColor: theme.colors.borderLight, borderBottomWidth: 1 }]}>
+              <Text style={[s.infoLabel, { color: theme.colors.textTertiary }]}>{label}</Text>
+              <Text style={[s.infoValue, { color: theme.colors.text }]}>{val}</Text>
             </View>
-          </View>
+          ))}
+        </View>
 
-          {/* Subject-wise Performance */}
-          <View className="bg-white rounded-xl p-5 mb-4 shadow-sm border border-gray-200">
-            <Text className="text-gray-900 font-bold text-lg mb-4">
-              Subject-wise Performance
-            </Text>
-            {result.subjects.map((subject, index) => (
-              <View
-                key={index}
-                className="mb-4 pb-4 border-b border-gray-100 last:border-b-0 last:mb-0 last:pb-0"
-              >
-                <View className="flex-row justify-between items-start mb-2">
-                  <Text className="text-gray-900 font-semibold text-base flex-1">
-                    {subject.name}
-                  </Text>
-                  <View className={`px-3 py-1 rounded-lg ${getGradeColor(subject.grade)}`}>
-                    <Text className="font-bold text-sm">{subject.grade}</Text>
+        {/* Subjects */}
+        <View style={[s.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.borderLight }]}>
+          <View style={s.cardHeader}>
+            <MaterialCommunityIcons name="book-open-variant" size={20} color={theme.colors.info} />
+            <Text style={[s.cardTitle, { color: theme.colors.text }]}>Subject-wise Performance</Text>
+          </View>
+          {result.subjects.map((sub, idx) => {
+            const pct = sub.totalMarks > 0 ? (sub.obtainedMarks / sub.totalMarks) * 100 : 0;
+            return (
+              <View key={idx} style={[s.subjectRow, idx < result.subjects.length - 1 && { borderBottomColor: theme.colors.borderLight, borderBottomWidth: 1 }]}>
+                <View style={s.subjectTop}>
+                  <Text style={[s.subjectName, { color: theme.colors.text }]}>{sub.name}</Text>
+                  <View style={[s.subjectGradeBadge, { backgroundColor: gradeBg(pct) }]}>
+                    <Text style={[s.subjectGradeText, { color: gradeColor(pct) }]}>{sub.grade}</Text>
                   </View>
                 </View>
-                <View className="flex-row justify-between items-center">
-                  <Text className="text-gray-600 text-sm">
-                    {subject.obtainedMarks} / {subject.totalMarks}
+                <View style={s.subjectBottom}>
+                  <Text style={[s.subjectMarks, { color: theme.colors.textTertiary }]}>
+                    {sub.obtainedMarks} / {sub.totalMarks}
                   </Text>
-                  <Text className="text-blue-600 font-semibold">
-                    {((subject.obtainedMarks / subject.totalMarks) * 100).toFixed(1)}%
-                  </Text>
+                  <Text style={[s.subjectPct, { color: gradeColor(pct) }]}>{pct.toFixed(1)}%</Text>
                 </View>
-                {/* Progress Bar */}
-                <View className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <View
-                    className="h-full bg-blue-600 rounded-full"
-                    style={{
-                      width: `${(subject.obtainedMarks / subject.totalMarks) * 100}%`,
-                    }}
-                  />
+                <View style={[s.progressBg, { backgroundColor: theme.colors.borderLight }]}>
+                  <View style={[s.progressFill, { width: `${pct}%`, backgroundColor: gradeColor(pct) }]} />
                 </View>
               </View>
-            ))}
+            );
+          })}
+        </View>
+
+        {/* Remarks */}
+        {result.remarks && (
+          <View style={[s.remarkCard, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary }]}>
+            <View style={s.remarkHeader}>
+              <MaterialCommunityIcons name="message-text-outline" size={18} color={theme.colors.primary} />
+              <Text style={[s.remarkTitle, { color: theme.colors.primary }]}>Teacher's Remarks</Text>
+            </View>
+            <Text style={[s.remarkText, { color: theme.colors.text }]}>"{result.remarks}"</Text>
           </View>
+        )}
 
-          {/* Remarks */}
-          {result.remarks && (
-            <View className="bg-blue-50 rounded-xl p-5 mb-4 border border-blue-200">
-              <Text className="text-blue-900 font-bold text-base mb-2">
-                📝 Teacher's Remarks
-              </Text>
-              <Text className="text-blue-800 text-sm leading-5">
-                "{result.remarks}"
-              </Text>
-            </View>
-          )}
+        {/* Attendance */}
+        {result.attendance !== undefined && (
+          <View style={[s.attendanceCard, { backgroundColor: theme.colors.successLight, borderColor: theme.colors.success }]}>
+            <MaterialCommunityIcons name="calendar-check" size={20} color={theme.colors.success} />
+            <Text style={[s.attendanceLabel, { color: theme.colors.success }]}>Attendance</Text>
+            <Text style={[s.attendanceValue, { color: theme.colors.success }]}>{result.attendance}%</Text>
+          </View>
+        )}
 
-          {/* Attendance if available */}
-          {result.attendance !== undefined && (
-            <View className="bg-green-50 rounded-xl p-5 mb-4 border border-green-200">
-              <Text className="text-green-900 font-bold text-base mb-2">
-                📅 Attendance
-              </Text>
-              <Text className="text-green-800 text-3xl font-bold">
-                {result.attendance}%
-              </Text>
-            </View>
-          )}
-
-          <View className="pb-8" />
-        </ScrollView>
-      </View>
-    </>
+        <View style={{ height: 40 }} />
+      </ScrollView>
+    </SafeAreaView>
   );
 };
+
+const s = StyleSheet.create({
+  safe: { flex: 1 },
+  flex: { flex: 1 },
+  loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 8 },
+
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
+  backBtn: { marginRight: 14 },
+  headerCenter: { flex: 1 },
+  headerTitle: { fontSize: 18, fontWeight: '800', letterSpacing: -0.3 },
+  headerSub: { fontSize: 12, fontWeight: '500', marginTop: 1 },
+  spacer: { width: 36 },
+
+  scoreCard: { borderRadius: 18, borderWidth: 1, padding: 24, alignItems: 'center', marginTop: 12, marginBottom: 14 },
+  scoreCircle: { width: 100, height: 100, borderRadius: 50, borderWidth: 4, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
+  scorePct: { fontSize: 24, fontWeight: '900' },
+  gradeBadge: { paddingHorizontal: 20, paddingVertical: 8, borderRadius: 20, marginBottom: 16 },
+  gradeText: { fontSize: 15, fontWeight: '800' },
+  statsRow: { flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, paddingTop: 16, width: '100%' },
+  statItem: { flex: 1, alignItems: 'center' },
+  statLabel: { fontSize: 11, fontWeight: '500', marginBottom: 4 },
+  statValue: { fontSize: 20, fontWeight: '800' },
+  statDivider: { width: 1, height: 30 },
+
+  card: { borderRadius: 18, borderWidth: 1, padding: 18, marginBottom: 14 },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
+  cardTitle: { fontSize: 16, fontWeight: '700' },
+
+  infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12 },
+  infoLabel: { fontSize: 13, fontWeight: '500' },
+  infoValue: { fontSize: 13, fontWeight: '700' },
+
+  subjectRow: { paddingVertical: 12 },
+  subjectTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  subjectName: { fontSize: 14, fontWeight: '700', flex: 1 },
+  subjectGradeBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8 },
+  subjectGradeText: { fontSize: 12, fontWeight: '800' },
+  subjectBottom: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
+  subjectMarks: { fontSize: 12, fontWeight: '500' },
+  subjectPct: { fontSize: 13, fontWeight: '700' },
+  progressBg: { height: 6, borderRadius: 3, overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: 3 },
+
+  remarkCard: { borderRadius: 14, borderWidth: 1, padding: 16, marginBottom: 14 },
+  remarkHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  remarkTitle: { fontSize: 14, fontWeight: '700' },
+  remarkText: { fontSize: 13, fontWeight: '500', lineHeight: 20 },
+
+  attendanceCard: { borderRadius: 14, borderWidth: 1, padding: 16, marginBottom: 14, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  attendanceLabel: { fontSize: 14, fontWeight: '600', flex: 1 },
+  attendanceValue: { fontSize: 22, fontWeight: '900' },
+});
 
 export default ResultDetailScreen;

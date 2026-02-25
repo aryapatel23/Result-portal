@@ -5,221 +5,251 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  Alert,
   StatusBar,
+  StyleSheet,
+  Dimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import apiService from '../../services/api';
-import Loading from '../../components/Loading';
 import { Result } from '../../types';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const FILTERS = ['All', 'Current', 'Previous'] as const;
 
 const StudentResultsScreen = ({ navigation }: any) => {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const [results, setResults] = useState<Result[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'current' | 'previous'>('all');
+  const [filter, setFilter] = useState(0);
 
-  useEffect(() => {
-    fetchResults();
-  }, []);
+  useEffect(() => { fetchResults(); }, []);
 
   const fetchResults = async () => {
     try {
-      const response = await apiService.getStudentResults(user?.grNumber || '');
-      setResults(response.data || []);
-    } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Failed to load results');
+      const res = await apiService.getStudentResults(user?.grNumber || '');
+      setResults(res.data || []);
+    } catch (e: any) {
+      console.log('Results error:', e.message);
     } finally {
       setIsLoading(false);
       setRefreshing(false);
     }
   };
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchResults();
-  };
+  const onRefresh = () => { setRefreshing(true); fetchResults(); };
 
-  const getFilteredResults = () => {
-    // You can implement filtering logic based on academic year
-    return results;
-  };
+  const getGradeColor = (pct: number) =>
+    pct >= 80 ? theme.colors.success :
+    pct >= 60 ? theme.colors.info :
+    pct >= 40 ? theme.colors.warning : theme.colors.error;
 
   if (isLoading) {
-    return <Loading />;
+    return (
+      <View style={[styles.loadingWrap, { backgroundColor: theme.colors.background }]}>
+        <MaterialCommunityIcons name="loading" size={32} color={theme.colors.primary} />
+      </View>
+    );
   }
 
-  const filteredResults = getFilteredResults();
-
   return (
-    <>
-      <StatusBar barStyle="light-content" backgroundColor="#1e40af" />
-      <View className="flex-1 bg-gray-50">
-        {/* Header */}
-        <View className="bg-blue-700 pt-12 pb-6 px-6 rounded-b-3xl">
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            className="mb-4"
-          >
-            <Text className="text-white text-base">← Back</Text>
-          </TouchableOpacity>
-          <Text className="text-white text-2xl font-bold">All Results</Text>
-          <Text className="text-blue-100 text-sm mt-1">
-            {filteredResults.length} result{filteredResults.length !== 1 ? 's' : ''} found
+    <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]} edges={['top']}>
+      <StatusBar barStyle={theme.isDark ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
+
+      {/* Header */}
+      <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
+        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>My Results</Text>
+        <View style={styles.headerRight}>
+          <Text style={[styles.countBadge, { color: theme.colors.primary, backgroundColor: theme.colors.primaryLight }]}>
+            {results.length}
           </Text>
         </View>
+      </View>
 
-        <ScrollView
-          className="flex-1 px-6 mt-4"
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Filter Tabs */}
-          <View className="flex-row mb-6">
-            <TouchableOpacity
-              onPress={() => setFilter('all')}
-              className={`flex-1 mr-2 py-3 rounded-xl ${
-                filter === 'all'
-                  ? 'bg-blue-600'
-                  : 'bg-white border border-gray-300'
-              }`}
-            >
-              <Text
-                className={`text-center font-semibold ${
-                  filter === 'all' ? 'text-white' : 'text-gray-700'
-                }`}
-              >
-                All
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setFilter('current')}
-              className={`flex-1 mx-1 py-3 rounded-xl ${
-                filter === 'current'
-                  ? 'bg-blue-600'
-                  : 'bg-white border border-gray-300'
-              }`}
-            >
-              <Text
-                className={`text-center font-semibold ${
-                  filter === 'current' ? 'text-white' : 'text-gray-700'
-                }`}
-              >
-                Current
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setFilter('previous')}
-              className={`flex-1 ml-2 py-3 rounded-xl ${
-                filter === 'previous'
-                  ? 'bg-blue-600'
-                  : 'bg-white border border-gray-300'
-              }`}
-            >
-              <Text
-                className={`text-center font-semibold ${
-                  filter === 'previous' ? 'text-white' : 'text-gray-700'
-                }`}
-              >
-                Previous
-              </Text>
-            </TouchableOpacity>
+      {/* Filter Chips */}
+      <View style={styles.filterRow}>
+        {FILTERS.map((f, idx) => (
+          <TouchableOpacity
+            key={f}
+            style={[
+              styles.filterChip,
+              { borderColor: theme.colors.border },
+              filter === idx && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+            ]}
+            onPress={() => setFilter(idx)}
+            activeOpacity={0.7}
+          >
+            <Text style={[
+              styles.filterText,
+              { color: theme.colors.textSecondary },
+              filter === idx && { color: '#FFFFFF' },
+            ]}>
+              {f}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <ScrollView
+        style={styles.flex}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        showsVerticalScrollIndicator={false}
+      >
+        {results.length === 0 ? (
+          <View style={[styles.emptyCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.borderLight }]}>
+            <MaterialCommunityIcons name="file-search-outline" size={48} color={theme.colors.textTertiary} />
+            <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>No Results Found</Text>
+            <Text style={[styles.emptyDesc, { color: theme.colors.textTertiary }]}>
+              Your exam results will appear here once published by your teachers.
+            </Text>
           </View>
-
-          {/* Results List */}
-          {filteredResults.length === 0 ? (
-            <View className="bg-white rounded-xl p-8 items-center border border-gray-200">
-              <Text className="text-6xl mb-3">📚</Text>
-              <Text className="text-gray-900 font-semibold text-lg mb-2">
-                No Results Found
-              </Text>
-              <Text className="text-gray-500 text-sm text-center">
-                Your exam results will appear here once they are published by your teachers
-              </Text>
-            </View>
-          ) : (
-            filteredResults.map((result) => (
+        ) : (
+          results.map((result, index) => {
+            const gradeColor = getGradeColor(result.percentage);
+            return (
               <TouchableOpacity
-                key={result._id}
+                key={result._id || index}
+                style={[styles.resultCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.borderLight }]}
                 onPress={() => navigation.navigate('ResultDetail', { resultId: result._id })}
-                className="bg-white rounded-xl p-5 mb-4 shadow-sm border border-gray-200 active:bg-gray-50"
+                activeOpacity={0.7}
               >
-                {/* Header */}
-                <View className="flex-row justify-between items-start mb-3">
-                  <View className="flex-1 mr-4">
-                    <Text className="text-gray-900 font-bold text-lg">
+                {/* Top Section */}
+                <View style={styles.resultTop}>
+                  <View style={[styles.resultIcon, { backgroundColor: theme.colors.primaryLight }]}>
+                    <MaterialCommunityIcons name="file-document-outline" size={24} color={theme.colors.primary} />
+                  </View>
+                  <View style={styles.resultMeta}>
+                    <Text style={[styles.resultTitle, { color: theme.colors.text }]} numberOfLines={1}>
                       {result.examType}
                     </Text>
-                    <Text className="text-gray-500 text-sm mt-1">
-                      {result.term} • {result.academicYear}
-                    </Text>
-                    <Text className="text-gray-600 text-xs mt-1">
-                      {new Date(result.createdAt).toLocaleDateString('en-IN', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
+                    <Text style={[styles.resultSub, { color: theme.colors.textTertiary }]}>
+                      {result.term} | {result.academicYear}
                     </Text>
                   </View>
-                  <View className="items-center">
-                    <View className="bg-blue-100 px-4 py-2 rounded-xl">
-                      <Text className="text-blue-700 font-bold text-lg">
-                        {result.percentage.toFixed(1)}%
-                      </Text>
-                    </View>
-                    <Text className="text-gray-600 text-xs mt-1">
-                      Grade: {result.grade}
+                  <View style={[styles.percentBadge, { backgroundColor: gradeColor + '14' }]}>
+                    <Text style={[styles.percentText, { color: gradeColor }]}>
+                      {result.percentage.toFixed(1)}%
                     </Text>
                   </View>
                 </View>
 
-                {/* Stats */}
-                <View className="flex-row justify-between items-center pt-3 border-t border-gray-100">
-                  <View>
-                    <Text className="text-gray-500 text-xs">Total Marks</Text>
-                    <Text className="text-gray-900 font-semibold mt-1">
-                      {result.obtainedMarks} / {result.totalMarks}
+                {/* Stats Row */}
+                <View style={[styles.statsRow, { borderTopColor: theme.colors.borderLight }]}>
+                  <View style={styles.statItem}>
+                    <Text style={[styles.statItemLabel, { color: theme.colors.textTertiary }]}>Marks</Text>
+                    <Text style={[styles.statItemValue, { color: theme.colors.text }]}>
+                      {result.obtainedMarks}/{result.totalMarks}
                     </Text>
                   </View>
-                  <View>
-                    <Text className="text-gray-500 text-xs">Subjects</Text>
-                    <Text className="text-gray-900 font-semibold mt-1">
-                      {result.subjects.length}
-                    </Text>
+                  <View style={[styles.statDivider, { backgroundColor: theme.colors.border }]} />
+                  <View style={styles.statItem}>
+                    <Text style={[styles.statItemLabel, { color: theme.colors.textTertiary }]}>Grade</Text>
+                    <Text style={[styles.statItemValue, { color: gradeColor }]}>{result.grade}</Text>
+                  </View>
+                  <View style={[styles.statDivider, { backgroundColor: theme.colors.border }]} />
+                  <View style={styles.statItem}>
+                    <Text style={[styles.statItemLabel, { color: theme.colors.textTertiary }]}>Subjects</Text>
+                    <Text style={[styles.statItemValue, { color: theme.colors.text }]}>{result.subjects?.length || 0}</Text>
                   </View>
                   {result.rank && (
-                    <View>
-                      <Text className="text-gray-500 text-xs">Rank</Text>
-                      <Text className="text-gray-900 font-semibold mt-1">
-                        #{result.rank}
-                      </Text>
-                    </View>
+                    <>
+                      <View style={[styles.statDivider, { backgroundColor: theme.colors.border }]} />
+                      <View style={styles.statItem}>
+                        <Text style={[styles.statItemLabel, { color: theme.colors.textTertiary }]}>Rank</Text>
+                        <Text style={[styles.statItemValue, { color: theme.colors.text }]}>#{result.rank}</Text>
+                      </View>
+                    </>
                   )}
-                  <Text className="text-blue-600 font-semibold">
-                    View →
-                  </Text>
                 </View>
 
-                {result.remarks && (
-                  <View className="mt-3 pt-3 border-t border-gray-100">
-                    <Text className="text-gray-500 text-xs mb-1">Remarks:</Text>
-                    <Text className="text-gray-700 text-sm italic">
-                      "{result.remarks}"
-                    </Text>
-                  </View>
-                )}
+                {/* View Details */}
+                <View style={styles.viewRow}>
+                  <Text style={[styles.viewText, { color: theme.colors.primary }]}>View Details</Text>
+                  <MaterialCommunityIcons name="chevron-right" size={18} color={theme.colors.primary} />
+                </View>
               </TouchableOpacity>
-            ))
-          )}
-
-          <View className="pb-8" />
-        </ScrollView>
-      </View>
-    </>
+            );
+          })
+        )}
+        <View style={{ height: 100 }} />
+      </ScrollView>
+    </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  safe: { flex: 1 },
+  flex: { flex: 1 },
+  loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 8 },
+
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+  },
+  backBtn: { width: 36, height: 36, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  headerTitle: { flex: 1, fontSize: 20, fontWeight: '800', marginLeft: 8, letterSpacing: -0.3 },
+  headerRight: {},
+  countBadge: {
+    fontSize: 13,
+    fontWeight: '700',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+
+  filterRow: { flexDirection: 'row', paddingHorizontal: 20, paddingVertical: 12, gap: 8 },
+  filterChip: {
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  filterText: { fontSize: 13, fontWeight: '600' },
+
+  resultCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 16,
+    marginBottom: 12,
+  },
+  resultTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
+  resultIcon: { width: 46, height: 46, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  resultMeta: { flex: 1 },
+  resultTitle: { fontSize: 16, fontWeight: '700', marginBottom: 3 },
+  resultSub: { fontSize: 12, fontWeight: '500' },
+  percentBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
+  percentText: { fontSize: 15, fontWeight: '800' },
+
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    paddingTop: 14,
+    borderTopWidth: 1,
+    marginBottom: 12,
+  },
+  statItem: { alignItems: 'center' },
+  statItemLabel: { fontSize: 11, fontWeight: '500', marginBottom: 3 },
+  statItemValue: { fontSize: 14, fontWeight: '700' },
+  statDivider: { width: 1, height: 28 },
+
+  viewRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 },
+  viewText: { fontSize: 13, fontWeight: '600' },
+
+  emptyCard: { alignItems: 'center', padding: 40, borderRadius: 20, borderWidth: 1, gap: 10, marginTop: 40 },
+  emptyTitle: { fontSize: 18, fontWeight: '700' },
+  emptyDesc: { fontSize: 13, textAlign: 'center', lineHeight: 20 },
+});
 
 export default StudentResultsScreen;

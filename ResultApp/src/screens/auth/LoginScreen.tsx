@@ -10,325 +10,469 @@ import {
   Alert,
   StatusBar,
   StyleSheet,
+  ActivityIndicator,
+  Dimensions,
+  Animated,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
-import Loading from '../../components/Loading';
+import { useTheme } from '../../context/ThemeContext';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import DateTimePicker from '@react-native-community/datetimepicker';
+
+type Role = 'student' | 'teacher' | 'admin';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const ROLE_CONFIG = {
+  student: { icon: 'school-outline', label: 'Student' },
+  teacher: { icon: 'human-male-board', label: 'Teacher' },
+  admin: { icon: 'shield-account-outline', label: 'Admin' },
+};
 
 const LoginScreen = () => {
-  const [selectedRole, setSelectedRole] = useState<'student' | 'teacher' | 'admin'>('student');
-  const [identifier, setIdentifier] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
   const { login } = useAuth();
+  const { theme, toggleTheme, isDark } = useTheme();
+
+  const [role, setRole] = useState<Role>('student');
+  const [loading, setLoading] = useState(false);
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  const [grNumber, setGrNumber] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState(new Date(2010, 0, 1));
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const handleLogin = async () => {
-    if (!identifier.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please enter all fields');
-      return;
-    }
-
-    setIsLoading(true);
+    setLoading(true);
     try {
-      await login({ identifier, password, role: selectedRole });
+      if (role === 'student') {
+        if (!grNumber.trim()) {
+          Alert.alert('Missing Information', 'Please enter your GR Number.');
+          setLoading(false);
+          return;
+        }
+        const year = dateOfBirth.getFullYear();
+        const month = String(dateOfBirth.getMonth() + 1).padStart(2, '0');
+        const day = String(dateOfBirth.getDate()).padStart(2, '0');
+        const dobString = `${year}-${month}-${day}`;
+
+        await login({
+          role: 'student',
+          grNumber: grNumber.trim(),
+          dateOfBirth: dobString,
+        });
+      } else {
+        if (!email.trim() || !password.trim()) {
+          Alert.alert('Missing Information', 'Please enter both Email and Password.');
+          setLoading(false);
+          return;
+        }
+        await login({
+          role,
+          email: email.trim(),
+          password,
+        });
+      }
     } catch (error: any) {
-      Alert.alert('Login Failed', error.message || 'Please check your credentials');
+      console.error('Login Error:', error);
+      const errorMsg = error.message || 'Please check your credentials and try again.';
+      setTimeout(() => {
+        Alert.alert('Authentication Failed', errorMsg);
+      }, 300);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const getRolePlaceholder = () => {
-    switch (selectedRole) {
-      case 'student':
-        return 'GR Number';
-      case 'teacher':
-        return 'Email or Employee ID';
-      case 'admin':
-        return 'Email';
-      default:
-        return 'Email or ID';
-    }
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (event.type === 'dismissed') return;
+    if (selectedDate) setDateOfBirth(selectedDate);
   };
-
-  if (isLoading) {
-    return <Loading />;
-  }
 
   return (
-    <>
-      <StatusBar barStyle="light-content" backgroundColor="#1e40af" />
+    <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]} edges={['top', 'bottom']}>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={theme.colors.background}
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.container}
+        style={styles.flex}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Header */}
+          {/* Theme Toggle */}
+          <TouchableOpacity
+            style={[styles.themeToggle, { backgroundColor: theme.colors.card }]}
+            onPress={toggleTheme}
+            activeOpacity={0.7}
+          >
+            <MaterialCommunityIcons
+              name={isDark ? 'weather-sunny' : 'weather-night'}
+              size={20}
+              color={theme.colors.primary}
+            />
+          </TouchableOpacity>
+
+          {/* Brand Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Student Result Portal</Text>
-            <Text style={styles.subtitle}>Access your academic information</Text>
+            <View style={[styles.logoOuter, { backgroundColor: theme.colors.primaryLight }]}>
+              <View style={[styles.logoInner, { backgroundColor: theme.colors.primary }]}>
+                <MaterialCommunityIcons name="school" size={36} color="#FFFFFF" />
+              </View>
+            </View>
+            <Text style={[styles.brandTitle, { color: theme.colors.text }]}>
+              Result Portal
+            </Text>
+            <Text style={[styles.brandSubtitle, { color: theme.colors.textTertiary }]}>
+              Sign in to continue your journey
+            </Text>
           </View>
 
-          {/* Role Selection */}
-          <View style={styles.content}>
-            <Text style={styles.sectionLabel}>Select Your Role</Text>
-            <View style={styles.roleContainer}>
-              <TouchableOpacity
-                onPress={() => setSelectedRole('student')}
-                style={[
-                  styles.roleButton,
-                  styles.roleButtonLeft,
-                  selectedRole === 'student' && styles.roleButtonActive
-                ]}
-              >
-                <Text style={[
-                  styles.roleText,
-                  selectedRole === 'student' && styles.roleTextActive
-                ]}>
-                  Student
-                </Text>
-              </TouchableOpacity>
+          {/* Role Selector */}
+          <View style={[styles.roleRow, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+            {(['student', 'teacher', 'admin'] as Role[]).map((r) => {
+              const isActive = role === r;
+              return (
+                <TouchableOpacity
+                  key={r}
+                  style={[
+                    styles.roleChip,
+                    isActive && { backgroundColor: theme.colors.primary },
+                  ]}
+                  onPress={() => setRole(r)}
+                  activeOpacity={0.7}
+                >
+                  <MaterialCommunityIcons
+                    name={ROLE_CONFIG[r].icon}
+                    size={18}
+                    color={isActive ? '#FFFFFF' : theme.colors.textTertiary}
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text
+                    style={[
+                      styles.roleLabel,
+                      { color: isActive ? '#FFFFFF' : theme.colors.textSecondary },
+                      isActive && styles.roleLabelActive,
+                    ]}
+                  >
+                    {ROLE_CONFIG[r].label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
 
-              <TouchableOpacity
-                onPress={() => setSelectedRole('teacher')}
-                style={[
-                  styles.roleButton,
-                  styles.roleButtonMiddle,
-                  selectedRole === 'teacher' && styles.roleButtonActive
-                ]}
-              >
-                <Text style={[
-                  styles.roleText,
-                  selectedRole === 'teacher' && styles.roleTextActive
-                ]}>
-                  Teacher
-                </Text>
-              </TouchableOpacity>
+          {/* Form Card */}
+          <View style={[styles.formCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.borderLight }]}>
+            {role === 'student' ? (
+              <>
+                {/* GR Number */}
+                <View style={styles.fieldGroup}>
+                  <Text style={[styles.fieldLabel, { color: theme.colors.textSecondary }]}>
+                    GR Number
+                  </Text>
+                  <View style={[styles.inputWrap, { backgroundColor: theme.colors.inputBg, borderColor: theme.colors.border }]}>
+                    <MaterialCommunityIcons name="card-account-details-outline" size={20} color={theme.colors.textTertiary} />
+                    <TextInput
+                      style={[styles.input, { color: theme.colors.text }]}
+                      placeholder="e.g. 2023001"
+                      placeholderTextColor={theme.colors.textTertiary}
+                      value={grNumber}
+                      onChangeText={setGrNumber}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      editable={!loading}
+                    />
+                  </View>
+                </View>
 
-              <TouchableOpacity
-                onPress={() => setSelectedRole('admin')}
-                style={[
-                  styles.roleButton,
-                  styles.roleButtonRight,
-                  selectedRole === 'admin' && styles.roleButtonActive
-                ]}
-              >
-                <Text style={[
-                  styles.roleText,
-                  selectedRole === 'admin' && styles.roleTextActive
-                ]}>
-                  Admin
-                </Text>
-              </TouchableOpacity>
-            </View>
+                {/* Date of Birth */}
+                <View style={styles.fieldGroup}>
+                  <Text style={[styles.fieldLabel, { color: theme.colors.textSecondary }]}>
+                    Date of Birth
+                  </Text>
+                  <TouchableOpacity
+                    style={[styles.inputWrap, { backgroundColor: theme.colors.inputBg, borderColor: theme.colors.border }]}
+                    onPress={() => setShowDatePicker(true)}
+                    activeOpacity={0.7}
+                  >
+                    <MaterialCommunityIcons name="calendar-month-outline" size={20} color={theme.colors.textTertiary} />
+                    <Text style={[styles.inputText, { color: theme.colors.text }]}>
+                      {dateOfBirth.toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </Text>
+                    <MaterialCommunityIcons name="chevron-down" size={18} color={theme.colors.textTertiary} />
+                  </TouchableOpacity>
+                  {showDatePicker && (
+                    <DateTimePicker
+                      value={dateOfBirth}
+                      mode="date"
+                      display="default"
+                      onChange={onDateChange}
+                      maximumDate={new Date()}
+                    />
+                  )}
+                </View>
+              </>
+            ) : (
+              <>
+                {/* Email */}
+                <View style={styles.fieldGroup}>
+                  <Text style={[styles.fieldLabel, { color: theme.colors.textSecondary }]}>
+                    Email Address
+                  </Text>
+                  <View style={[styles.inputWrap, { backgroundColor: theme.colors.inputBg, borderColor: theme.colors.border }]}>
+                    <MaterialCommunityIcons name="email-outline" size={20} color={theme.colors.textTertiary} />
+                    <TextInput
+                      style={[styles.input, { color: theme.colors.text }]}
+                      placeholder="name@school.com"
+                      placeholderTextColor={theme.colors.textTertiary}
+                      value={email}
+                      onChangeText={setEmail}
+                      autoCapitalize="none"
+                      keyboardType="email-address"
+                      autoCorrect={false}
+                      editable={!loading}
+                    />
+                  </View>
+                </View>
 
-            {/* Login Form */}
-            <View style={styles.formContainer}>
-              <Text style={styles.formTitle}>Sign In</Text>
+                {/* Password */}
+                <View style={styles.fieldGroup}>
+                  <Text style={[styles.fieldLabel, { color: theme.colors.textSecondary }]}>
+                    Password
+                  </Text>
+                  <View style={[styles.inputWrap, { backgroundColor: theme.colors.inputBg, borderColor: theme.colors.border }]}>
+                    <MaterialCommunityIcons name="lock-outline" size={20} color={theme.colors.textTertiary} />
+                    <TextInput
+                      style={[styles.input, { color: theme.colors.text }]}
+                      placeholder="Enter password"
+                      placeholderTextColor={theme.colors.textTertiary}
+                      value={password}
+                      onChangeText={setPassword}
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      editable={!loading}
+                      onSubmitEditing={handleLogin}
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowPassword(!showPassword)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <MaterialCommunityIcons
+                        name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                        size={22}
+                        color={theme.colors.textTertiary}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>{getRolePlaceholder()}</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder={`Enter your ${getRolePlaceholder()}`}
-                  value={identifier}
-                  onChangeText={setIdentifier}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-              </View>
+                <TouchableOpacity style={styles.forgotRow}>
+                  <Text style={[styles.forgotText, { color: theme.colors.primary }]}>
+                    Forgot Password?
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Password</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter your password"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                  autoCapitalize="none"
-                />
-              </View>
+            {/* Login Button */}
+            <TouchableOpacity
+              style={[
+                styles.loginBtn,
+                { backgroundColor: theme.colors.primary },
+                loading && { opacity: 0.6 },
+              ]}
+              onPress={handleLogin}
+              disabled={loading}
+              activeOpacity={0.85}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <View style={styles.loginBtnContent}>
+                  <Text style={styles.loginBtnText}>Sign In</Text>
+                  <MaterialCommunityIcons name="arrow-right" size={20} color="#FFFFFF" />
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
 
-              <TouchableOpacity
-                onPress={handleLogin}
-                style={styles.loginButton}
-              >
-                <Text style={styles.loginButtonText}>Sign In</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Info Section */}
-            <View style={styles.infoContainer}>
-              <Text style={styles.infoTitle}>📱 Quick Access</Text>
-              <Text style={styles.infoText}>
-                {selectedRole === 'student' && 'View your results, attendance, and academic progress'}
-                {selectedRole === 'teacher' && 'Manage students, upload results, and mark attendance'}
-                {selectedRole === 'admin' && 'Full system access and management'}
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={[styles.footerText, { color: theme.colors.textTertiary }]}>
+              Need help?{' '}
+              <Text style={{ color: theme.colors.primary, fontWeight: '600' }}>
+                Contact Support
               </Text>
-            </View>
+            </Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-  },
+  flex: { flex: 1 },
+  safe: { flex: 1 },
   scrollContent: {
     flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: SCREEN_WIDTH > 400 ? 28 : 20,
+    paddingVertical: 24,
   },
-  header: {
-    backgroundColor: '#1d4ed8',
-    paddingTop: 64,
-    paddingBottom: 32,
-    paddingHorizontal: 24,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-  },
-  title: {
-    color: '#ffffff',
-    fontSize: 28,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  subtitle: {
-    color: '#bfdbfe',
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  content: {
-    paddingHorizontal: 24,
-    marginTop: 32,
-    paddingBottom: 32,
-  },
-  sectionLabel: {
-    color: '#374151',
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  roleContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-  },
-  roleButton: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-  },
-  roleButtonLeft: {
-    marginRight: 8,
-    borderTopLeftRadius: 12,
-    borderBottomLeftRadius: 12,
-    borderTopRightRadius: 12,
-    borderBottomRightRadius: 12,
-  },
-  roleButtonMiddle: {
-    marginHorizontal: 4,
-    borderRadius: 12,
-  },
-  roleButtonRight: {
-    marginLeft: 8,
-    borderTopLeftRadius: 12,
-    borderBottomLeftRadius: 12,
-    borderTopRightRadius: 12,
-    borderBottomRightRadius: 12,
-  },
-  roleButtonActive: {
-    backgroundColor: '#2563eb',
-    borderColor: '#2563eb',
-  },
-  roleText: {
-    textAlign: 'center',
-    fontWeight: '600',
-    color: '#374151',
-  },
-  roleTextActive: {
-    color: '#ffffff',
-  },
-  formContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 24,
+  themeToggle: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  logoOuter: {
+    width: 88,
+    height: 88,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  logoInner: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  brandTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+    marginBottom: 6,
+  },
+  brandSubtitle: {
+    fontSize: 15,
+    fontWeight: '400',
+  },
+  roleRow: {
+    flexDirection: 'row',
+    padding: 4,
+    borderRadius: 16,
+    marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
   },
-  formTitle: {
-    color: '#111827',
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 24,
+  roleChip: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 12,
   },
-  inputGroup: {
-    marginBottom: 16,
+  roleLabel: {
+    fontSize: 13,
+    fontWeight: '600',
   },
-  inputLabel: {
-    color: '#374151',
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 8,
+  roleLabelActive: {
+    fontWeight: '700',
   },
-  input: {
-    backgroundColor: '#f9fafb',
+  formCard: {
+    borderRadius: 24,
+    padding: 24,
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    color: '#111827',
-    fontSize: 16,
-  },
-  loginButton: {
-    backgroundColor: '#2563eb',
-    borderRadius: 12,
-    paddingVertical: 16,
-    marginTop: 8,
-    shadowColor: '#2563eb',
+    elevation: 1,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    marginBottom: 20,
   },
-  loginButtonText: {
-    color: '#ffffff',
-    textAlign: 'center',
-    fontWeight: 'bold',
-    fontSize: 16,
+  fieldGroup: {
+    marginBottom: 18,
   },
-  infoContainer: {
-    marginTop: 32,
-    backgroundColor: '#eff6ff',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-  },
-  infoTitle: {
-    color: '#1e3a8a',
+  fieldLabel: {
+    fontSize: 13,
     fontWeight: '600',
     marginBottom: 8,
+    marginLeft: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  infoText: {
-    color: '#1e40af',
-    fontSize: 14,
+  inputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    height: 52,
+    gap: 10,
+  },
+  input: {
+    flex: 1,
+    fontSize: 15,
+    height: '100%',
+  },
+  inputText: {
+    flex: 1,
+    fontSize: 15,
+  },
+  forgotRow: {
+    alignSelf: 'flex-end',
+    marginBottom: 20,
+    marginTop: -6,
+  },
+  forgotText: {
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  loginBtn: {
+    height: 52,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  loginBtnContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  loginBtnText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  footer: {
+    alignItems: 'center',
+    paddingBottom: 16,
+  },
+  footerText: {
+    fontSize: 13,
   },
 });
 
