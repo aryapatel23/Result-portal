@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import apiService from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
-import { Result } from '../../types';
+import { Result, getResultTotals } from '../../types';
 
 const ResultDetailScreen = ({ route, navigation }: any) => {
   const { resultId } = route.params;
@@ -24,8 +24,8 @@ const ResultDetailScreen = ({ route, navigation }: any) => {
 
   const fetchResultDetail = async () => {
     try {
-      const response = await apiService.getResultById(resultId);
-      setResult(response.data);
+      const response = await apiService.getStudentResultById(resultId);
+      setResult(response);
     } catch (error: any) {
       Alert.alert('Error', error.response?.data?.message || 'Failed to load result details');
       navigation.goBack();
@@ -52,6 +52,8 @@ const ResultDetailScreen = ({ route, navigation }: any) => {
     );
   }
 
+  const { percentage, grade, obtainedMarks, totalMarks } = getResultTotals(result);
+
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: theme.colors.background }]} edges={['top']}>
       <StatusBar barStyle={theme.isDark ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
@@ -71,34 +73,25 @@ const ResultDetailScreen = ({ route, navigation }: any) => {
       <ScrollView style={s.flex} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Score Card */}
         <View style={[s.scoreCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.borderLight }]}>
-          <View style={[s.scoreCircle, { borderColor: gradeColor(result.percentage) }]}>
-            <Text style={[s.scorePct, { color: gradeColor(result.percentage) }]}>
-              {result.percentage.toFixed(1)}%
+          <View style={[s.scoreCircle, { borderColor: gradeColor(percentage) }]}>
+            <Text style={[s.scorePct, { color: gradeColor(percentage) }]}>
+              {percentage.toFixed(1)}%
             </Text>
           </View>
-          <View style={[s.gradeBadge, { backgroundColor: gradeBg(result.percentage) }]}>
-            <Text style={[s.gradeText, { color: gradeColor(result.percentage) }]}>Grade {result.grade}</Text>
+          <View style={[s.gradeBadge, { backgroundColor: gradeBg(percentage) }]}>
+            <Text style={[s.gradeText, { color: gradeColor(percentage) }]}>Grade {grade}</Text>
           </View>
 
           <View style={[s.statsRow, { borderTopColor: theme.colors.borderLight }]}>
             <View style={s.statItem}>
               <Text style={[s.statLabel, { color: theme.colors.textTertiary }]}>Obtained</Text>
-              <Text style={[s.statValue, { color: theme.colors.text }]}>{result.obtainedMarks}</Text>
+              <Text style={[s.statValue, { color: theme.colors.text }]}>{obtainedMarks}</Text>
             </View>
             <View style={[s.statDivider, { backgroundColor: theme.colors.borderLight }]} />
             <View style={s.statItem}>
               <Text style={[s.statLabel, { color: theme.colors.textTertiary }]}>Total</Text>
-              <Text style={[s.statValue, { color: theme.colors.text }]}>{result.totalMarks}</Text>
+              <Text style={[s.statValue, { color: theme.colors.text }]}>{totalMarks}</Text>
             </View>
-            {result.rank && (
-              <>
-                <View style={[s.statDivider, { backgroundColor: theme.colors.borderLight }]} />
-                <View style={s.statItem}>
-                  <Text style={[s.statLabel, { color: theme.colors.textTertiary }]}>Rank</Text>
-                  <Text style={[s.statValue, { color: theme.colors.primary }]}>#{result.rank}</Text>
-                </View>
-              </>
-            )}
           </View>
         </View>
 
@@ -128,18 +121,21 @@ const ResultDetailScreen = ({ route, navigation }: any) => {
             <Text style={[s.cardTitle, { color: theme.colors.text }]}>Subject-wise Performance</Text>
           </View>
           {result.subjects.map((sub, idx) => {
-            const pct = sub.totalMarks > 0 ? (sub.obtainedMarks / sub.totalMarks) * 100 : 0;
+            const pct = sub.maxMarks > 0 ? (sub.marks / sub.maxMarks) * 100 : 0;
+            const subGrade =
+              pct >= 90 ? 'A+' : pct >= 80 ? 'A' : pct >= 70 ? 'B+' :
+              pct >= 60 ? 'B' : pct >= 50 ? 'C' : pct >= 40 ? 'D' : 'F';
             return (
               <View key={idx} style={[s.subjectRow, idx < result.subjects.length - 1 && { borderBottomColor: theme.colors.borderLight, borderBottomWidth: 1 }]}>
                 <View style={s.subjectTop}>
                   <Text style={[s.subjectName, { color: theme.colors.text }]}>{sub.name}</Text>
                   <View style={[s.subjectGradeBadge, { backgroundColor: gradeBg(pct) }]}>
-                    <Text style={[s.subjectGradeText, { color: gradeColor(pct) }]}>{sub.grade}</Text>
+                    <Text style={[s.subjectGradeText, { color: gradeColor(pct) }]}>{subGrade}</Text>
                   </View>
                 </View>
                 <View style={s.subjectBottom}>
                   <Text style={[s.subjectMarks, { color: theme.colors.textTertiary }]}>
-                    {sub.obtainedMarks} / {sub.totalMarks}
+                    {sub.marks} / {sub.maxMarks}
                   </Text>
                   <Text style={[s.subjectPct, { color: gradeColor(pct) }]}>{pct.toFixed(1)}%</Text>
                 </View>
@@ -159,15 +155,6 @@ const ResultDetailScreen = ({ route, navigation }: any) => {
               <Text style={[s.remarkTitle, { color: theme.colors.primary }]}>Teacher's Remarks</Text>
             </View>
             <Text style={[s.remarkText, { color: theme.colors.text }]}>"{result.remarks}"</Text>
-          </View>
-        )}
-
-        {/* Attendance */}
-        {result.attendance !== undefined && (
-          <View style={[s.attendanceCard, { backgroundColor: theme.colors.successLight, borderColor: theme.colors.success }]}>
-            <MaterialCommunityIcons name="calendar-check" size={20} color={theme.colors.success} />
-            <Text style={[s.attendanceLabel, { color: theme.colors.success }]}>Attendance</Text>
-            <Text style={[s.attendanceValue, { color: theme.colors.success }]}>{result.attendance}%</Text>
           </View>
         )}
 

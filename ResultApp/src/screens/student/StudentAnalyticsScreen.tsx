@@ -11,10 +11,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import apiService from '../../services/api';
-import { Result } from '../../types';
+import { Result, getResultTotals } from '../../types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const BAR_MAX_HEIGHT = 120;
@@ -22,7 +21,6 @@ const BAR_MAX_HEIGHT = 120;
 const TABS = ['All', 'Lessons', 'Score'] as const;
 
 const StudentAnalyticsScreen = ({ navigation }: any) => {
-  const { user } = useAuth();
   const { theme } = useTheme();
   const [results, setResults] = useState<Result[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -35,8 +33,8 @@ const StudentAnalyticsScreen = ({ navigation }: any) => {
 
   const fetchData = async () => {
     try {
-      const res = await apiService.getStudentResults(user?.grNumber || '');
-      setResults(res.data || []);
+      const res = await apiService.getStudentResults();
+      setResults(Array.isArray(res) ? res : []);
     } catch (e: any) {
       console.log('Analytics error:', e.message);
     } finally {
@@ -47,16 +45,17 @@ const StudentAnalyticsScreen = ({ navigation }: any) => {
 
   const onRefresh = () => { setRefreshing(true); fetchData(); };
 
-  // Calculate analytics data
+  // Calculate analytics data from real subjects
   const totalExams = results.length;
+  const resultsWithTotals = results.map(r => ({ ...r, ...getResultTotals(r) }));
   const avgPercentage = totalExams > 0
-    ? Math.round(results.reduce((s, r) => s + (r.percentage || 0), 0) / totalExams)
+    ? Math.round(resultsWithTotals.reduce((s, r) => s + r.percentage, 0) / totalExams)
     : 0;
   const highestScore = totalExams > 0
-    ? Math.max(...results.map(r => r.percentage || 0))
+    ? Math.round(Math.max(...resultsWithTotals.map(r => r.percentage)))
     : 0;
   const lowestScore = totalExams > 0
-    ? Math.min(...results.map(r => r.percentage || 0))
+    ? Math.round(Math.min(...resultsWithTotals.map(r => r.percentage)))
     : 0;
 
   // Subject-wise analysis from latest result
@@ -64,7 +63,7 @@ const StudentAnalyticsScreen = ({ navigation }: any) => {
   const subjectData = latestResult?.subjects || [];
 
   // Performance trend (last 5 exams)
-  const trendData = results.slice(0, 5).reverse();
+  const trendData = resultsWithTotals.slice(0, 5).reverse();
 
   const getGradeColor = (pct: number) =>
     pct >= 80 ? theme.colors.success :
@@ -165,7 +164,7 @@ const StudentAnalyticsScreen = ({ navigation }: any) => {
                 return (
                   <View key={idx} style={styles.barWrap}>
                     <Text style={[styles.barValue, { color: theme.colors.textSecondary }]}>
-                      {result.percentage}%
+                      {Math.round(result.percentage)}%
                     </Text>
                     <View style={[styles.barTrack, { backgroundColor: theme.colors.borderLight }]}>
                       <View style={[styles.barFill, { height: barHeight, backgroundColor: color }]} />
@@ -192,14 +191,14 @@ const StudentAnalyticsScreen = ({ navigation }: any) => {
             </View>
 
             {subjectData.map((sub, idx) => {
-              const pct = sub.totalMarks > 0 ? Math.round((sub.obtainedMarks / sub.totalMarks) * 100) : 0;
+              const pct = sub.maxMarks > 0 ? Math.round((sub.marks / sub.maxMarks) * 100) : 0;
               const barColor = getGradeColor(pct);
               return (
                 <View key={idx} style={styles.subjectRow}>
                   <View style={styles.subjectInfo}>
                     <Text style={[styles.subjectName, { color: theme.colors.text }]}>{sub.name}</Text>
                     <Text style={[styles.subjectMarks, { color: theme.colors.textTertiary }]}>
-                      {sub.obtainedMarks}/{sub.totalMarks}
+                      {sub.marks}/{sub.maxMarks}
                     </Text>
                   </View>
                   <View style={[styles.progressBg, { backgroundColor: theme.colors.borderLight }]}>
@@ -222,7 +221,7 @@ const StudentAnalyticsScreen = ({ navigation }: any) => {
           {results.length === 0 ? (
             <Text style={[styles.noDataText, { color: theme.colors.textTertiary }]}>No exam data available</Text>
           ) : (
-            results.slice(0, 5).map((result, idx) => (
+            resultsWithTotals.slice(0, 5).map((result, idx) => (
               <View key={idx} style={[styles.historyRow, { borderBottomColor: theme.colors.borderLight }]}>
                 <View style={[styles.historyDot, { backgroundColor: getGradeColor(result.percentage) }]} />
                 <View style={styles.historyInfo}>
@@ -233,7 +232,7 @@ const StudentAnalyticsScreen = ({ navigation }: any) => {
                 </View>
                 <View style={styles.historyRight}>
                   <Text style={[styles.historyPct, { color: getGradeColor(result.percentage) }]}>
-                    {result.percentage}%
+                    {Math.round(result.percentage)}%
                   </Text>
                   <Text style={[styles.historyGrade, { color: theme.colors.textTertiary }]}>{result.grade}</Text>
                 </View>

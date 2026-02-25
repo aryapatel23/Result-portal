@@ -11,17 +11,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import apiService from '../../services/api';
-import { Result } from '../../types';
+import { Result, getResultTotals } from '../../types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const FILTERS = ['All', 'Current', 'Previous'] as const;
 
 const StudentResultsScreen = ({ navigation }: any) => {
-  const { user } = useAuth();
   const { theme } = useTheme();
   const [results, setResults] = useState<Result[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -32,8 +30,8 @@ const StudentResultsScreen = ({ navigation }: any) => {
 
   const fetchResults = async () => {
     try {
-      const res = await apiService.getStudentResults(user?.grNumber || '');
-      setResults(res.data || []);
+      const res = await apiService.getStudentResults();
+      setResults(Array.isArray(res) ? res : []);
     } catch (e: any) {
       console.log('Results error:', e.message);
     } finally {
@@ -111,7 +109,8 @@ const StudentResultsScreen = ({ navigation }: any) => {
           </View>
         ) : (
           results.map((result, index) => {
-            const gradeColor = getGradeColor(result.percentage);
+            const { percentage, grade, obtainedMarks, totalMarks } = getResultTotals(result);
+            const gradeColor = getGradeColor(percentage);
             return (
               <TouchableOpacity
                 key={result._id || index}
@@ -134,7 +133,7 @@ const StudentResultsScreen = ({ navigation }: any) => {
                   </View>
                   <View style={[styles.percentBadge, { backgroundColor: gradeColor + '14' }]}>
                     <Text style={[styles.percentText, { color: gradeColor }]}>
-                      {result.percentage.toFixed(1)}%
+                      {percentage.toFixed(1)}%
                     </Text>
                   </View>
                 </View>
@@ -144,28 +143,19 @@ const StudentResultsScreen = ({ navigation }: any) => {
                   <View style={styles.statItem}>
                     <Text style={[styles.statItemLabel, { color: theme.colors.textTertiary }]}>Marks</Text>
                     <Text style={[styles.statItemValue, { color: theme.colors.text }]}>
-                      {result.obtainedMarks}/{result.totalMarks}
+                      {obtainedMarks}/{totalMarks}
                     </Text>
                   </View>
                   <View style={[styles.statDivider, { backgroundColor: theme.colors.border }]} />
                   <View style={styles.statItem}>
                     <Text style={[styles.statItemLabel, { color: theme.colors.textTertiary }]}>Grade</Text>
-                    <Text style={[styles.statItemValue, { color: gradeColor }]}>{result.grade}</Text>
+                    <Text style={[styles.statItemValue, { color: gradeColor }]}>{grade}</Text>
                   </View>
                   <View style={[styles.statDivider, { backgroundColor: theme.colors.border }]} />
                   <View style={styles.statItem}>
                     <Text style={[styles.statItemLabel, { color: theme.colors.textTertiary }]}>Subjects</Text>
                     <Text style={[styles.statItemValue, { color: theme.colors.text }]}>{result.subjects?.length || 0}</Text>
                   </View>
-                  {result.rank && (
-                    <>
-                      <View style={[styles.statDivider, { backgroundColor: theme.colors.border }]} />
-                      <View style={styles.statItem}>
-                        <Text style={[styles.statItemLabel, { color: theme.colors.textTertiary }]}>Rank</Text>
-                        <Text style={[styles.statItemValue, { color: theme.colors.text }]}>#{result.rank}</Text>
-                      </View>
-                    </>
-                  )}
                 </View>
 
                 {/* View Details */}

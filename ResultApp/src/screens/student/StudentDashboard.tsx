@@ -14,7 +14,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import apiService from '../../services/api';
-import { Result } from '../../types';
+import { Result, getResultTotals, StudentProfile } from '../../types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -23,20 +23,26 @@ const StudentDashboard = ({ navigation }: any) => {
   const { theme } = useTheme();
 
   const [results, setResults] = useState<Result[]>([]);
+  const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await apiService.getStudentResults(user?.grNumber || '');
-      setResults(res.data || []);
+      const [resultsRes, profileRes] = await Promise.all([
+        apiService.getStudentResults().catch(() => []),
+        apiService.getStudentProfile().catch(() => null),
+      ]);
+      // API returns array directly (or 404 if none)
+      setResults(Array.isArray(resultsRes) ? resultsRes : []);
+      setProfile(profileRes);
     } catch (e: any) {
       console.log('Dashboard load error:', e.message);
     } finally {
       setIsLoading(false);
       setRefreshing(false);
     }
-  }, [user?.grNumber]);
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -47,14 +53,18 @@ const StudentDashboard = ({ navigation }: any) => {
     fetchData();
   };
 
-  const avgPercentage =
-    results.length > 0
-      ? Math.round(results.reduce((sum, r) => sum + (r.percentage || 0), 0) / results.length)
+  // Compute stats from real data
+  const totalExams = profile?.statistics?.totalExamsTaken || results.length;
+  const avgPercentage = profile?.statistics?.averagePercentage
+    ? Math.round(Number(profile.statistics.averagePercentage))
+    : results.length > 0
+      ? Math.round(results.reduce((sum, r) => sum + getResultTotals(r).percentage, 0) / results.length)
       : 0;
-  const totalExams = results.length;
-  const bestGrade = results.length > 0
-    ? results.reduce((best, r) => (r.percentage > best.percentage ? r : best), results[0])
+  const bestResult = results.length > 0
+    ? results.reduce((best, r) => (getResultTotals(r).percentage > getResultTotals(best).percentage ? r : best), results[0])
     : null;
+  const bestPct = bestResult ? Math.round(getResultTotals(bestResult).percentage) : 0;
+  const bestGrade = bestResult ? getResultTotals(bestResult).grade : '--';
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -80,10 +90,11 @@ const StudentDashboard = ({ navigation }: any) => {
   );
 
   const renderResultCard = (result: Result, index: number) => {
+    const { percentage, grade } = getResultTotals(result);
     const gradeColor =
-      result.percentage >= 80 ? theme.colors.success :
-      result.percentage >= 60 ? theme.colors.info :
-      result.percentage >= 40 ? theme.colors.warning : theme.colors.error;
+      percentage >= 80 ? theme.colors.success :
+      percentage >= 60 ? theme.colors.info :
+      percentage >= 40 ? theme.colors.warning : theme.colors.error;
     return (
       <TouchableOpacity
         key={result._id || index}
@@ -104,10 +115,10 @@ const StudentDashboard = ({ navigation }: any) => {
         </View>
         <View style={styles.resultRight}>
           <Text style={[styles.resultPercent, { color: gradeColor }]}>
-            {result.percentage}%
+            {Math.round(percentage)}%
           </Text>
           <View style={[styles.gradeBadge, { backgroundColor: gradeColor + '18' }]}>
-            <Text style={[styles.gradeText, { color: gradeColor }]}>{result.grade}</Text>
+            <Text style={[styles.gradeText, { color: gradeColor }]}>{grade}</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -177,9 +188,9 @@ const StudentDashboard = ({ navigation }: any) => {
         <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Overview</Text>
         <View style={styles.statsGrid}>
           {renderStatCard('chart-line', 'Average', `${avgPercentage}%`, theme.colors.info, theme.colors.infoLight)}
-          {renderStatCard('trophy-outline', 'Best Score', bestGrade ? `${bestGrade.percentage}%` : '--', theme.colors.warning, theme.colors.warningLight)}
+          {renderStatCard('trophy-outline', 'Best Score', bestResult ? `${bestPct}%` : '--', theme.colors.warning, theme.colors.warningLight)}
           {renderStatCard('file-multiple-outline', 'Total Exams', totalExams, theme.colors.accent, theme.colors.accentLight)}
-          {renderStatCard('star-outline', 'Best Grade', bestGrade?.grade || '--', theme.colors.success, theme.colors.successLight)}
+          {renderStatCard('star-outline', 'Best Grade', bestGrade, theme.colors.success, theme.colors.successLight)}
         </View>
 
         {/* Quick Actions */}
