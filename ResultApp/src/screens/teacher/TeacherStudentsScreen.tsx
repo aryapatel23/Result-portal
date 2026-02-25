@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,12 +8,16 @@ import {
   Alert,
   StatusBar,
   TextInput,
+  StyleSheet,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTheme } from '../../context/ThemeContext';
 import apiService from '../../services/api';
-import Loading from '../../components/Loading';
 import { Student } from '../../types';
 
 const TeacherStudentsScreen = ({ navigation, route }: any) => {
+  const { theme } = useTheme();
   const { standard } = route?.params || {};
   const [students, setStudents] = useState<Student[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
@@ -22,15 +26,7 @@ const TeacherStudentsScreen = ({ navigation, route }: any) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClass, setSelectedClass] = useState<string>(standard || 'all');
 
-  useEffect(() => {
-    fetchStudents();
-  }, []);
-
-  useEffect(() => {
-    filterStudents();
-  }, [students, searchQuery, selectedClass]);
-
-  const fetchStudents = async () => {
+  const fetchStudents = useCallback(async () => {
     try {
       const response = await apiService.getTeacherStudents();
       setStudents(response.data || []);
@@ -40,26 +36,30 @@ const TeacherStudentsScreen = ({ navigation, route }: any) => {
       setIsLoading(false);
       setRefreshing(false);
     }
-  };
+  }, []);
 
-  const filterStudents = () => {
+  useEffect(() => {
+    fetchStudents();
+  }, [fetchStudents]);
+
+  useEffect(() => {
     let filtered = students;
 
     if (selectedClass !== 'all') {
-      filtered = filtered.filter((s) => s.standard === selectedClass);
+      filtered = filtered.filter(s => s.standard === selectedClass);
     }
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
-        (s) =>
+        s =>
           s.name.toLowerCase().includes(query) ||
-          s.grNumber.toLowerCase().includes(query)
+          s.grNumber.toLowerCase().includes(query),
       );
     }
 
     setFilteredStudents(filtered);
-  };
+  }, [students, searchQuery, selectedClass]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -67,135 +67,309 @@ const TeacherStudentsScreen = ({ navigation, route }: any) => {
   };
 
   const getUniqueClasses = () => {
-    const classes = Array.from(new Set(students.map((s) => s.standard)));
-    return ['all', ...classes.sort()];
+    const classes = [...new Set(students.map(s => s.standard))].sort();
+    return ['all', ...classes];
   };
 
+  const getInitials = (name: string) =>
+    name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+
+  const AVATAR_COLORS = [
+    '#0D9488', '#6366F1', '#F59E0B', '#EF4444', '#10B981',
+    '#3B82F6', '#8B5CF6', '#EC4899',
+  ];
+
+  const getAvatarColor = (name: string) =>
+    AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
+
   if (isLoading) {
-    return <Loading />;
+    return (
+      <View style={[styles.loadingWrap, { backgroundColor: theme.colors.background }]}>
+        <MaterialCommunityIcons name="loading" size={32} color={theme.colors.primary} />
+        <Text style={[styles.loadingText, { color: theme.colors.textTertiary }]}>
+          Loading students...
+        </Text>
+      </View>
+    );
   }
 
   return (
-    <>
-      <StatusBar barStyle="light-content" backgroundColor="#1e40af" />
-      <View className="flex-1 bg-gray-50">
-        {/* Header */}
-        <View className="bg-blue-700 pt-12 pb-6 px-6 rounded-b-3xl">
-          <TouchableOpacity onPress={() => navigation.goBack()} className="mb-4">
-            <Text className="text-white text-base">← Back</Text>
-          </TouchableOpacity>
-          <Text className="text-white text-2xl font-bold">My Students</Text>
-          <Text className="text-blue-100 text-sm mt-1">
-            {filteredStudents.length} student{filteredStudents.length !== 1 ? 's' : ''}
+    <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]} edges={['top']}>
+      <StatusBar
+        barStyle={theme.isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={theme.colors.background}
+      />
+
+      {/* Header */}
+      <View style={[styles.header, { borderBottomColor: theme.colors.borderLight }]}>
+        <TouchableOpacity
+          style={[styles.backBtn, { backgroundColor: theme.colors.card }]}
+          onPress={() => navigation.goBack()}
+        >
+          <MaterialCommunityIcons name="arrow-left" size={20} color={theme.colors.text} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Students</Text>
+        <View style={[styles.countBadge, { backgroundColor: theme.colors.primaryLight }]}>
+          <Text style={[styles.countText, { color: theme.colors.primary }]}>
+            {filteredStudents.length}
           </Text>
         </View>
+      </View>
 
-        <ScrollView
-          className="flex-1 px-6 mt-4"
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          showsVerticalScrollIndicator={false}
+      {/* Search Bar */}
+      <View style={styles.searchWrap}>
+        <View
+          style={[
+            styles.searchBar,
+            { backgroundColor: theme.colors.card, borderColor: theme.colors.borderLight },
+          ]}
         >
-          {/* Search Bar */}
-          <View className="mb-4">
-            <TextInput
-              className="bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900"
-              placeholder="Search by name or GR number..."
-              value={searchQuery}
-              onChangeText={setSearchQuery}
+          <MaterialCommunityIcons name="magnify" size={20} color={theme.colors.textTertiary} />
+          <TextInput
+            style={[styles.searchInput, { color: theme.colors.text }]}
+            placeholder="Search by name or GR number..."
+            placeholderTextColor={theme.colors.textTertiary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <MaterialCommunityIcons
+                name="close-circle"
+                size={18}
+                color={theme.colors.textTertiary}
+              />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      {/* Class Filter */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterRow}
+      >
+        {getUniqueClasses().map(cls => {
+          const isActive = selectedClass === cls;
+          return (
+            <TouchableOpacity
+              key={cls}
+              style={[
+                styles.filterChip,
+                {
+                  backgroundColor: isActive ? theme.colors.primary : theme.colors.card,
+                  borderColor: isActive ? theme.colors.primary : theme.colors.borderLight,
+                },
+              ]}
+              onPress={() => setSelectedClass(cls)}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.filterText,
+                  { color: isActive ? '#FFFFFF' : theme.colors.textSecondary },
+                ]}
+              >
+                {cls === 'all' ? 'All Classes' : cls}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
+      {/* Students List */}
+      <ScrollView
+        style={styles.flex}
+        contentContainerStyle={styles.listContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        showsVerticalScrollIndicator={false}
+      >
+        {filteredStudents.length === 0 ? (
+          <View style={styles.emptyWrap}>
+            <MaterialCommunityIcons
+              name="account-search-outline"
+              size={56}
+              color={theme.colors.textTertiary}
             />
+            <Text style={[styles.emptyTitle, { color: theme.colors.textSecondary }]}>
+              No Students Found
+            </Text>
+            <Text style={[styles.emptyDesc, { color: theme.colors.textTertiary }]}>
+              {searchQuery ? 'Try a different search term' : 'No students in this class'}
+            </Text>
           </View>
-
-          {/* Class Filter */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            className="mb-6"
-          >
-            {getUniqueClasses().map((cls) => (
-              <TouchableOpacity
-                key={cls}
-                onPress={() => setSelectedClass(cls)}
-                className={`px-4 py-2 rounded-full mr-2 ${
-                  selectedClass === cls
-                    ? 'bg-blue-600'
-                    : 'bg-white border border-gray-300'
-                }`}
-              >
-                <Text
-                  className={`font-semibold ${
-                    selectedClass === cls ? 'text-white' : 'text-gray-700'
-                  }`}
-                >
-                  {cls === 'all' ? 'All Classes' : cls}
+        ) : (
+          filteredStudents.map((student, idx) => (
+            <View
+              key={student._id || idx}
+              style={[
+                styles.studentCard,
+                { backgroundColor: theme.colors.card, borderColor: theme.colors.borderLight },
+              ]}
+            >
+              <View style={[styles.studentAvatar, { backgroundColor: getAvatarColor(student.name) }]}>
+                <Text style={styles.avatarText}>{getInitials(student.name)}</Text>
+              </View>
+              <View style={styles.studentInfo}>
+                <Text style={[styles.studentName, { color: theme.colors.text }]}>
+                  {student.name}
                 </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          {/* Students List */}
-          {filteredStudents.length === 0 ? (
-            <View className="bg-white rounded-xl p-8 items-center border border-gray-200">
-              <Text className="text-6xl mb-3">👥</Text>
-              <Text className="text-gray-900 font-semibold text-lg mb-2">
-                No Students Found
-              </Text>
-              <Text className="text-gray-500 text-sm text-center">
-                {searchQuery
-                  ? 'Try different search terms'
-                  : 'No students assigned to you yet'}
-              </Text>
-            </View>
-          ) : (
-            filteredStudents.map((student) => (
-              <TouchableOpacity
-                key={student._id}
-                onPress={() =>
-                  navigation.navigate('StudentDetail', { studentId: student._id })
-                }
-                className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-200 active:bg-gray-50"
-              >
-                <View className="flex-row items-center">
-                  <View className="w-12 h-12 bg-blue-100 rounded-full items-center justify-center mr-3">
-                    <Text className="text-blue-600 font-bold text-lg">
-                      {student.name.charAt(0).toUpperCase()}
+                <View style={styles.studentMeta}>
+                  <View style={styles.metaItem}>
+                    <MaterialCommunityIcons
+                      name="card-account-details-outline"
+                      size={12}
+                      color={theme.colors.textTertiary}
+                    />
+                    <Text style={[styles.metaText, { color: theme.colors.textTertiary }]}>
+                      {student.grNumber}
                     </Text>
                   </View>
-                  <View className="flex-1">
-                    <Text className="text-gray-900 font-semibold text-base">
-                      {student.name}
+                  <View style={styles.metaItem}>
+                    <MaterialCommunityIcons
+                      name="school-outline"
+                      size={12}
+                      color={theme.colors.textTertiary}
+                    />
+                    <Text style={[styles.metaText, { color: theme.colors.textTertiary }]}>
+                      {student.standard}
                     </Text>
-                    <Text className="text-gray-500 text-sm mt-1">
-                      GR: {student.grNumber} • {student.standard}
-                    </Text>
-                  </View>
-                  <View className="items-end">
-                    <View
-                      className={`px-3 py-1 rounded-full ${
-                        student.isActive
-                          ? 'bg-green-100'
-                          : 'bg-red-100'
-                      }`}
-                    >
-                      <Text
-                        className={`text-xs font-semibold ${
-                          student.isActive ? 'text-green-700' : 'text-red-700'
-                        }`}
-                      >
-                        {student.isActive ? 'Active' : 'Inactive'}
-                      </Text>
-                    </View>
-                    <Text className="text-blue-600 text-sm mt-2">View →</Text>
                   </View>
                 </View>
-              </TouchableOpacity>
-            ))
-          )}
-
-          <View className="pb-8" />
-        </ScrollView>
-      </View>
-    </>
+              </View>
+              <View
+                style={[
+                  styles.statusBadge,
+                  {
+                    backgroundColor: student.isActive
+                      ? theme.colors.successLight
+                      : theme.colors.errorLight,
+                  },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.statusDot,
+                    {
+                      backgroundColor: student.isActive
+                        ? theme.colors.success
+                        : theme.colors.error,
+                    },
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.statusText,
+                    {
+                      color: student.isActive
+                        ? theme.colors.success
+                        : theme.colors.error,
+                    },
+                  ]}
+                >
+                  {student.isActive ? 'Active' : 'Inactive'}
+                </Text>
+              </View>
+            </View>
+          ))
+        )}
+        <View style={{ height: 30 }} />
+      </ScrollView>
+    </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  safe: { flex: 1 },
+  flex: { flex: 1 },
+  loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { marginTop: 12, fontSize: 14, fontWeight: '500' },
+
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  headerTitle: { flex: 1, fontSize: 20, fontWeight: '800' },
+  countBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12 },
+  countText: { fontSize: 13, fontWeight: '700' },
+
+  searchWrap: { paddingHorizontal: 20, paddingTop: 12 },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    height: 46,
+    gap: 8,
+  },
+  searchInput: { flex: 1, fontSize: 14, fontWeight: '500', padding: 0 },
+
+  filterRow: { paddingHorizontal: 20, paddingVertical: 12, gap: 8 },
+  filterChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  filterText: { fontSize: 13, fontWeight: '600' },
+
+  listContent: { paddingHorizontal: 20 },
+
+  studentCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 10,
+  },
+  studentAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  avatarText: { color: '#FFF', fontSize: 15, fontWeight: '800' },
+  studentInfo: { flex: 1 },
+  studentName: { fontSize: 15, fontWeight: '700', marginBottom: 4 },
+  studentMeta: { flexDirection: 'row', gap: 12 },
+  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  metaText: { fontSize: 11, fontWeight: '500' },
+
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+    gap: 4,
+  },
+  statusDot: { width: 6, height: 6, borderRadius: 3 },
+  statusText: { fontSize: 11, fontWeight: '600' },
+
+  emptyWrap: { alignItems: 'center', paddingTop: 60 },
+  emptyTitle: { fontSize: 18, fontWeight: '700', marginTop: 16 },
+  emptyDesc: { fontSize: 13, fontWeight: '500', marginTop: 6 },
+});
 
 export default TeacherStudentsScreen;
