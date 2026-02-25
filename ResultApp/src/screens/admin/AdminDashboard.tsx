@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,42 +9,46 @@ import {
   StatusBar,
   StyleSheet,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import apiService from '../../services/api';
-import Loading from '../../components/Loading';
 
 const AdminDashboard = ({ navigation }: any) => {
   const { user, logout } = useAuth();
-  const [dashboardData, setDashboardData] = useState<any>({ 
-    totalStudents: 0, 
-    totalTeachers: 0, 
-    totalResults: 0, 
-    totalClasses: 0 
+  const { theme, toggleTheme } = useTheme();
+  const [dashboardData, setDashboardData] = useState<any>({
+    totalStudents: 0,
+    totalTeachers: 0,
+    totalResults: 0,
+    totalClasses: 0,
   });
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       const response = await apiService.getAdminDashboard();
-      setDashboardData(response.data || {
-        totalStudents: 0,
-        totalTeachers: 0,
-        totalResults: 0,
-        totalClasses: 0
-      });
+      setDashboardData(
+        response.data || {
+          totalStudents: 0,
+          totalTeachers: 0,
+          totalResults: 0,
+          totalClasses: 0,
+        },
+      );
     } catch (error: any) {
-      // Silently fail - dashboard will show zeros
       console.log('Dashboard load error:', error.message);
     } finally {
       setIsLoading(false);
       setRefreshing(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -52,429 +56,478 @@ const AdminDashboard = ({ navigation }: any) => {
   };
 
   const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', onPress: logout, style: 'destructive' },
+      { text: 'Sign Out', onPress: logout, style: 'destructive' },
     ]);
   };
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  };
+
+  const getInitials = (name: string) =>
+    name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+
+  const STATS = [
+    {
+      icon: 'account-group',
+      label: 'Students',
+      key: 'totalStudents',
+      color: theme.colors.primary,
+      bg: theme.colors.primaryLight,
+    },
+    {
+      icon: 'human-male-board',
+      label: 'Teachers',
+      key: 'totalTeachers',
+      color: theme.colors.accent,
+      bg: theme.colors.accentLight,
+    },
+    {
+      icon: 'file-document-multiple',
+      label: 'Results',
+      key: 'totalResults',
+      color: theme.colors.success,
+      bg: theme.colors.successLight,
+    },
+    {
+      icon: 'google-classroom',
+      label: 'Classes',
+      key: 'totalClasses',
+      color: theme.colors.warning,
+      bg: theme.colors.warningLight,
+    },
+  ];
+
+  const USER_ACTIONS = [
+    {
+      icon: 'account-group-outline',
+      label: 'Students',
+      desc: 'View all students',
+      color: theme.colors.primary,
+      bg: theme.colors.primaryLight,
+      screen: 'AdminStudents',
+    },
+    {
+      icon: 'human-male-board',
+      label: 'Teachers',
+      desc: 'Manage teachers',
+      color: theme.colors.accent,
+      bg: theme.colors.accentLight,
+      screen: 'AdminTeachers',
+    },
+    {
+      icon: 'account-plus-outline',
+      label: 'Add Student',
+      desc: 'Create new',
+      color: theme.colors.success,
+      bg: theme.colors.successLight,
+      screen: 'AdminCreateStudent',
+    },
+    {
+      icon: 'account-tie-outline',
+      label: 'Add Teacher',
+      desc: 'Create new',
+      color: theme.colors.info,
+      bg: theme.colors.infoLight,
+      screen: 'AdminCreateTeacher',
+    },
+  ];
+
+  const SYSTEM_ACTIONS = [
+    {
+      icon: 'chart-box-outline',
+      label: 'Results',
+      desc: 'All results',
+      color: theme.colors.warning,
+      bg: theme.colors.warningLight,
+      screen: 'AdminResults',
+    },
+    {
+      icon: 'calendar-check-outline',
+      label: 'Attendance',
+      desc: 'Track records',
+      color: theme.colors.error,
+      bg: theme.colors.errorLight,
+      screen: 'AdminAttendance',
+    },
+    {
+      icon: 'upload-multiple',
+      label: 'Bulk Ops',
+      desc: 'Bulk upload',
+      color: theme.colors.primary,
+      bg: theme.colors.primaryLight,
+      screen: 'AdminBulkOperations',
+    },
+    {
+      icon: 'cog-outline',
+      label: 'Settings',
+      desc: 'System config',
+      color: theme.colors.accent,
+      bg: theme.colors.accentLight,
+      screen: 'AdminSettings',
+    },
+  ];
+
   if (isLoading) {
-    return <Loading />;
+    return (
+      <View style={[styles.loadingWrap, { backgroundColor: theme.colors.background }]}>
+        <MaterialCommunityIcons name="loading" size={32} color={theme.colors.primary} />
+        <Text style={[styles.loadingText, { color: theme.colors.textTertiary }]}>Loading...</Text>
+      </View>
+    );
   }
 
   return (
-    <>
-      <StatusBar barStyle="light-content" backgroundColor="#1e40af" />
-      <View style={styles.container}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]} edges={['top']}>
+      <StatusBar
+        barStyle={theme.isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={theme.colors.background}
+      />
+
+      <ScrollView
+        style={styles.flex}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerTop}>
-            <View style={styles.headerTitleContainer}>
-              <Text style={styles.headerSubtitle}>Admin Portal</Text>
-              <Text style={styles.headerTitle}>
-                {user?.name}
-              </Text>
-            </View>
-            <TouchableOpacity
-              onPress={handleLogout}
-              style={styles.logoutButton}
-            >
-              <Text style={styles.logoutButtonText}>Logout</Text>
-            </TouchableOpacity>
+        <View style={styles.headerRow}>
+          <View style={styles.headerLeft}>
+            <Text style={[styles.greeting, { color: theme.colors.textTertiary }]}>
+              {getGreeting()}
+            </Text>
+            <Text style={[styles.userName, { color: theme.colors.text }]} numberOfLines={1}>
+              {user?.name || 'Admin'}
+            </Text>
           </View>
-          
-          <View style={styles.headerInfo}>
-            <Text style={styles.headerInfoLabel}>System Overview</Text>
-            <Text style={styles.headerInfoValue}>Full Access Control</Text>
+          <View style={styles.headerRight}>
+            <TouchableOpacity
+              style={[styles.iconBtn, { backgroundColor: theme.colors.card }]}
+              onPress={toggleTheme}
+            >
+              <MaterialCommunityIcons
+                name={theme.isDark ? 'white-balance-sunny' : 'moon-waning-crescent'}
+                size={18}
+                color={theme.colors.primary}
+              />
+            </TouchableOpacity>
+            <View style={[styles.avatar, { backgroundColor: theme.colors.accent }]}>
+              <Text style={styles.avatarText}>{getInitials(user?.name || 'A')}</Text>
+            </View>
           </View>
         </View>
 
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-          showsVerticalScrollIndicator={false}
+        {/* Admin Banner */}
+        <View style={[styles.bannerCard, { backgroundColor: theme.colors.primary }]}>
+          <View style={styles.bannerInner}>
+            <View style={styles.bannerLeft}>
+              <Text style={styles.bannerTitle}>Admin Panel</Text>
+              <Text style={styles.bannerSubtitle}>
+                Manage your institution, students, teachers and results from one place.
+              </Text>
+            </View>
+            <View style={styles.bannerIcon}>
+              <MaterialCommunityIcons
+                name="shield-crown-outline"
+                size={52}
+                color="rgba(255,255,255,0.15)"
+              />
+            </View>
+          </View>
+        </View>
+
+        {/* Stats Grid */}
+        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Overview</Text>
+        <View style={styles.statsGrid}>
+          {STATS.map((stat, idx) => (
+            <View
+              key={idx}
+              style={[
+                styles.statCard,
+                { backgroundColor: theme.colors.card, borderColor: theme.colors.borderLight },
+              ]}
+            >
+              <View style={[styles.statIconWrap, { backgroundColor: stat.bg }]}>
+                <MaterialCommunityIcons name={stat.icon} size={20} color={stat.color} />
+              </View>
+              <Text style={[styles.statValue, { color: theme.colors.text }]}>
+                {dashboardData?.[stat.key] || 0}
+              </Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textTertiary }]}>
+                {stat.label}
+              </Text>
+            </View>
+          ))}
+        </View>
+
+        {/* User Management */}
+        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>User Management</Text>
+        <View style={styles.actionsGrid}>
+          {USER_ACTIONS.map((action, idx) => (
+            <TouchableOpacity
+              key={idx}
+              style={[
+                styles.actionCard,
+                { backgroundColor: theme.colors.card, borderColor: theme.colors.borderLight },
+              ]}
+              onPress={() => navigation.navigate(action.screen)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.actionIconWrap, { backgroundColor: action.bg }]}>
+                <MaterialCommunityIcons name={action.icon} size={22} color={action.color} />
+              </View>
+              <Text style={[styles.actionLabel, { color: theme.colors.text }]}>
+                {action.label}
+              </Text>
+              <Text style={[styles.actionDesc, { color: theme.colors.textTertiary }]}>
+                {action.desc}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* System Management */}
+        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>System Management</Text>
+        <View style={styles.actionsGrid}>
+          {SYSTEM_ACTIONS.map((action, idx) => (
+            <TouchableOpacity
+              key={idx}
+              style={[
+                styles.actionCard,
+                { backgroundColor: theme.colors.card, borderColor: theme.colors.borderLight },
+              ]}
+              onPress={() => navigation.navigate(action.screen)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.actionIconWrap, { backgroundColor: action.bg }]}>
+                <MaterialCommunityIcons name={action.icon} size={22} color={action.color} />
+              </View>
+              <Text style={[styles.actionLabel, { color: theme.colors.text }]}>
+                {action.label}
+              </Text>
+              <Text style={[styles.actionDesc, { color: theme.colors.textTertiary }]}>
+                {action.desc}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Recent Activity Placeholder */}
+        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Recent Activity</Text>
+        <View
+          style={[
+            styles.activityCard,
+            { backgroundColor: theme.colors.card, borderColor: theme.colors.borderLight },
+          ]}
         >
-          {/* Statistics Overview */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              System Statistics
-            </Text>
-            <View style={styles.statsGrid}>
-              <View style={[styles.statCard, styles.statCardLeft]}>
-                <Text style={styles.statLabel}>Total Students</Text>
-                <Text style={styles.statValue}>
-                  {dashboardData?.totalStudents || 0}
-                </Text>
+          {[
+            {
+              icon: 'account-plus',
+              text: 'System is ready for management',
+              time: 'Now',
+              color: theme.colors.primary,
+            },
+            {
+              icon: 'file-document-check',
+              text: `${dashboardData?.totalResults || 0} results uploaded`,
+              time: 'Total',
+              color: theme.colors.success,
+            },
+            {
+              icon: 'account-group',
+              text: `${dashboardData?.totalStudents || 0} students enrolled`,
+              time: 'Total',
+              color: theme.colors.accent,
+            },
+          ].map((item, idx) => (
+            <View
+              key={idx}
+              style={[
+                styles.activityRow,
+                idx < 2 && {
+                  borderBottomWidth: 1,
+                  borderBottomColor: theme.colors.borderLight,
+                },
+              ]}
+            >
+              <View style={[styles.activityIcon, { backgroundColor: item.color + '15' }]}>
+                <MaterialCommunityIcons name={item.icon} size={18} color={item.color} />
               </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statLabel}>Total Teachers</Text>
-                <Text style={styles.statValue}>
-                  {dashboardData?.totalTeachers || 0}
-                </Text>
-              </View>
-              <View style={[styles.statCard, styles.statCardLeft]}>
-                <Text style={styles.statLabel}>Total Results</Text>
-                <Text style={styles.statValue}>
-                  {dashboardData?.totalResults || 0}
-                </Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statLabel}>Active Classes</Text>
-                <Text style={styles.statValue}>
-                  {dashboardData?.totalClasses || 0}
-                </Text>
-              </View>
+              <Text
+                style={[styles.activityText, { color: theme.colors.text }]}
+                numberOfLines={1}
+              >
+                {item.text}
+              </Text>
+              <Text style={[styles.activityTime, { color: theme.colors.textTertiary }]}>
+                {item.time}
+              </Text>
             </View>
-          </View>
+          ))}
+        </View>
 
-          {/* Management Actions */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              User Management
-            </Text>
-            <View style={styles.actionGrid}>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('AdminStudents')}
-                style={[styles.actionCard, styles.actionCardBlue, styles.actionCardLeft]}
-              >
-                <Text style={styles.actionIcon}>👨‍🎓</Text>
-                <Text style={styles.actionTitle}>Students</Text>
-                <Text style={styles.actionSubtitle}>
-                  Manage all students
-                </Text>
-              </TouchableOpacity>
+        {/* Sign Out */}
+        <TouchableOpacity
+          style={[
+            styles.logoutBtn,
+            { backgroundColor: theme.colors.errorLight, borderColor: theme.colors.error },
+          ]}
+          onPress={handleLogout}
+          activeOpacity={0.7}
+        >
+          <MaterialCommunityIcons name="logout" size={20} color={theme.colors.error} />
+          <Text style={[styles.logoutText, { color: theme.colors.error }]}>Sign Out</Text>
+        </TouchableOpacity>
 
-              <TouchableOpacity
-                onPress={() => navigation.navigate('AdminTeachers')}
-                style={[styles.actionCard, styles.actionCardGreen]}
-              >
-                <Text style={styles.actionIcon}>👨‍🏫</Text>
-                <Text style={styles.actionTitle}>Teachers</Text>
-                <Text style={styles.actionSubtitleGreen}>
-                  Manage all teachers
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => navigation.navigate('AdminCreateStudent')}
-                style={[styles.actionCard, styles.actionCardPurple, styles.actionCardLeft]}
-              >
-                <Text style={styles.actionIcon}>➕👨‍🎓</Text>
-                <Text style={styles.actionTitle}>Add Student</Text>
-                <Text style={styles.actionSubtitlePurple}>
-                  Create new student
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => navigation.navigate('AdminCreateTeacher')}
-                style={[styles.actionCard, styles.actionCardOrange]}
-              >
-                <Text style={styles.actionIcon}>➕👨‍🏫</Text>
-                <Text style={styles.actionTitle}>Add Teacher</Text>
-                <Text style={styles.actionSubtitleOrange}>
-                  Create new teacher
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* System Management */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              System Management
-            </Text>
-            <View style={styles.actionGrid}>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('AdminResults')}
-                style={[styles.actionCard, styles.actionCardIndigo, styles.actionCardLeft]}
-              >
-                <Text style={styles.actionIcon}>📊</Text>
-                <Text style={styles.actionTitle}>All Results</Text>
-                <Text style={styles.actionSubtitleIndigo}>
-                  View all results
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => navigation.navigate('AdminAttendance')}
-                style={[styles.actionCard, styles.actionCardPink]}
-              >
-                <Text style={styles.actionIcon}>📅</Text>
-                <Text style={styles.actionTitle}>Attendance</Text>
-                <Text style={styles.actionSubtitlePink}>
-                  View attendance records
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => navigation.navigate('AdminBulkOperations')}
-                style={[styles.actionCard, styles.actionCardTeal, styles.actionCardLeft]}
-              >
-                <Text style={styles.actionIcon}>📤</Text>
-                <Text style={styles.actionTitle}>Bulk Upload</Text>
-                <Text style={styles.actionSubtitleTeal}>
-                  Upload in bulk
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => navigation.navigate('AdminSettings')}
-                style={[styles.actionCard, styles.actionCardGray]}
-              >
-                <Text style={styles.actionIcon}>⚙️</Text>
-                <Text style={styles.actionTitle}>Settings</Text>
-                <Text style={styles.actionSubtitleGrayLight}>
-                  System configuration
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Recent Activity */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              Recent Activity
-            </Text>
-            <View style={styles.activityCard}>
-              <View style={styles.activityEmpty}>
-                <Text style={styles.activityIcon}>📋</Text>
-                <Text style={styles.activityText}>
-                  Activity logs will appear here
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.bottomPadding} />
-        </ScrollView>
-      </View>
-    </>
+        <View style={{ height: 40 }} />
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-  },
-  header: {
-    backgroundColor: '#1d4ed8',
-    paddingTop: 48,
-    paddingBottom: 24,
-    paddingHorizontal: 24,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-  },
-  headerTop: {
+  safe: { flex: 1 },
+  flex: { flex: 1 },
+  loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { marginTop: 12, fontSize: 14, fontWeight: '500' },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 8 },
+
+  headerRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 16,
   },
-  headerTitleContainer: {
-    flex: 1,
-  },
-  headerSubtitle: {
-    color: '#bfdbfe',
-    fontSize: 14,
-  },
-  headerTitle: {
-    color: '#ffffff',
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginTop: 4,
-  },
-  logoutButton: {
-    backgroundColor: '#1e40af',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  logoutButtonText: {
-    color: '#ffffff',
-    fontWeight: '600',
-  },
-  headerInfo: {
-    backgroundColor: '#1e40af',
+  headerLeft: { flex: 1 },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  greeting: { fontSize: 13, fontWeight: '500' },
+  userName: { fontSize: 22, fontWeight: '800', letterSpacing: -0.3 },
+  iconBtn: {
+    width: 36,
+    height: 36,
     borderRadius: 12,
-    padding: 16,
-    marginTop: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  headerInfoLabel: {
-    color: '#bfdbfe',
+  avatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: { color: '#FFF', fontSize: 16, fontWeight: '800' },
+
+  bannerCard: {
+    borderRadius: 18,
+    padding: 20,
+    marginBottom: 20,
+    overflow: 'hidden',
+  },
+  bannerInner: { flexDirection: 'row', alignItems: 'center' },
+  bannerLeft: { flex: 1 },
+  bannerTitle: { color: '#FFFFFF', fontSize: 20, fontWeight: '800', marginBottom: 6 },
+  bannerSubtitle: {
+    color: 'rgba(255,255,255,0.75)',
     fontSize: 12,
-    marginBottom: 4,
+    fontWeight: '500',
+    lineHeight: 18,
   },
-  headerInfoValue: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  scrollView: {
-    flex: 1,
-    paddingHorizontal: 24,
-    marginTop: 16,
-  },
-  scrollContent: {
-    paddingBottom: 32,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    color: '#111827',
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 12,
-  },
+  bannerIcon: { marginLeft: 12 },
+
+  sectionTitle: { fontSize: 17, fontWeight: '700', marginBottom: 12, marginTop: 4 },
+
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 20,
   },
   statCard: {
-    width: '48%',
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    width: '47%',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    padding: 14,
+    alignItems: 'center',
   },
-  statCardLeft: {
-    marginRight: '4%',
-  },
-  statLabel: {
-    color: '#6b7280',
-    fontSize: 12,
-    marginBottom: 4,
-  },
-  statValue: {
-    color: '#111827',
-    fontSize: 30,
-    fontWeight: 'bold',
-  },
-  actionGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  actionCard: {
-    width: '48%',
+  statIconWrap: {
+    width: 40,
+    height: 40,
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-  },
-  actionCardLeft: {
-    marginRight: '4%',
-  },
-  actionCardBlue: {
-    backgroundColor: '#2563eb',
-  },
-  actionCardGreen: {
-    backgroundColor: '#16a34a',
-  },
-  actionCardPurple: {
-    backgroundColor: '#9333ea',
-  },
-  actionCardOrange: {
-    backgroundColor: '#ea580c',
-  },
-  actionCardIndigo: {
-    backgroundColor: '#4f46e5',
-  },
-  actionCardPink: {
-    backgroundColor: '#db2777',
-  },
-  actionCardTeal: {
-    backgroundColor: '#0d9488',
-  },
-  actionCardGray: {
-    backgroundColor: '#374151',
-  },
-  actionIcon: {
-    color: '#ffffff',
-    fontSize: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 8,
   },
-  actionTitle: {
-    color: '#ffffff',
-    fontWeight: '600',
+  statValue: { fontSize: 24, fontWeight: '800', marginBottom: 2 },
+  statLabel: { fontSize: 12, fontWeight: '500' },
+
+  actionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 20,
   },
-  actionSubtitle: {
-    color: '#bfdbfe',
-    fontSize: 12,
-    marginTop: 4,
-  },
-  actionSubtitleGreen: {
-    color: '#bbf7d0',
-    fontSize: 12,
-    marginTop: 4,
-  },
-  actionSubtitlePurple: {
-    color: '#e9d5ff',
-    fontSize: 12,
-    marginTop: 4,
-  },
-  actionSubtitleOrange: {
-    color: '#fed7aa',
-    fontSize: 12,
-    marginTop: 4,
-  },
-  actionSubtitleIndigo: {
-    color: '#c7d2fe',
-    fontSize: 12,
-    marginTop: 4,
-  },
-  actionSubtitlePink: {
-    color: '#fbcfe8',
-    fontSize: 12,
-    marginTop: 4,
-  },
-  actionSubtitleTeal: {
-    color: '#99f6e4',
-    fontSize: 12,
-    marginTop: 4,
-  },
-  actionSubtitleGrayLight: {
-    color: '#d1d5db',
-    fontSize: 12,
-    marginTop: 4,
-  },
-  activityCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+  actionCard: {
+    width: '47%',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  activityEmpty: {
+    padding: 16,
     alignItems: 'center',
-    paddingVertical: 32,
+  },
+  actionIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  actionLabel: { fontSize: 14, fontWeight: '700', marginBottom: 2 },
+  actionDesc: { fontSize: 11, fontWeight: '500', textAlign: 'center' },
+
+  activityCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 20,
+    overflow: 'hidden',
+  },
+  activityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    gap: 12,
   },
   activityIcon: {
-    fontSize: 36,
-    marginBottom: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  activityText: {
-    color: '#6b7280',
-    fontSize: 14,
+  activityText: { flex: 1, fontSize: 13, fontWeight: '600' },
+  activityTime: { fontSize: 11, fontWeight: '500' },
+
+  logoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 8,
+    marginTop: 4,
   },
-  bottomPadding: {
-    paddingBottom: 32,
-  },
+  logoutText: { fontSize: 15, fontWeight: '700' },
 });
 
 export default AdminDashboard;
