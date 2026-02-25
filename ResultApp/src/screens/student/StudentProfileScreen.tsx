@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,27 +6,57 @@ import {
   StatusBar,
   TouchableOpacity,
   StyleSheet,
+  RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import apiService from '../../services/api';
 
 const PROFILE_FIELDS = [
   { key: 'grNumber', label: 'GR Number', icon: 'card-account-details-outline' },
-  { key: 'dateOfBirth', label: 'Date of Birth', icon: 'calendar-outline' },
+  { key: 'dateOfBirth', label: 'Date of Birth', icon: 'calendar-outline', format: (v: string) => {
+    try { return new Date(v).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }); } catch { return v; }
+  }},
   { key: 'standard', label: 'Class / Standard', icon: 'school-outline' },
   { key: 'mobile', label: 'Mobile', icon: 'phone-outline' },
   { key: 'parentContact', label: 'Parent Contact', icon: 'account-supervisor-outline' },
   { key: 'email', label: 'Email', icon: 'email-outline' },
+  { key: 'penNo', label: 'PEN Number', icon: 'identifier' },
+  { key: 'aadharNumber', label: 'Aadhar Number', icon: 'card-account-details' },
+  { key: 'childUID', label: 'Child UID', icon: 'badge-account-outline' },
 ] as const;
 
 const StudentProfileScreen = ({ navigation }: any) => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const [profile, setProfile] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const initials = user?.name
-    ? user.name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2)
+  const fetchProfile = async () => {
+    try {
+      const data = await apiService.getMyProfile();
+      setProfile(data);
+    } catch (e: any) {
+      console.log('Profile error:', e.message);
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => { fetchProfile(); }, []);
+
+  const onRefresh = () => { setRefreshing(true); fetchProfile(); };
+
+  // Merge auth user data + profile API data
+  const userData = { ...user, ...profile };
+
+  const initials = userData?.name
+    ? userData.name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2)
     : '?';
 
   return (
@@ -48,7 +78,9 @@ const StudentProfileScreen = ({ navigation }: any) => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={s.flex} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView style={s.flex} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
         {/* Avatar Card */}
         <View style={[s.avatarCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.borderLight }]}>
           <View style={[s.avatarOuter, { backgroundColor: theme.colors.primaryLight }]}>
@@ -56,9 +88,9 @@ const StudentProfileScreen = ({ navigation }: any) => {
               <Text style={s.avatarText}>{initials}</Text>
             </View>
           </View>
-          <Text style={[s.userName, { color: theme.colors.text }]}>{user?.name}</Text>
+          <Text style={[s.userName, { color: theme.colors.text }]}>{userData?.name}</Text>
           <Text style={[s.userSub, { color: theme.colors.textTertiary }]}>
-            {user?.standard} • GR: {user?.grNumber}
+            {userData?.standard} • GR: {userData?.grNumber}
           </Text>
           <View style={[s.roleBadge, { backgroundColor: theme.colors.primaryLight }]}>
             <MaterialCommunityIcons name="school" size={14} color={theme.colors.primary} />
@@ -73,27 +105,32 @@ const StudentProfileScreen = ({ navigation }: any) => {
             <Text style={[s.infoHeaderText, { color: theme.colors.text }]}>Personal Information</Text>
           </View>
 
-          {PROFILE_FIELDS.map((field, idx) => {
-            const value = (user as any)?.[field.key];
-            if (!value) return null;
-            return (
-              <View
-                key={field.key}
-                style={[
-                  s.fieldRow,
-                  idx < PROFILE_FIELDS.length - 1 && { borderBottomColor: theme.colors.borderLight, borderBottomWidth: 1 },
-                ]}
-              >
-                <View style={[s.fieldIcon, { backgroundColor: theme.colors.primaryLight }]}>
-                  <MaterialCommunityIcons name={field.icon} size={18} color={theme.colors.primary} />
+          {isLoading ? (
+            <ActivityIndicator size="small" color={theme.colors.primary} style={{ paddingVertical: 20 }} />
+          ) : (
+            PROFILE_FIELDS.map((field, idx) => {
+              const rawValue = (userData as any)?.[field.key];
+              if (!rawValue) return null;
+              const value = 'format' in field && field.format ? field.format(rawValue) : rawValue;
+              return (
+                <View
+                  key={field.key}
+                  style={[
+                    s.fieldRow,
+                    idx < PROFILE_FIELDS.length - 1 && { borderBottomColor: theme.colors.borderLight, borderBottomWidth: 1 },
+                  ]}
+                >
+                  <View style={[s.fieldIcon, { backgroundColor: theme.colors.primaryLight }]}>
+                    <MaterialCommunityIcons name={field.icon} size={18} color={theme.colors.primary} />
+                  </View>
+                  <View style={s.fieldInfo}>
+                    <Text style={[s.fieldLabel, { color: theme.colors.textTertiary }]}>{field.label}</Text>
+                    <Text style={[s.fieldValue, { color: theme.colors.text }]}>{value}</Text>
+                  </View>
                 </View>
-                <View style={s.fieldInfo}>
-                  <Text style={[s.fieldLabel, { color: theme.colors.textTertiary }]}>{field.label}</Text>
-                  <Text style={[s.fieldValue, { color: theme.colors.text }]}>{value}</Text>
-                </View>
-              </View>
-            );
-          })}
+              );
+            })
+          )}
         </View>
 
         {/* Actions */}
