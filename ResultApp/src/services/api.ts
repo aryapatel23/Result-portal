@@ -116,6 +116,33 @@ class ApiService {
     return response.data;
   }
 
+  // Teacher Result endpoints (teacher-specific routes)
+  async uploadTeacherResult(resultData: any) {
+    const response = await this.api.post('/teacher/results', resultData);
+    return response.data;
+  }
+
+  async getTeacherResults(params?: { standard?: string; term?: string }) {
+    const response = await this.api.get('/teacher/results', { params });
+    return response.data;
+  }
+
+  async getTeacherResultById(resultId: string) {
+    const response = await this.api.get(`/teacher/results/${resultId}`);
+    return response.data;
+  }
+
+  async editTeacherResult(resultId: string, resultData: any) {
+    const response = await this.api.put(`/teacher/results/${resultId}`, resultData);
+    return response.data;
+  }
+
+  async deleteTeacherResult(resultId: string) {
+    const response = await this.api.delete(`/teacher/results/${resultId}`);
+    return response.data;
+  }
+
+  // Legacy result endpoints (admin / generic)
   async uploadResult(resultData: any) {
     const response = await this.api.post('/results', resultData);
     return response.data;
@@ -131,8 +158,24 @@ class ApiService {
     return response.data;
   }
 
+  // Teacher Attendance endpoints
   async markAttendance(attendanceData: any) {
     const response = await this.api.post('/teacher-attendance/mark', attendanceData);
+    return response.data;
+  }
+
+  async getTodayAttendance() {
+    const response = await this.api.get('/teacher-attendance/today');
+    return response.data;
+  }
+
+  async getAttendanceHistory() {
+    const response = await this.api.get('/teacher-attendance/my-history');
+    return response.data;
+  }
+
+  async getTeacherTimetable(teacherId: string) {
+    const response = await this.api.get(`/timetable/${teacherId}`);
     return response.data;
   }
 
