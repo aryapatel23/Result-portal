@@ -164,13 +164,25 @@ const getMyTimetable = async (req, res) => {
     const teacherId = req.user.id;
     const { academicYear = '2024-25' } = req.query;
 
+    console.log('🔍 Fetching timetable for teacher:', teacherId, 'Year:', academicYear);
+    console.log('📋 User from token:', JSON.stringify(req.user, null, 2));
+
     let timetable = await Timetable.findOne({
       teacher: teacherId,
       academicYear
     });
 
+    console.log('📊 Timetable found:', timetable ? 'YES' : 'NO');
+    if (timetable) {
+      console.log('📅 Schedule days:', Object.keys(timetable.schedule));
+      Object.keys(timetable.schedule).forEach(day => {
+        console.log(`   ${day}: ${timetable.schedule[day].length} periods`);
+      });
+    }
+
     // If no timetable exists, return empty structure
     if (!timetable) {
+      console.log('⚠️ No timetable found, returning empty structure');
       return res.status(200).json({
         timetable: {
           schedule: {
@@ -186,9 +198,10 @@ const getMyTimetable = async (req, res) => {
       });
     }
 
+    console.log('✅ Returning timetable with', Object.keys(timetable.schedule).length, 'days');
     res.status(200).json({ timetable });
   } catch (error) {
-    console.error('Error fetching timetable:', error);
+    console.error('❌ Error fetching timetable:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -218,8 +231,12 @@ const deleteTimetable = async (req, res) => {
 // Get student's class timetable
 const getStudentTimetable = async (req, res) => {
   try {
-    const { className, section } = req.user;
+    const studentClass = req.user.standard; // Use 'standard' field from User model
     const { academicYear = '2024-25' } = req.query;
+
+    if (!studentClass) {
+      return res.status(400).json({ message: 'Student class/standard not found' });
+    }
 
     const allTimetables = await Timetable.find({ academicYear }).populate('teacher', 'name');
 
@@ -233,8 +250,8 @@ const getStudentTimetable = async (req, res) => {
       days.forEach(day => {
         const periods = t.schedule[day] || [];
         periods.forEach(p => {
-          // Check if class matches (e.g. "10" or "STD 10")
-          if (p.class && className && p.class.includes(className)) {
+          // Check if class matches (e.g. "10" or "STD 10" matches student's standard "10")
+          if (p.class && p.class.includes(studentClass)) {
             schedule[day].push({
               _id: p._id,
               timeSlot: p.timeSlot,
