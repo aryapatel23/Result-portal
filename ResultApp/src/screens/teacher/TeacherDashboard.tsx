@@ -18,17 +18,14 @@ import apiService from '../../services/api';
 const TeacherDashboard = ({ navigation }: any) => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const [dashboardData, setDashboardData] = useState<any>({
-    totalStudents: 0,
-    totalResults: 0,
-  });
+  const [dashboardData, setDashboardData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchDashboardData = useCallback(async () => {
     try {
       const response = await apiService.getTeacherDashboard();
-      setDashboardData(response.data || { totalStudents: 0, totalResults: 0 });
+      setDashboardData(response || null);
     } catch (error: any) {
       console.log('Dashboard load error:', error.message);
     } finally {
@@ -186,7 +183,7 @@ const TeacherDashboard = ({ navigation }: any) => {
             <View style={styles.bannerTextWrap}>
               <Text style={styles.bannerLabel}>Students</Text>
               <Text style={styles.bannerValue}>
-                {dashboardData?.totalStudents || 0}
+                {dashboardData?.statistics?.totalStudents || 0}
               </Text>
             </View>
           </View>
@@ -206,14 +203,14 @@ const TeacherDashboard = ({ navigation }: any) => {
             {
               icon: 'account-group',
               label: 'Students',
-              value: dashboardData?.totalStudents || 0,
+              value: dashboardData?.statistics?.totalStudents || 0,
               color: theme.colors.primary,
               bg: theme.colors.primaryLight,
             },
             {
               icon: 'file-document-multiple',
               label: 'Results',
-              value: dashboardData?.totalResults || 0,
+              value: dashboardData?.recentResults?.length || 0,
               color: theme.colors.accent,
               bg: theme.colors.accentLight,
             },
