@@ -24,6 +24,11 @@ import StudentTimetableScreen from '../screens/student/StudentTimetableScreen';
 // Teacher Screens
 import TeacherDashboard from '../screens/teacher/TeacherDashboard';
 import TeacherStudentsScreen from '../screens/teacher/TeacherStudentsScreen';
+import TeacherProfileScreen from '../screens/teacher/TeacherProfileScreen';
+import TeacherTimetableScreen from '../screens/teacher/TeacherTimetableScreen';
+import TeacherUploadResultScreen from '../screens/teacher/TeacherUploadResultScreen';
+import TeacherResultsScreen from '../screens/teacher/TeacherResultsScreen';
+import TeacherAttendanceScreen from '../screens/teacher/TeacherAttendanceScreen';
 
 // Admin Screens
 import AdminDashboard from '../screens/admin/AdminDashboard';
@@ -33,21 +38,11 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 // Placeholder wrappers for upcoming screens
-const TeacherUploadResult = (props: any) => (
-  <PlaceholderScreen {...props} title="Upload Results" icon="file-upload-outline" description="Upload and manage student results. This feature is coming soon." />
-);
-const TeacherResults = (props: any) => (
-  <PlaceholderScreen {...props} title="Results" icon="chart-box-outline" description="View and analyze all student results. Coming soon." />
-);
-const TeacherAttendance = (props: any) => (
-  <PlaceholderScreen {...props} title="Attendance" icon="calendar-check-outline" description="Mark and manage student attendance. Coming soon." />
-);
-const TeacherTimetable = (props: any) => (
-  <PlaceholderScreen {...props} title="Timetable" icon="clock-outline" description="View your class schedule and timetable. Coming soon." />
-);
-const TeacherProfile = (props: any) => (
-  <PlaceholderScreen {...props} title="Profile" icon="account-circle-outline" description="View and edit your teacher profile. Coming soon." />
-);
+const TeacherTimetable = TeacherTimetableScreen;
+const TeacherProfile = TeacherProfileScreen;
+const TeacherUploadResult = TeacherUploadResultScreen;
+const TeacherResults = TeacherResultsScreen;
+const TeacherAttendance = TeacherAttendanceScreen;
 const AdminTeachers = (props: any) => (
   <PlaceholderScreen {...props} title="Teachers" icon="human-male-board" description="View and manage all teachers. Coming soon." />
 );

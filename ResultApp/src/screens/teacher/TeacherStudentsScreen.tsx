@@ -29,7 +29,8 @@ const TeacherStudentsScreen = ({ navigation, route }: any) => {
   const fetchStudents = useCallback(async () => {
     try {
       const response = await apiService.getTeacherStudents();
-      setStudents(response.data || []);
+      const studentsList = Array.isArray(response) ? response : (response.students || []);
+      setStudents(studentsList);
     } catch (error: any) {
       Alert.alert('Error', error.response?.data?.message || 'Failed to load students');
     } finally {
