@@ -19,18 +19,13 @@ const { width } = Dimensions.get('window');
 
 const TeacherPerformanceScreen = ({ navigation }: any) => {
   const { theme } = useTheme();
-  const [performance, setPerformance] = useState<any>(null);
   const [dashboard, setDashboard] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
-      const [perfData, dashData] = await Promise.all([
-        apiService.getTeacherPerformance(),
-        apiService.getTeacherDashboard(),
-      ]);
-      setPerformance(perfData);
+      const dashData = await apiService.getTeacherDashboard();
       setDashboard(dashData);
     } catch (err: any) {
       if (__DEV__) console.log('Performance error:', err.message);
