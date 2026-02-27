@@ -7,7 +7,6 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import Loading from '../components/Loading';
-import PlaceholderScreen from '../components/PlaceholderScreen';
 
 // Auth Screens
 import LoginScreen from '../screens/auth/LoginScreen';
@@ -33,40 +32,30 @@ import TeacherAttendanceScreen from '../screens/teacher/TeacherAttendanceScreen'
 // Admin Screens
 import AdminDashboard from '../screens/admin/AdminDashboard';
 import AdminStudentsScreen from '../screens/admin/AdminStudentsScreen';
+import AdminTeachersScreen from '../screens/admin/AdminTeachersScreen';
+import AdminCreateStudentScreen from '../screens/admin/AdminCreateStudentScreen';
+import AdminCreateTeacherScreen from '../screens/admin/AdminCreateTeacherScreen';
+import AdminResultsScreen from '../screens/admin/AdminResultsScreen';
+import AdminUploadResultScreen from '../screens/admin/AdminUploadResultScreen';
+import AdminAttendanceScreen from '../screens/admin/AdminAttendanceScreen';
+import AdminHolidaysScreen from '../screens/admin/AdminHolidaysScreen';
+import AdminTimetableScreenNew from '../screens/admin/AdminTimetableScreenNew';
+import AdminPromoteStudentsScreen from '../screens/admin/AdminPromoteStudentsScreen';
+import AdminSettingsScreen from '../screens/admin/AdminSettingsScreen';
+import AdminTeacherDetailScreen from '../screens/admin/AdminTeacherDetailScreen';
+import AdminEditTeacherScreen from '../screens/admin/AdminEditTeacherScreen';
+import AdminEditStudentScreen from '../screens/admin/AdminEditStudentScreen';
+import AdminResultDetailScreen from '../screens/admin/AdminResultDetailScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// Placeholder wrappers for upcoming screens
+// Aliases for teacher screens
 const TeacherTimetable = TeacherTimetableScreen;
 const TeacherProfile = TeacherProfileScreen;
 const TeacherUploadResult = TeacherUploadResultScreen;
 const TeacherResults = TeacherResultsScreen;
 const TeacherAttendance = TeacherAttendanceScreen;
-const AdminTeachers = (props: any) => (
-  <PlaceholderScreen {...props} title="Teachers" icon="human-male-board" description="View and manage all teachers. Coming soon." />
-);
-const AdminCreateStudent = (props: any) => (
-  <PlaceholderScreen {...props} title="Add Student" icon="account-plus-outline" description="Create a new student account. Coming soon." />
-);
-const AdminCreateTeacher = (props: any) => (
-  <PlaceholderScreen {...props} title="Add Teacher" icon="account-tie-outline" description="Create a new teacher account. Coming soon." />
-);
-const AdminResults = (props: any) => (
-  <PlaceholderScreen {...props} title="Results" icon="chart-box-outline" description="View and manage all results across the institution. Coming soon." />
-);
-const AdminAttendance = (props: any) => (
-  <PlaceholderScreen {...props} title="Attendance" icon="calendar-check-outline" description="Track and manage attendance records. Coming soon." />
-);
-const AdminBulkOperations = (props: any) => (
-  <PlaceholderScreen {...props} title="Bulk Operations" icon="upload-multiple" description="Bulk upload students, teachers, and results. Coming soon." />
-);
-const AdminSettings = (props: any) => (
-  <PlaceholderScreen {...props} title="Settings" icon="cog-outline" description="Configure system settings and preferences. Coming soon." />
-);
-const AdminEditStudent = (props: any) => (
-  <PlaceholderScreen {...props} title="Edit Student" icon="account-edit-outline" description="Edit student details. Coming soon." />
-);
 
 const TAB_ICONS: Record<string, { focused: string; default: string }> = {
   Home: { focused: 'home', default: 'home-outline' },
@@ -74,6 +63,9 @@ const TAB_ICONS: Record<string, { focused: string; default: string }> = {
   Analytics: { focused: 'chart-bar', default: 'chart-bar' },
   Profile: { focused: 'account-circle', default: 'account-circle-outline' },
   Students: { focused: 'account-group', default: 'account-group-outline' },
+  Teachers: { focused: 'human-male-board', default: 'human-male-board' },
+  Attendance: { focused: 'calendar-check', default: 'calendar-check-outline' },
+  Settings: { focused: 'cog', default: 'cog-outline' },
 };
 
 const tabBarScreenOptions = (theme: any) => ({
@@ -137,14 +129,16 @@ const TeacherTabs = () => {
   );
 };
 
-// Admin Bottom Tabs
+// Admin Bottom Tabs - 5 tabs
 const AdminTabs = () => {
   const { theme } = useTheme();
   return (
     <Tab.Navigator screenOptions={({ route }) => ({ ...tabBarScreenOptions(theme), ...renderTabIcon(theme)({ route }) })}>
       <Tab.Screen name="Home" component={AdminDashboard} />
       <Tab.Screen name="Students" component={AdminStudentsScreen} />
-      <Tab.Screen name="Profile" component={AdminSettings} />
+      <Tab.Screen name="Teachers" component={AdminTeachersScreen} />
+      <Tab.Screen name="Attendance" component={AdminAttendanceScreen} />
+      <Tab.Screen name="Settings" component={AdminSettingsScreen} />
     </Tab.Navigator>
   );
 };
@@ -191,14 +185,20 @@ const AppNavigator = () => {
             <Stack.Screen name="AdminTabs" component={AdminTabs} />
             <Stack.Screen name="AdminDashboard" component={AdminDashboard} />
             <Stack.Screen name="AdminStudents" component={AdminStudentsScreen} />
-            <Stack.Screen name="AdminTeachers" component={AdminTeachers} />
-            <Stack.Screen name="AdminCreateStudent" component={AdminCreateStudent} />
-            <Stack.Screen name="AdminCreateTeacher" component={AdminCreateTeacher} />
-            <Stack.Screen name="AdminResults" component={AdminResults} />
-            <Stack.Screen name="AdminAttendance" component={AdminAttendance} />
-            <Stack.Screen name="AdminBulkOperations" component={AdminBulkOperations} />
-            <Stack.Screen name="AdminSettings" component={AdminSettings} />
-            <Stack.Screen name="AdminEditStudent" component={AdminEditStudent} />
+            <Stack.Screen name="AdminTeachers" component={AdminTeachersScreen} />
+            <Stack.Screen name="AdminCreateStudent" component={AdminCreateStudentScreen} />
+            <Stack.Screen name="AdminCreateTeacher" component={AdminCreateTeacherScreen} />
+            <Stack.Screen name="AdminResults" component={AdminResultsScreen} />
+            <Stack.Screen name="AdminUploadResult" component={AdminUploadResultScreen} />
+            <Stack.Screen name="AdminAttendance" component={AdminAttendanceScreen} />
+            <Stack.Screen name="AdminHolidays" component={AdminHolidaysScreen} />
+            <Stack.Screen name="AdminTimetable" component={AdminTimetableScreenNew} />
+            <Stack.Screen name="AdminPromoteStudents" component={AdminPromoteStudentsScreen} />
+            <Stack.Screen name="AdminSettings" component={AdminSettingsScreen} />
+            <Stack.Screen name="AdminTeacherDetail" component={AdminTeacherDetailScreen} />
+            <Stack.Screen name="AdminEditTeacher" component={AdminEditTeacherScreen} />
+            <Stack.Screen name="AdminEditStudent" component={AdminEditStudentScreen} />
+            <Stack.Screen name="AdminResultDetail" component={AdminResultDetailScreen} />
           </>
         ) : (
           <Stack.Screen name="Login" component={LoginScreen} />

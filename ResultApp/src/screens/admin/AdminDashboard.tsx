@@ -30,16 +30,15 @@ const AdminDashboard = ({ navigation }: any) => {
   const fetchDashboardData = useCallback(async () => {
     try {
       const response = await apiService.getAdminDashboard();
-      setDashboardData(
-        response.data || {
-          totalStudents: 0,
-          totalTeachers: 0,
-          totalResults: 0,
-          totalClasses: 0,
-        },
-      );
+      const data = response?.overview || response?.data || response || {};
+      setDashboardData({
+        totalStudents: data.totalStudents || 0,
+        totalTeachers: data.totalTeachers || 0,
+        totalResults: data.totalResults || 0,
+        totalClasses: data.totalClasses || 0,
+      });
     } catch (error: any) {
-      console.log('Dashboard load error:', error.message);
+      if (__DEV__) console.log('Dashboard load error:', error.message);
     } finally {
       setIsLoading(false);
       setRefreshing(false);
@@ -153,6 +152,14 @@ const AdminDashboard = ({ navigation }: any) => {
       screen: 'AdminResults',
     },
     {
+      icon: 'file-upload-outline',
+      label: 'Upload Result',
+      desc: 'Add marks',
+      color: theme.colors.success,
+      bg: theme.colors.successLight,
+      screen: 'AdminUploadResult',
+    },
+    {
       icon: 'calendar-check-outline',
       label: 'Attendance',
       desc: 'Track records',
@@ -161,19 +168,35 @@ const AdminDashboard = ({ navigation }: any) => {
       screen: 'AdminAttendance',
     },
     {
-      icon: 'upload-multiple',
-      label: 'Bulk Ops',
-      desc: 'Bulk upload',
+      icon: 'calendar-star',
+      label: 'Holidays',
+      desc: 'Manage holidays',
+      color: theme.colors.info,
+      bg: theme.colors.infoLight,
+      screen: 'AdminHolidays',
+    },
+    {
+      icon: 'timetable',
+      label: 'Timetable',
+      desc: 'Set schedules',
       color: theme.colors.primary,
       bg: theme.colors.primaryLight,
-      screen: 'AdminBulkOperations',
+      screen: 'AdminTimetable',
+    },
+    {
+      icon: 'account-arrow-up',
+      label: 'Promote',
+      desc: 'Promote class',
+      color: theme.colors.accent,
+      bg: theme.colors.accentLight,
+      screen: 'AdminPromoteStudents',
     },
     {
       icon: 'cog-outline',
       label: 'Settings',
       desc: 'System config',
-      color: theme.colors.accent,
-      bg: theme.colors.accentLight,
+      color: theme.colors.warning,
+      bg: theme.colors.warningLight,
       screen: 'AdminSettings',
     },
   ];

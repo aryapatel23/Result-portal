@@ -28,7 +28,8 @@ const AdminStudentsScreen = ({ navigation }: any) => {
   const fetchStudents = useCallback(async () => {
     try {
       const response = await apiService.getAllStudents();
-      setStudents(response.data || []);
+      const list = Array.isArray(response) ? response : response?.students || response?.data || [];
+      setStudents(list);
     } catch (error: any) {
       Alert.alert('Error', error.response?.data?.message || 'Failed to load students');
     } finally {
@@ -172,38 +173,43 @@ const AdminStudentsScreen = ({ navigation }: any) => {
       </View>
 
       {/* Class Filter */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterRow}
-      >
-        {getUniqueClasses().map(cls => {
-          const isActive = selectedClass === cls;
-          return (
-            <TouchableOpacity
-              key={cls}
-              style={[
-                styles.filterChip,
-                {
-                  backgroundColor: isActive ? theme.colors.primary : theme.colors.card,
-                  borderColor: isActive ? theme.colors.primary : theme.colors.borderLight,
-                },
-              ]}
-              onPress={() => setSelectedClass(cls)}
-              activeOpacity={0.7}
-            >
-              <Text
+      <View style={styles.filterWrap}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterRow}
+        >
+          {getUniqueClasses().map(cls => {
+            const isActive = selectedClass === cls;
+            return (
+              <TouchableOpacity
+                key={cls}
                 style={[
-                  styles.filterText,
-                  { color: isActive ? '#FFFFFF' : theme.colors.textSecondary },
+                  styles.filterChip,
+                  {
+                    backgroundColor: isActive ? theme.colors.primary : theme.colors.card,
+                    borderColor: isActive ? theme.colors.primary : theme.colors.borderLight,
+                  },
                 ]}
+                onPress={() => setSelectedClass(cls)}
+                activeOpacity={0.7}
               >
-                {cls === 'all' ? 'All Classes' : cls}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+                {isActive && (
+                  <MaterialCommunityIcons name="check-circle" size={14} color="#FFF" />
+                )}
+                <Text
+                  style={[
+                    styles.filterText,
+                    { color: isActive ? '#FFFFFF' : theme.colors.textSecondary },
+                  ]}
+                >
+                  {cls === 'all' ? 'All Classes' : `Class ${cls}`}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
 
       {/* Students List */}
       <ScrollView
@@ -383,6 +389,7 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1, fontSize: 14, fontWeight: '500', padding: 0 },
 
+  filterWrap: { paddingVertical: 12 },
   filterRow: { paddingHorizontal: 20, paddingVertical: 12, gap: 8 },
   filterChip: {
     paddingHorizontal: 16,
