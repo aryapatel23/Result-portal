@@ -179,34 +179,27 @@ class ApiService {
     return response.data;
   }
 
-  // Admin endpoints
+  // ────────────────────────────── Admin endpoints ──────────────────────────────
+
+  // Dashboard
   async getAdminDashboard() {
     const response = await this.api.get('/admin/dashboard');
     return response.data;
   }
 
+  // Student management
   async getAllStudents() {
     const response = await this.api.get('/student-management');
     return response.data;
   }
 
-  async getAllTeachers() {
-    const response = await this.api.get('/admin/teachers');
-    return response.data;
-  }
-
-  async createTeacher(teacherData: any) {
-    const response = await this.api.post('/admin/create-teacher', teacherData);
+  async getStudentById(studentId: string) {
+    const response = await this.api.get(`/student-management/${studentId}`);
     return response.data;
   }
 
   async createStudent(studentData: any) {
-    const response = await this.api.post('/admin/create-student', studentData);
-    return response.data;
-  }
-
-  async updateTeacher(teacherId: string, teacherData: any) {
-    const response = await this.api.put(`/admin/teachers/${teacherId}`, teacherData);
+    const response = await this.api.post('/bulk-students/register', studentData);
     return response.data;
   }
 
@@ -215,23 +208,202 @@ class ApiService {
     return response.data;
   }
 
-  async deleteTeacher(teacherId: string) {
-    const response = await this.api.delete(`/admin/teachers/${teacherId}`);
-    return response.data;
-  }
-
   async deleteStudent(studentId: string) {
     const response = await this.api.delete(`/student-management/${studentId}`);
     return response.data;
   }
 
-  async getAllResults() {
-    const response = await this.api.get('/results');
+  async getStudentStats() {
+    const response = await this.api.get('/student-management/stats/overview');
     return response.data;
   }
 
-  async getAttendanceRecords(params?: any) {
-    const response = await this.api.get('/admin/attendance', { params });
+  // Teacher management
+  async getAllTeachers() {
+    const response = await this.api.get('/admin/teachers');
+    return response.data;
+  }
+
+  async getTeacherById(teacherId: string) {
+    const response = await this.api.get(`/admin/teachers/${teacherId}`);
+    return response.data;
+  }
+
+  async createTeacher(teacherData: any) {
+    const response = await this.api.post('/admin/teachers', teacherData);
+    return response.data;
+  }
+
+  async updateTeacher(teacherId: string, teacherData: any) {
+    const response = await this.api.put(`/admin/teachers/${teacherId}`, teacherData);
+    return response.data;
+  }
+
+  async deleteTeacher(teacherId: string) {
+    const response = await this.api.delete(`/admin/teachers/${teacherId}`);
+    return response.data;
+  }
+
+  async rateTeacher(teacherId: string, data: { rating: number; comments?: string }) {
+    const response = await this.api.post(`/admin/teachers/${teacherId}/rate`, data);
+    return response.data;
+  }
+
+  async getTeachersList() {
+    const response = await this.api.get('/admin/teachers-list');
+    return response.data;
+  }
+
+  // Results
+  async getAllResults(params?: { standard?: string }) {
+    const response = await this.api.get('/results/admin', { params });
+    return response.data;
+  }
+
+  async getResultById(resultId: string) {
+    const response = await this.api.get(`/results/${resultId}`);
+    return response.data;
+  }
+
+  async adminUploadResult(resultData: any) {
+    const response = await this.api.post('/results', resultData);
+    return response.data;
+  }
+
+  async getResultsActivity() {
+    const response = await this.api.get('/admin/results-activity');
+    return response.data;
+  }
+
+  // Attendance (admin)
+  async getAdminAttendanceAll(params?: any) {
+    const response = await this.api.get('/admin/attendance/all', { params });
+    return response.data;
+  }
+
+  async getAdminTodaySummary() {
+    const response = await this.api.get('/admin/attendance/today-summary');
+    return response.data;
+  }
+
+  async getTeacherAttendanceById(teacherId: string) {
+    const response = await this.api.get(`/admin/attendance/teacher/${teacherId}`);
+    return response.data;
+  }
+
+  async getAttendanceReport(params?: any) {
+    const response = await this.api.get('/admin/attendance/report', { params });
+    return response.data;
+  }
+
+  async adminMarkAttendance(data: any) {
+    const response = await this.api.post('/admin/attendance/mark', data);
+    return response.data;
+  }
+
+  async adminUpdateAttendance(id: string, data: any) {
+    const response = await this.api.put(`/admin/attendance/update/${id}`, data);
+    return response.data;
+  }
+
+  async adminDeleteAttendance(id: string) {
+    const response = await this.api.delete(`/admin/attendance/delete/${id}`);
+    return response.data;
+  }
+
+  // Holidays
+  async getAllHolidays() {
+    const response = await this.api.get('/admin/holidays');
+    return response.data;
+  }
+
+  async getUpcomingHolidays() {
+    const response = await this.api.get('/admin/holidays/upcoming');
+    return response.data;
+  }
+
+  async createHoliday(data: any) {
+    const response = await this.api.post('/admin/holidays', data);
+    return response.data;
+  }
+
+  async updateHoliday(id: string, data: any) {
+    const response = await this.api.put(`/admin/holidays/${id}`, data);
+    return response.data;
+  }
+
+  async deleteHoliday(id: string) {
+    const response = await this.api.delete(`/admin/holidays/${id}`);
+    return response.data;
+  }
+
+  // Timetable (admin)
+  async getAdminTeacherTimetable(teacherId: string) {
+    const response = await this.api.get(`/timetable/admin/timetable/${teacherId}`);
+    return response.data;
+  }
+
+  async saveAdminTeacherTimetable(teacherId: string, data: any) {
+    const response = await this.api.post(`/timetable/admin/timetable/${teacherId}`, data);
+    return response.data;
+  }
+
+  async deleteAdminTeacherTimetable(teacherId: string) {
+    const response = await this.api.delete(`/timetable/admin/timetable/${teacherId}`);
+    return response.data;
+  }
+
+  // Student promotion
+  async promoteStudent(data: { studentId: string; fromStandard: string; toStandard: string }) {
+    const response = await this.api.post('/student-promotion/single', data);
+    return response.data;
+  }
+
+  async bulkPromoteStudents(data: { fromStandard: string; toStandard: string }) {
+    const response = await this.api.post('/student-promotion/bulk', data);
+    return response.data;
+  }
+
+  async getStudentsByStandard(standard: string) {
+    const response = await this.api.get(`/student-promotion/by-standard/${standard}`);
+    return response.data;
+  }
+
+  // System config
+  async getSystemConfig() {
+    const response = await this.api.get('/system-config');
+    return response.data;
+  }
+
+  async updateSystemConfig(data: any) {
+    const response = await this.api.put('/system-config', data);
+    return response.data;
+  }
+
+  async getAttendanceSettings() {
+    const response = await this.api.get('/system-config/teacher-attendance-settings');
+    return response.data;
+  }
+
+  async updateAttendanceSettings(data: any) {
+    const response = await this.api.put('/system-config/teacher-attendance-settings', data);
+    return response.data;
+  }
+
+  // Teacher performance (admin view)
+  async getAllTeachersPerformance() {
+    const response = await this.api.get('/performance/teachers');
+    return response.data;
+  }
+
+  async getPerformanceLeaderboard() {
+    const response = await this.api.get('/performance/leaderboard');
+    return response.data;
+  }
+
+  // Bulk operations
+  async getStudentByGRNumberAdmin(grNumber: string) {
+    const response = await this.api.get(`/student/gr/${grNumber}`);
     return response.data;
   }
 }
