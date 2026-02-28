@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { LogIn, Mail, Lock, Briefcase } from 'lucide-react';
+import { LogIn, Mail, Lock, Briefcase, KeyRound, ArrowLeft, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 import axios from '../api/axios';
 
@@ -15,6 +15,9 @@ const TeacherLogin = () => {
     password: ''
   });
   const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -62,6 +65,24 @@ const TeacherLogin = () => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    if (!forgotEmail.trim()) {
+      return toast.error('Please enter your email address');
+    }
+    setForgotLoading(true);
+    try {
+      const response = await axios.post('/auth/forgot-password', { email: forgotEmail.trim() });
+      toast.success('New password sent to your email! Check your inbox.');
+      setShowForgotPassword(false);
+      setForgotEmail('');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Something went wrong. Please try again.');
+    } finally {
+      setForgotLoading(false);
     }
   };
 
@@ -114,6 +135,16 @@ const TeacherLogin = () => {
               </div>
             </div>
 
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowForgotPassword(true)}
+                className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+              >
+                Forgot Password?
+              </button>
+            </div>
+
             <button
               type="submit"
               disabled={loading}
@@ -150,6 +181,69 @@ const TeacherLogin = () => {
           </div>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotPassword && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+            <div className="text-center mb-6">
+              <div className="inline-block p-3 bg-blue-100 rounded-full mb-4">
+                <KeyRound className="h-10 w-10 text-blue-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-800">Reset Password</h3>
+              <p className="text-gray-500 mt-2 text-sm">
+                Enter your registered email and we'll send you a new password
+              </p>
+            </div>
+
+            <form onSubmit={handleForgotPassword} className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    type="email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="your.email@school.com"
+                    required
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={forgotLoading}
+                className={`w-full py-3 px-4 bg-blue-600 text-white rounded-lg font-medium flex items-center justify-center transition-colors ${
+                  forgotLoading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-700'
+                }`}
+              >
+                {forgotLoading ? (
+                  'Sending...'
+                ) : (
+                  <>
+                    <Send className="mr-2 h-5 w-5" />
+                    Send New Password
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setShowForgotPassword(false); setForgotEmail(''); }}
+                className="w-full py-2 text-gray-600 hover:text-gray-800 font-medium flex items-center justify-center transition-colors"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Login
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
