@@ -16,7 +16,7 @@ import { useTheme } from '../../context/ThemeContext';
 import apiService from '../../services/api';
 
 const AdminDashboard = ({ navigation }: any) => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [dashboardData, setDashboardData] = useState<any>({
     totalStudents: 0,
@@ -49,16 +49,16 @@ const AdminDashboard = ({ navigation }: any) => {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
+  // Auto-navigate to change password if required
+  useEffect(() => {
+    if (user?.passwordResetRequired) {
+      navigation.navigate('TeacherChangePassword', { required: true });
+    }
+  }, [user, navigation]);
+
   const onRefresh = () => {
     setRefreshing(true);
     fetchDashboardData();
-  };
-
-  const handleLogout = () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign Out', onPress: logout, style: 'destructive' },
-    ]);
   };
 
   const getGreeting = () => {
@@ -399,19 +399,6 @@ const AdminDashboard = ({ navigation }: any) => {
           ))}
         </View>
 
-        {/* Sign Out */}
-        <TouchableOpacity
-          style={[
-            styles.logoutBtn,
-            { backgroundColor: theme.colors.errorLight, borderColor: theme.colors.error },
-          ]}
-          onPress={handleLogout}
-          activeOpacity={0.7}
-        >
-          <MaterialCommunityIcons name="logout" size={20} color={theme.colors.error} />
-          <Text style={[styles.logoutText, { color: theme.colors.error }]}>Sign Out</Text>
-        </TouchableOpacity>
-
         <View style={{ height: 40 }} />
       </ScrollView>
     </SafeAreaView>
@@ -539,18 +526,6 @@ const styles = StyleSheet.create({
   },
   activityText: { flex: 1, fontSize: 13, fontWeight: '600' },
   activityTime: { fontSize: 11, fontWeight: '500' },
-
-  logoutBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    gap: 8,
-    marginTop: 4,
-  },
-  logoutText: { fontSize: 15, fontWeight: '700' },
 });
 
 export default AdminDashboard;

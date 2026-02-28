@@ -28,6 +28,7 @@ import TeacherTimetableScreen from '../screens/teacher/TeacherTimetableScreen';
 import TeacherUploadResultScreen from '../screens/teacher/TeacherUploadResultScreen';
 import TeacherResultsScreen from '../screens/teacher/TeacherResultsScreen';
 import TeacherAttendanceScreen from '../screens/teacher/TeacherAttendanceScreen';
+import TeacherChangePasswordScreen from '../screens/teacher/TeacherChangePasswordScreen';
 
 // Admin Screens
 import AdminDashboard from '../screens/admin/AdminDashboard';
@@ -42,6 +43,7 @@ import AdminHolidaysScreen from '../screens/admin/AdminHolidaysScreen';
 import AdminTimetableScreenNew from '../screens/admin/AdminTimetableScreenNew';
 import AdminPromoteStudentsScreen from '../screens/admin/AdminPromoteStudentsScreen';
 import AdminSettingsScreen from '../screens/admin/AdminSettingsScreen';
+import AdminProfileScreen from '../screens/admin/AdminProfileScreen';
 import AdminTeacherDetailScreen from '../screens/admin/AdminTeacherDetailScreen';
 import AdminEditTeacherScreen from '../screens/admin/AdminEditTeacherScreen';
 import AdminEditStudentScreen from '../screens/admin/AdminEditStudentScreen';
@@ -138,7 +140,7 @@ const AdminTabs = () => {
       <Tab.Screen name="Students" component={AdminStudentsScreen} />
       <Tab.Screen name="Teachers" component={AdminTeachersScreen} />
       <Tab.Screen name="Attendance" component={AdminAttendanceScreen} />
-      <Tab.Screen name="Settings" component={AdminSettingsScreen} />
+      <Tab.Screen name="Profile" component={AdminProfileScreen} />
     </Tab.Navigator>
   );
 };
@@ -179,6 +181,7 @@ const AppNavigator = () => {
             <Stack.Screen name="TeacherAttendance" component={TeacherAttendance} />
             <Stack.Screen name="TeacherTimetable" component={TeacherTimetable} />
             <Stack.Screen name="TeacherProfile" component={TeacherProfile} />
+            <Stack.Screen name="TeacherChangePassword" component={TeacherChangePasswordScreen} />
           </>
         ) : user.role === 'admin' ? (
           <>
@@ -199,6 +202,7 @@ const AppNavigator = () => {
             <Stack.Screen name="AdminEditTeacher" component={AdminEditTeacherScreen} />
             <Stack.Screen name="AdminEditStudent" component={AdminEditStudentScreen} />
             <Stack.Screen name="AdminResultDetail" component={AdminResultDetailScreen} />
+            <Stack.Screen name="TeacherChangePassword" component={TeacherChangePasswordScreen} />
           </>
         ) : (
           <Stack.Screen name="Login" component={LoginScreen} />

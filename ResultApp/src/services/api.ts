@@ -68,6 +68,11 @@ class ApiService {
     return response.data;
   }
 
+  async forgotPassword(email: string) {
+    const response = await this.api.post('/auth/forgot-password', { email });
+    return response.data;
+  }
+
   // Student endpoints
   async getStudentProfile() {
     const response = await this.api.get('/student/profile');

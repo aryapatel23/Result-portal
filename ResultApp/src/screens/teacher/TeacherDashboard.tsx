@@ -38,6 +38,13 @@ const TeacherDashboard = ({ navigation }: any) => {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
+  // Auto-navigate to change password if required
+  useEffect(() => {
+    if (user?.passwordResetRequired) {
+      navigation.navigate('TeacherChangePassword', { required: true });
+    }
+  }, [user, navigation]);
+
   const onRefresh = () => {
     setRefreshing(true);
     fetchDashboardData();
