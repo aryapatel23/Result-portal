@@ -20,12 +20,13 @@ import EditResult from './components/EditResult';
 
 // Student Components
 import StudentRegister from './components/StudentRegister';
-import StudentLogin from './components/StudentLogin';
+import LoginRedirect from './components/LoginRedirect';
 import StudentDashboard from './components/StudentDashboard';
 import StudentResultDetail from './components/StudentResultDetail';
 import BulkStudentUpload from './components/BulkStudentUpload';
 import RegisterStudent from './components/RegisterStudent';
 import PromoteStudents from './components/PromoteStudents';
+import ResetPasswordComplete from './components/ResetPasswordComplete';
 
 // Teacher Components
 import TeacherDashboard from './components/TeacherDashboard';
@@ -91,10 +92,13 @@ function App() {
               <Suspense fallback={<PageLoader />}>
                 <Routes>
                   <Route path="/" element={<Home />} />
+                  <Route path="/reset-password" element={<ResetPasswordComplete />} />
                   <Route path="/activities" element={<Activities />} />
 
                   <Route path="/student/register" element={<StudentRegister />} />
-                  <Route path="/student/login" element={<StudentLogin />} />
+                  <Route path="/student/login" element={<LoginRedirect />} />
+                  <Route path="/teacher/login" element={<LoginRedirect />} />
+                  <Route path="/admin/login" element={<LoginRedirect />} />
                   <Route path="/student/dashboard" element={<StudentDashboard />} />
                   <Route path="/student/result/:resultId" element={<StudentResultDetail />} />
                   <Route path="/student/view" element={<ViewResult />} />
