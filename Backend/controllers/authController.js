@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
+const { sendPasswordResetEmail } = require("../utils/emailService");
 
 // Admin/Teacher Login
 // Unified Login (Admin, Teacher, Student)
@@ -105,7 +106,8 @@ exports.loginUser = async (req, res) => {
         employeeId: user.employeeId,
         classTeacher: user.classTeacher,
         subjects: user.subjects,
-        assignedClasses: user.assignedClasses
+        assignedClasses: user.assignedClasses,
+        passwordResetRequired: user.passwordResetRequired || false
       }
     });
 
@@ -225,6 +227,125 @@ exports.registerTeacher = async (req, res) => {
     });
   } catch (error) {
     console.error("Teacher registration error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Forgot Password - Generate new password and send via email
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Please provide your email address" });
+    }
+
+    const user = await User.findOne({ email: email.trim(), role: { $in: ['teacher', 'admin'] } });
+    if (!user) {
+      // Don't reveal whether the email exists for security
+      return res.status(200).json({ 
+        success: true,
+        message: "If an account with this email exists, a new password has been sent to it." 
+      });
+    }
+
+    // Generate a new 6-character password
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    let newPassword = '';
+    for (let i = 0; i < 6; i++) {
+      newPassword += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
+    // Hash and save the new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    user.password = hashedPassword;
+    user.passwordResetRequired = true; // Flag user to change password on next login
+    await user.save();
+
+    // Send the new password via email
+    try {
+      await sendPasswordResetEmail({
+        email: user.email,
+        name: user.name,
+        password: newPassword
+      });
+      console.log(`📧 Password reset email sent to ${user.email}`);
+    } catch (emailError) {
+      console.error('❌ Failed to send password reset email:', emailError);
+      return res.status(500).json({ message: "Password was reset but email failed to send. Please contact administrator." });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "A new password has been sent to your email address. Please check your inbox."
+    });
+
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Complete Password Reset - Verify temp password and set new one (auto-login)
+exports.completePasswordReset = async (req, res) => {
+  try {
+    const { email, tempPassword, newPassword } = req.body;
+
+    if (!email || !tempPassword || !newPassword) {
+      return res.status(400).json({ message: "Please provide all required fields" });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: "New password must be at least 6 characters" });
+    }
+
+    const user = await User.findOne({ email: email.trim(), role: { $in: ['teacher', 'admin'] } });
+    if (!user) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    // Verify the temporary password
+    const isMatch = await bcrypt.compare(tempPassword, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid temporary password" });
+    }
+
+    // Hash and save the new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    user.password = hashedPassword;
+    user.passwordResetRequired = false; // Clear the flag
+    await user.save();
+
+    // Generate token and auto-login the user
+    const token = jwt.sign(
+      { id: user._id, role: user.role, name: user.name, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    console.log(`✅ Password reset completed for ${user.email}`);
+
+    res.json({
+      success: true,
+      message: "Password reset successful! You are now logged in.",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        employeeId: user.employeeId,
+        classTeacher: user.classTeacher,
+        subjects: user.subjects,
+        assignedClasses: user.assignedClasses,
+        passwordResetRequired: false
+      }
+    });
+
+  } catch (error) {
+    console.error("Complete password reset error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
