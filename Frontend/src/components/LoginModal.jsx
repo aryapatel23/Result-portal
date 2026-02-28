@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginUser, clearError } from '../redux/slices/authSlice';
-import { X, User, Briefcase, Shield, Mail, Lock, Calendar, LogIn, Loader2, ArrowRight } from 'lucide-react';
+import { X, User, Briefcase, Shield, Mail, Lock, Calendar, LogIn, Loader2, ArrowRight, KeyRound, Send, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
+import axios from '../api/axios';
 
 const LoginModal = ({ isOpen, onClose, initialRole = 'student' }) => {
     const navigate = useNavigate();
@@ -11,15 +12,24 @@ const LoginModal = ({ isOpen, onClose, initialRole = 'student' }) => {
     const dispatch = useDispatch();
     const { loading, error } = useSelector((state) => state.auth);
 
+    // Forgot password state
+    const [showForgotPassword, setShowForgotPassword] = useState(false);
+    const [forgotEmail, setForgotEmail] = useState('');
+    const [forgotLoading, setForgotLoading] = useState(false);
+
     // Clear errors when modal opens/closes or tab changes
     React.useEffect(() => {
         if (isOpen) {
             dispatch(clearError());
             setActiveTab(initialRole);
+            setShowForgotPassword(false);
+            setForgotEmail('');
         } else {
             // Clear all input fields when modal closes for security
             setStudentData({ grNumber: '', dateOfBirth: '' });
             setAuthData({ email: '', password: '' });
+            setShowForgotPassword(false);
+            setForgotEmail('');
         }
     }, [isOpen, initialRole, dispatch]);
 
@@ -55,8 +65,25 @@ const LoginModal = ({ isOpen, onClose, initialRole = 'student' }) => {
                 navigate(dashboardPath);
             }
         } catch (err) {
-            // Error is handled by the useEffect above
             console.error(err);
+        }
+    };
+
+    const handleForgotPassword = async (e) => {
+        e.preventDefault();
+        if (!forgotEmail.trim()) {
+            return toast.error('Please enter your email address');
+        }
+        setForgotLoading(true);
+        try {
+            await axios.post('/auth/forgot-password', { email: forgotEmail.trim() });
+            toast.success('New password sent to your email! Check your inbox.');
+            setShowForgotPassword(false);
+            setForgotEmail('');
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Something went wrong. Please try again.');
+        } finally {
+            setForgotLoading(false);
         }
     };
 
@@ -86,6 +113,62 @@ const LoginModal = ({ isOpen, onClose, initialRole = 'student' }) => {
                 </button>
 
                 <div className="p-8 sm:p-10">
+                    {showForgotPassword ? (
+                        /* ===== FORGOT PASSWORD VIEW ===== */
+                        <>
+                            <div className="text-center mb-8">
+                                <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-50 rounded-2xl mb-4">
+                                    <KeyRound className="h-8 w-8 text-blue-600" />
+                                </div>
+                                <h2 className="text-3xl font-black text-gray-900 tracking-tight">Reset <span className="text-blue-600">Password</span></h2>
+                                <p className="text-gray-500 mt-2 font-medium">Enter your email to receive a new password</p>
+                            </div>
+
+                            <form onSubmit={handleForgotPassword} className="space-y-6">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Email Address</label>
+                                    <div className="relative">
+                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-300" />
+                                        <input
+                                            type="email"
+                                            placeholder="name@school.com"
+                                            className="w-full bg-white border border-gray-200 rounded-2xl pl-12 pr-4 py-4 text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all shadow-sm"
+                                            value={forgotEmail}
+                                            onChange={(e) => setForgotEmail(e.target.value)}
+                                            required
+                                            autoFocus
+                                        />
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={forgotLoading}
+                                    className="group w-full py-4 rounded-2xl font-black text-white transition-all duration-300 transform active:scale-[0.98] shadow-xl bg-gradient-to-r from-blue-600 to-sky-600 shadow-blue-100 flex items-center justify-center gap-2 disabled:opacity-50"
+                                >
+                                    {forgotLoading ? (
+                                        <Loader2 className="h-5 w-5 animate-spin" />
+                                    ) : (
+                                        <>
+                                            <Send className="h-5 w-5" />
+                                            <span>Send New Password</span>
+                                        </>
+                                    )}
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => { setShowForgotPassword(false); setForgotEmail(''); }}
+                                    className="w-full flex items-center justify-center gap-2 py-3 text-gray-500 hover:text-gray-700 font-bold transition-colors"
+                                >
+                                    <ArrowLeft className="h-4 w-4" />
+                                    <span>Back to Login</span>
+                                </button>
+                            </form>
+                        </>
+                    ) : (
+                        /* ===== LOGIN VIEW ===== */
+                        <>
                     {/* Header */}
                     <div className="text-center mb-8">
                         <h2 className="text-3xl font-black text-gray-900 tracking-tight">Welcome <span className="text-indigo-600">Back</span></h2>
@@ -162,7 +245,16 @@ const LoginModal = ({ isOpen, onClose, initialRole = 'student' }) => {
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Secure Password</label>
+                                    <div className="flex items-center justify-between ml-1 mr-1">
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Secure Password</label>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowForgotPassword(true)}
+                                            className="text-xs font-bold text-blue-500 hover:text-blue-700 transition-colors"
+                                        >
+                                            Forgot Password?
+                                        </button>
+                                    </div>
                                     <div className="relative">
                                         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-300" />
                                         <input
@@ -210,6 +302,8 @@ const LoginModal = ({ isOpen, onClose, initialRole = 'student' }) => {
                             Secure Cloud Verification • <span className="text-indigo-600">SSO Enabled</span>
                         </p>
                     </div>
+                        </>
+                    )}
                 </div>
             </div>
         </div>
