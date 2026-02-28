@@ -1,25 +1,57 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, User, LogOut, Bell, ChevronDown, UserCheck, BookOpen, LayoutDashboard, Clock } from 'lucide-react';
+import { Menu, X, User, LogOut, Bell, ChevronDown, UserCheck, BookOpen, LayoutDashboard, Clock, KeyRound } from 'lucide-react';
 import LanguageSwitcher from './LanguageSwitcher';
 import LoginModal from './LoginModal';
+import ChangePasswordModal from './ChangePasswordModal';
 
 const Navbar = () => {
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const { pathname } = location;
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [passwordChangeRequired, setPasswordChangeRequired] = useState(false);
   const [selectedRole, setSelectedRole] = useState('student');
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (userData) {
-      setUser(JSON.parse(userData));
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
+      // Auto-open change password modal if required
+      if (parsedUser.passwordResetRequired) {
+        setShowChangePassword(true);
+        setPasswordChangeRequired(true);
+      }
     }
   }, [pathname]); // Re-check when route changes
+
+  // Auto-open login modal when ?login= query param is present
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const loginRole = params.get('login');
+    const resetEmail = params.get('resetPassword');
+    
+    // Handle password reset redirect
+    if (resetEmail) {
+      navigate(`/reset-password?resetPassword=${encodeURIComponent(resetEmail)}`, { replace: true });
+      return;
+    }
+    
+    // Handle login modal
+    if (loginRole && !user) {
+      const validRoles = ['student', 'teacher', 'admin'];
+      setSelectedRole(validRoles.includes(loginRole) ? loginRole : 'student');
+      setShowLoginModal(true);
+      // Clean up the URL query param
+      navigate('/', { replace: true });
+    }
+  }, [location.search]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isActive = (path) =>
     pathname === path
@@ -106,6 +138,19 @@ const Navbar = () => {
                           <Clock className="w-4 h-4 text-gray-600" />
                           <span>Attendance</span>
                         </Link>
+                      )}
+
+                      {(user.role === 'admin' || user.role === 'teacher') && (
+                        <button
+                          onClick={() => {
+                            setShowChangePassword(true);
+                            setShowProfileMenu(false);
+                          }}
+                          className="flex items-center gap-2 px-4 py-3 hover:bg-gray-50 transition-colors w-full text-left"
+                        >
+                          <KeyRound className="w-4 h-4 text-gray-600" />
+                          <span>Change Password</span>
+                        </button>
                       )}
                       
                       <button
@@ -219,6 +264,19 @@ const Navbar = () => {
                       Attendance
                     </Link>
                   )}
+
+                  {(user.role === 'admin' || user.role === 'teacher') && (
+                    <button
+                      onClick={() => {
+                        setShowChangePassword(true);
+                        setIsOpen(false);
+                      }}
+                      className="flex items-center gap-2 w-full px-3 py-3 text-gray-700 hover:text-slate-600 hover:bg-gray-50 rounded-lg transition-all duration-300"
+                    >
+                      <KeyRound className="w-4 h-4" />
+                      <span>Change Password</span>
+                    </button>
+                  )}
                   
                   <button
                     onClick={() => {
@@ -289,6 +347,29 @@ const Navbar = () => {
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
         initialRole={selectedRole}
+      />
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={showChangePassword}
+        onClose={() => {
+          if (!passwordChangeRequired) {
+            setShowChangePassword(false);
+          }
+        }}
+        required={passwordChangeRequired}
+        onSuccess={() => {
+          // Update user data to clear the flag
+          const userData = localStorage.getItem('user');
+          if (userData) {
+            const user = JSON.parse(userData);
+            user.passwordResetRequired = false;
+            localStorage.setItem('user', JSON.stringify(user));
+            setUser(user);
+          }
+          setPasswordChangeRequired(false);
+          setShowChangePassword(false);
+        }}
       />
     </nav>
   );
