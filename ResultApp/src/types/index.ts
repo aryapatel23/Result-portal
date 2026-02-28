@@ -17,6 +17,7 @@ export interface User {
   assignedClasses?: string[];
   phone?: string;
   isActive?: boolean;
+  passwordResetRequired?: boolean;
 }
 
 export interface LoginCredentials {

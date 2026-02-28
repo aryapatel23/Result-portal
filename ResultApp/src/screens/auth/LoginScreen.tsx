@@ -13,12 +13,14 @@ import {
   ActivityIndicator,
   Dimensions,
   Animated,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import apiService from '../../services/api';
 
 type Role = 'student' | 'teacher' | 'admin';
 
@@ -44,6 +46,38 @@ const LoginScreen = () => {
   const [grNumber, setGrNumber] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState(new Date(2010, 0, 1));
   const [showDatePicker, setShowDatePicker] = useState(false);
+
+  // Forgot password state
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+
+  const handleForgotPassword = async () => {
+    if (!forgotEmail.trim()) {
+      Alert.alert('Missing Email', 'Please enter your registered email address.');
+      return;
+    }
+    if (!/\S+@\S+\.\S+/.test(forgotEmail.trim())) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      return;
+    }
+    setForgotLoading(true);
+    try {
+      const response = await apiService.forgotPassword(forgotEmail.trim());
+      setShowForgotModal(false);
+      setForgotEmail('');
+      Alert.alert(
+        '✅ Password Reset Sent',
+        'A new temporary password has been sent to your email.\n\n📋 Next Steps:\n1. Check your email inbox\n2. Copy the temporary password\n3. Login with your email + temporary password\n4. You will be asked to set a new secure password',
+        [{ text: 'Got It' }]
+      );
+    } catch (error: any) {
+      const msg = error.response?.data?.message || error.message || 'Something went wrong. Please try again.';
+      Alert.alert('Error', msg);
+    } finally {
+      setForgotLoading(false);
+    }
+  };
 
   const handleLogin = async () => {
     setLoading(true);
@@ -280,7 +314,7 @@ const LoginScreen = () => {
                   </View>
                 </View>
 
-                <TouchableOpacity style={styles.forgotRow}>
+                <TouchableOpacity style={styles.forgotRow} onPress={() => setShowForgotModal(true)}>
                   <Text style={[styles.forgotText, { color: theme.colors.primary }]}>
                     Forgot Password?
                   </Text>
@@ -321,6 +355,74 @@ const LoginScreen = () => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Forgot Password Modal */}
+      <Modal
+        visible={showForgotModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowForgotModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.colors.card }]}>
+            <View style={[styles.modalHeader, { marginBottom: 20 }]}>
+              <View style={[styles.modalIcon, { backgroundColor: theme.colors.primaryLight }]}>
+                <MaterialCommunityIcons name="lock-reset" size={32} color={theme.colors.primary} />
+              </View>
+              <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Reset Password</Text>
+              <Text style={[styles.modalSubtitle, { color: theme.colors.textSecondary }]}>
+                Enter your registered email. We'll send you a temporary password that you can use to login.
+              </Text>
+            </View>
+
+            {/* Info Banner */}
+            <View style={[styles.infoBanner, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary, marginBottom: 16 }]}>
+              <MaterialCommunityIcons name="information-outline" size={18} color={theme.colors.primary} />
+              <Text style={[styles.infoBannerText, { color: theme.colors.primary }]}>
+                After login, you'll be asked to set a new secure password
+              </Text>
+            </View>
+
+            <View style={[styles.inputWrap, { backgroundColor: theme.colors.inputBg, borderColor: theme.colors.border }]}>
+              <MaterialCommunityIcons name="email-outline" size={20} color={theme.colors.textTertiary} />
+              <TextInput
+                style={[styles.input, { color: theme.colors.text }]}
+                placeholder="Enter your email"
+                placeholderTextColor={theme.colors.textTertiary}
+                value={forgotEmail}
+                onChangeText={setForgotEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoCorrect={false}
+                editable={!forgotLoading}
+                onSubmitEditing={handleForgotPassword}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.loginBtn, { backgroundColor: theme.colors.primary }, forgotLoading && { opacity: 0.6 }]}
+              onPress={handleForgotPassword}
+              disabled={forgotLoading}
+            >
+              {forgotLoading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <View style={styles.loginBtnContent}>
+                  <MaterialCommunityIcons name="email-send-outline" size={20} color="#FFFFFF" />
+                  <Text style={styles.loginBtnText}>Send New Password</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.modalCancelBtn}
+              onPress={() => { setShowForgotModal(false); setForgotEmail(''); }}
+            >
+              <Text style={[styles.modalCancelText, { color: theme.colors.textSecondary }]}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -473,6 +575,69 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 13,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: 24,
+    padding: 28,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+  },
+  modalHeader: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  modalIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    marginBottom: 8,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  modalCancelBtn: {
+    alignItems: 'center',
+    paddingVertical: 14,
+    marginTop: 8,
+  },
+  modalCancelText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  infoBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    gap: 8,
+  },
+  infoBannerText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 16,
   },
 });
 

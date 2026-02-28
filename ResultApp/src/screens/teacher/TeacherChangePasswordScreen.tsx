@@ -15,10 +15,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiService from '../../services/api';
 
-const TeacherChangePasswordScreen = ({ navigation }: any) => {
+const TeacherChangePasswordScreen = ({ navigation, route }: any) => {
   const { theme } = useTheme();
+  const { user, updateUser } = useAuth();
+  const required = route?.params?.required || false;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -73,12 +77,23 @@ const TeacherChangePasswordScreen = ({ navigation }: any) => {
         newPassword: formData.newPassword,
       });
 
+      // Clear the passwordResetRequired flag
+      if (user && required) {
+        const updatedUser = { ...user, passwordResetRequired: false };
+        await updateUser(updatedUser);
+      }
+
       Alert.alert('Success', 'Password changed successfully!', [
         {
           text: 'OK',
           onPress: () => {
             setFormData({ oldPassword: '', newPassword: '', confirmPassword: '' });
-            navigation.goBack();
+            if (required) {
+              // Navigate to dashboard after required password change
+              navigation.replace(user?.role === 'admin' ? 'AdminTabs' : 'TeacherTabs');
+            } else {
+              navigation.goBack();
+            }
           },
         },
       ]);
@@ -102,10 +117,15 @@ const TeacherChangePasswordScreen = ({ navigation }: any) => {
 
       {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.border }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color={theme.colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Change Password</Text>
+        {!required && (
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color={theme.colors.text} />
+          </TouchableOpacity>
+        )}
+        {required && <View style={styles.backBtn} />}
+        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
+          {required ? 'Password Change Required' : 'Change Password'}
+        </Text>
         <View style={styles.placeholder} />
       </View>
 
@@ -119,12 +139,53 @@ const TeacherChangePasswordScreen = ({ navigation }: any) => {
           showsVerticalScrollIndicator={false}
         >
           {/* Security Info */}
-          <View style={[styles.infoCard, { backgroundColor: `${theme.colors.warning}15`, borderColor: theme.colors.warning }]}>
-            <MaterialCommunityIcons name="shield-lock-outline" size={22} color={theme.colors.warning} />
-            <Text style={[styles.infoText, { color: theme.colors.warning }]}>
-              Choose a strong password with at least 6 characters
+          <View style={[
+            styles.infoCard, 
+            { 
+              backgroundColor: required ? `${theme.colors.error}15` : `${theme.colors.warning}15`, 
+              borderColor: required ? theme.colors.error : theme.colors.warning 
+            }
+          ]}>
+            <MaterialCommunityIcons 
+              name={required ? "alert-circle-outline" : "shield-lock-outline"}
+              size={22} 
+              color={required ? theme.colors.error : theme.colors.warning} 
+            />
+            <Text style={[
+              styles.infoText, 
+              { color: required ? theme.colors.error : theme.colors.warning }
+            ]}>
+              {required 
+                ? '🔐 You are using a temporary password. For your security, please set a new strong password now. You cannot access the app until you change it.'
+                : 'Choose a strong password with at least 6 characters for better security'
+              }
             </Text>
           </View>
+
+          {/* Steps Banner when required */}
+          {required && (
+            <View style={[styles.stepsBanner, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+              <Text style={[styles.stepsTitle, { color: theme.colors.text }]}>📋 How it works:</Text>
+              <View style={styles.step}>
+                <View style={[styles.stepNumber, { backgroundColor: theme.colors.primaryLight }]}>
+                  <Text style={[styles.stepNumberText, { color: theme.colors.primary }]}>1</Text>
+                </View>
+                <Text style={[styles.stepText, { color: theme.colors.textSecondary }]}>Enter the temporary password from your email</Text>
+              </View>
+              <View style={styles.step}>
+                <View style={[styles.stepNumber, { backgroundColor: theme.colors.primaryLight }]}>
+                  <Text style={[styles.stepNumberText, { color: theme.colors.primary }]}>2</Text>
+                </View>
+                <Text style={[styles.stepText, { color: theme.colors.textSecondary }]}>Create a new strong password</Text>
+              </View>
+              <View style={styles.step}>
+                <View style={[styles.stepNumber, { backgroundColor: theme.colors.primaryLight }]}>
+                  <Text style={[styles.stepNumberText, { color: theme.colors.primary }]}>3</Text>
+                </View>
+                <Text style={[styles.stepText, { color: theme.colors.textSecondary }]}>Confirm your new password</Text>
+              </View>
+            </View>
+          )}
 
           {/* Form */}
           <View style={styles.form}>
@@ -335,7 +396,40 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 24,
   },
-  infoText: { fontSize: 13, flex: 1, fontWeight: '500' },
+  infoText: { fontSize: 13, flex: 1, fontWeight: '500', lineHeight: 18 },
+  stepsBanner: {
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 20,
+  },
+  stepsTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  step: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  stepNumber: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stepNumberText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  stepText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+  },
   form: {},
   inputGroup: { marginBottom: 18 },
   label: { fontSize: 14, fontWeight: '600', marginBottom: 8 },

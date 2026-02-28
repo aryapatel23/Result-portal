@@ -85,7 +85,7 @@ const TeacherProfileScreen = ({ navigation }: any) => {
       label: 'Change Password',
       desc: 'Update your password',
       color: theme.colors.warning,
-      onPress: () => Alert.alert('Coming Soon', 'Password change feature will be available soon'),
+      onPress: () => navigation.navigate('TeacherChangePassword'),
     },
     {
       icon: 'cog-outline',
