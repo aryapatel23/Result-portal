@@ -83,6 +83,11 @@ const userSchema = new mongoose.Schema({
   faceRegistered: {
     type: Boolean,
     default: false
+  },
+  // Password reset flag
+  passwordResetRequired: {
+    type: Boolean,
+    default: false
   }
 }, { timestamps: true });
 
