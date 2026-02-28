@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput, Alert,
   StatusBar, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform,
@@ -12,20 +12,60 @@ const STANDARDS = ['Balvatika', '1', '2', '3', '4', '5', '6', '7', '8'];
 
 const AdminEditStudentScreen = ({ route, navigation }: any) => {
   const { theme } = useTheme();
-  const { student } = route.params || {};
+  const { studentId } = route.params || {};
+  const [student, setStudent] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    name: student?.name || '',
-    grNumber: student?.grNumber || '',
-    dateOfBirth: student?.dateOfBirth?.split('T')[0] || '',
-    standard: student?.standard || '',
-    penNo: student?.penNo || '',
-    aadharNo: student?.aadharNo || '',
-    uidNumber: student?.uidNumber || '',
-    mobile: student?.mobile || '',
-    email: student?.email || '',
-    parentContact: student?.parentContact || '',
+    name: '',
+    grNumber: '',
+    dateOfBirth: '',
+    standard: '',
+    penNo: '',
+    aadharNo: '',
+    uidNumber: '',
+    mobile: '',
+    email: '',
+    parentContact: '',
   });
+
+  useEffect(() => {
+    const fetchStudent = async () => {
+      if (!studentId) {
+        Alert.alert('Error', 'No student ID provided');
+        navigation.goBack();
+        return;
+      }
+      
+      setLoading(true);
+      try {
+        const response = await apiService.getStudentById(studentId);
+        const studentData = response?.student || response?.data || response;
+        setStudent(studentData);
+        
+        // Populate form with fetched data
+        setForm({
+          name: studentData?.name || '',
+          grNumber: studentData?.grNumber || '',
+          dateOfBirth: studentData?.dateOfBirth?.split('T')[0] || '',
+          standard: studentData?.standard || '',
+          penNo: studentData?.penNo || '',
+          aadharNo: studentData?.aadharNo || '',
+          uidNumber: studentData?.uidNumber || '',
+          mobile: studentData?.mobile || '',
+          email: studentData?.email || '',
+          parentContact: studentData?.parentContact || '',
+        });
+      } catch (error: any) {
+        Alert.alert('Error', error.response?.data?.message || 'Failed to load student data');
+        navigation.goBack();
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudent();
+  }, [studentId, navigation]);
 
   const updateField = (key: string, value: string) => setForm(prev => ({ ...prev, [key]: value }));
 
@@ -36,8 +76,11 @@ const AdminEditStudentScreen = ({ route, navigation }: any) => {
     }
     setSaving(true);
     try {
-      await apiService.updateStudent(student._id, form);
-      Alert.alert('Success', 'Student updated', [{ text: 'OK', onPress: () => navigation.goBack() }]);
+      await apiService.updateStudent(studentId, form);
+      Alert.alert('Success', 'Student updated successfully', [{ 
+        text: 'OK', 
+        onPress: () => navigation.goBack() 
+      }]);
     } catch (e: any) {
       Alert.alert('Error', e.response?.data?.message || 'Update failed');
     } finally {
@@ -51,10 +94,12 @@ const AdminEditStudentScreen = ({ route, navigation }: any) => {
       {
         text: 'Delete', style: 'destructive', onPress: async () => {
           try {
-            await apiService.deleteStudent(student._id);
+            await apiService.deleteStudent(studentId);
             Alert.alert('Deleted', 'Student removed');
             navigation.goBack();
-          } catch (e: any) { Alert.alert('Error', e.response?.data?.message || 'Failed'); }
+          } catch (e: any) { 
+            Alert.alert('Error', e.response?.data?.message || 'Failed'); 
+          }
         },
       },
     ]);
@@ -78,6 +123,25 @@ const AdminEditStudentScreen = ({ route, navigation }: any) => {
       </View>
     </View>
   );
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]} edges={['top']}>
+        <StatusBar barStyle={theme.isDark ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
+        <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color={theme.colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Edit Student</Text>
+          <View style={{ width: 32 }} />
+        </View>
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={[styles.loadingText, { color: theme.colors.textTertiary }]}>Loading student data...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]} edges={['top']}>
@@ -145,6 +209,8 @@ const AdminEditStudentScreen = ({ route, navigation }: any) => {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
+  loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { marginTop: 12, fontSize: 14, fontWeight: '500' },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
   backBtn: { padding: 4 },
   headerTitle: { fontSize: 18, fontWeight: '700', flex: 1, marginLeft: 12 },

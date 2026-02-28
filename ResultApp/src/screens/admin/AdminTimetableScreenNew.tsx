@@ -65,12 +65,19 @@ const AdminTimetableScreenNew = ({ navigation }: any) => {
       const normalized: any = {};
       DAYS.forEach(day => {
         if (schedule[day] && Array.isArray(schedule[day])) {
-          normalized[day] = schedule[day].map((p: any) => ({
-            subject: p.subject || '',
-            class: p.class || p.standard || '',
-            startTime: p.startTime || '',
-            endTime: p.endTime || '',
-          }));
+          normalized[day] = schedule[day].map((p: any) => {
+            const startTime = p.startTime || '';
+            const endTime = p.endTime || '';
+            const timeSlot = p.timeSlot || (startTime && endTime ? `${startTime} - ${endTime}` : '');
+            
+            return {
+              subject: p.subject || '',
+              class: p.class || p.standard || '',
+              startTime: startTime,
+              endTime: endTime,
+              timeSlot: timeSlot,
+            };
+          });
         } else {
           normalized[day] = [];
         }
@@ -110,23 +117,34 @@ const AdminTimetableScreenNew = ({ navigation }: any) => {
       Alert.alert('Missing Subject', 'Please enter subject name');
       return;
     }
+    if (!periodForm.class.trim()) {
+      Alert.alert('Missing Class', 'Please select a class');
+      return;
+    }
+    if (!periodForm.startTime.trim() || !periodForm.endTime.trim()) {
+      Alert.alert('Missing Time', 'Please select start and end time');
+      return;
+    }
+    
     const { day, periodIdx, isNew } = editingPeriod;
+    
+    // Create timeSlot in format "HH:MM - HH:MM"
+    const timeSlot = `${periodForm.startTime} - ${periodForm.endTime}`;
+    
     setTimetable((prev: any) => {
       const daySchedule = [...(prev[day] || [])];
+      const periodData = {
+        subject: periodForm.subject,
+        class: periodForm.class,
+        startTime: periodForm.startTime,
+        endTime: periodForm.endTime,
+        timeSlot: timeSlot,
+      };
+      
       if (isNew) {
-        daySchedule.push({
-          subject: periodForm.subject,
-          class: periodForm.class,
-          startTime: periodForm.startTime,
-          endTime: periodForm.endTime,
-        });
+        daySchedule.push(periodData);
       } else {
-        daySchedule[periodIdx] = {
-          subject: periodForm.subject,
-          class: periodForm.class,
-          startTime: periodForm.startTime,
-          endTime: periodForm.endTime,
-        };
+        daySchedule[periodIdx] = periodData;
       }
       return { ...prev, [day]: daySchedule };
     });

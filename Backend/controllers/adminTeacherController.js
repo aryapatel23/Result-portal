@@ -109,13 +109,23 @@ const getTeacherPerformance = async (req, res) => {
   }
 };
 
+// Generate a random 6-character alphanumeric password
+const generatePassword = (length = 6) => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  let password = '';
+  for (let i = 0; i < length; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return password;
+};
+
 // Create new teacher account
 const createTeacher = async (req, res) => {
   try {
-    const { name, email, password, employeeId, subjects, classTeacher, assignedClasses, phone } = req.body;
+    const { name, email, employeeId, subjects, classTeacher, assignedClasses, phone } = req.body;
 
-    if (!name || !email || !password || !employeeId) {
-      return res.status(400).json({ message: 'Please fill all required fields' });
+    if (!name || !email || !employeeId) {
+      return res.status(400).json({ message: 'Please fill all required fields (Name, Email, Employee ID)' });
     }
 
     // Check if teacher already exists
@@ -124,9 +134,12 @@ const createTeacher = async (req, res) => {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
+    // Auto-generate a 6-character password
+    const plainPassword = generatePassword(6);
+
     // Hash password
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = await bcrypt.hash(plainPassword, salt);
 
     const teacher = new User({
       name,
@@ -143,23 +156,25 @@ const createTeacher = async (req, res) => {
 
     await teacher.save();
 
-    // Send welcome email with credentials
+    // Send welcome email with auto-generated credentials
+    let emailSent = false;
     try {
       await sendTeacherWelcomeEmail({
         email: teacher.email,
         name: teacher.name,
-        password: password, // Send the original password (before hashing)
+        password: plainPassword, // Send the auto-generated password (before hashing)
         employeeId: teacher.employeeId
       });
-      console.log(`✅ Welcome email sent to ${teacher.email}`);
+      emailSent = true;
+      console.log(`✅ Welcome email with credentials sent to ${teacher.email}`);
     } catch (emailError) {
       console.error('❌ Failed to send welcome email:', emailError);
       // Don't fail the request if email fails - teacher is already created
     }
 
     res.status(201).json({
-      message: 'Teacher account created successfully',
-      emailSent: true, // Indicate email was attempted
+      message: `Teacher account created successfully! ${emailSent ? 'Login credentials sent to ' + teacher.email : 'Warning: Email could not be sent. Auto-generated password: ' + plainPassword}`,
+      emailSent,
       teacher: {
         id: teacher._id,
         name: teacher.name,

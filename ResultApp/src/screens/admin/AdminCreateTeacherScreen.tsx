@@ -14,7 +14,7 @@ const AdminCreateTeacherScreen = ({ navigation }: any) => {
   const { theme } = useTheme();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({
-    name: '', employeeId: '', email: '', password: '',
+    name: '', employeeId: '', email: '',
     phone: '', classTeacher: '', subjectInput: '',
   });
   const [subjects, setSubjects] = useState<string[]>([]);
@@ -35,12 +35,8 @@ const AdminCreateTeacherScreen = ({ navigation }: any) => {
   };
 
   const handleSubmit = async () => {
-    if (!form.name || !form.employeeId || !form.email || !form.password) {
-      Alert.alert('Missing Fields', 'Please fill Name, Employee ID, Email, and Password.');
-      return;
-    }
-    if (form.password.length < 6) {
-      Alert.alert('Weak Password', 'Password must be at least 6 characters long.');
+    if (!form.name || !form.employeeId || !form.email) {
+      Alert.alert('Missing Fields', 'Please fill Name, Employee ID, and Email.');
       return;
     }
     if (!/\S+@\S+\.\S+/.test(form.email)) {
@@ -55,7 +51,6 @@ const AdminCreateTeacherScreen = ({ navigation }: any) => {
         name: form.name,
         employeeId: form.employeeId,
         email: form.email,
-        password: form.password,
         phone: form.phone,
         classTeacher: form.classTeacher || null,
         subjects,
@@ -67,7 +62,7 @@ const AdminCreateTeacherScreen = ({ navigation }: any) => {
       // Success - show confirmation
       Alert.alert(
         '✅ Success',
-        `Teacher ${form.name} created successfully!\n\n📧 Welcome email sent to ${form.email}`,
+        `Teacher ${form.name} created successfully!\n\n� Auto-generated password sent to ${form.email}\n\nThe teacher can login with their email and the password received via email.`,
         [
           {
             text: 'Add Another Teacher',
@@ -76,7 +71,6 @@ const AdminCreateTeacherScreen = ({ navigation }: any) => {
                 name: '',
                 employeeId: '',
                 email: '',
-                password: '',
                 phone: '',
                 classTeacher: '',
                 subjectInput: '',
@@ -152,7 +146,15 @@ const AdminCreateTeacherScreen = ({ navigation }: any) => {
           {renderInput('Full Name', 'name', 'account', { required: true })}
           {renderInput('Employee ID', 'employeeId', 'badge-account', { required: true, cap: 'characters' })}
           {renderInput('Email', 'email', 'email-outline', { required: true, keyboard: 'email-address', cap: 'none' })}
-          {renderInput('Password', 'password', 'lock-outline', { required: true, secure: true })}
+          
+          {/* Password auto-generated info */}
+          <View style={[styles.autoPassInfo, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary }]}>
+            <MaterialCommunityIcons name="lock-check" size={20} color={theme.colors.primary} />
+            <Text style={[styles.autoPassText, { color: theme.colors.primary }]}>
+              Password will be auto-generated and sent to teacher's email
+            </Text>
+          </View>
+
           {renderInput('Phone', 'phone', 'phone', { keyboard: 'phone-pad' })}
 
           {/* Subjects */}
@@ -244,6 +246,8 @@ const styles = StyleSheet.create({
   classChipText: { fontSize: 13, fontWeight: '600' },
   submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 14, gap: 8, marginTop: 10 },
   submitText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
+  autoPassInfo: { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 12, borderWidth: 1, marginBottom: 14, gap: 10 },
+  autoPassText: { fontSize: 13, fontWeight: '600', flex: 1 },
 });
 
 export default AdminCreateTeacherScreen;

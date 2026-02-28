@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, RefreshControl,
-  StatusBar, StyleSheet, ActivityIndicator,
+  StatusBar, StyleSheet, ActivityIndicator, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -16,6 +16,8 @@ const AdminAttendanceScreen = ({ navigation }: any) => {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedRecord, setSelectedRecord] = useState<any>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -36,6 +38,26 @@ const AdminAttendanceScreen = ({ navigation }: any) => {
   }, [selectedDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const openDetailModal = (record: any) => {
+    setSelectedRecord(record);
+    setShowDetailModal(true);
+  };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'long',
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
+  const formatTime = (timeStr: string | null) => {
+    if (!timeStr) return 'Not marked';
+    return timeStr;
+  };
 
   const statusColor: Record<string, string> = {
     present: '#10B981',
@@ -66,8 +88,9 @@ const AdminAttendanceScreen = ({ navigation }: any) => {
   }
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]} edges={['top']}>
-      <StatusBar barStyle={theme.isDark ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
+    <>
+      <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]} edges={['top']}>
+        <StatusBar barStyle={theme.isDark ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
 
       <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -125,7 +148,7 @@ const AdminAttendanceScreen = ({ navigation }: any) => {
             const sColor = statusColor[status] || '#999';
 
             return (
-              <View key={r._id || idx} style={[styles.recCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.borderLight }]}>
+              <TouchableOpacity key={r._id || idx} style={[styles.recCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.borderLight }]} onPress={() => openDetailModal(r)}>
                 <View style={[styles.statusStripe, { backgroundColor: sColor }]} />
                 <View style={styles.recContent}>
                   <View style={styles.recTop}>
@@ -168,13 +191,182 @@ const AdminAttendanceScreen = ({ navigation }: any) => {
                     </View>
                   )}
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           })
         )}
         <View style={{ height: 40 }} />
       </ScrollView>
     </SafeAreaView>
+
+    {/* Detail Modal */}
+    <Modal
+      visible={showDetailModal}
+      animationType="slide"
+      transparent
+      onRequestClose={() => setShowDetailModal(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={[styles.modalBox, { backgroundColor: theme.colors.background }]}>
+          {/* Modal Header */}
+          <View style={[styles.modalHeader, { borderBottomColor: theme.colors.borderLight }]}>
+            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Attendance Details</Text>
+            <TouchableOpacity onPress={() => setShowDetailModal(false)} style={styles.modalCloseBtn}>
+              <MaterialCommunityIcons name="close" size={24} color={theme.colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Modal Content */}
+          <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+            {selectedRecord && (
+              <View>
+                {/* Teacher Info */}
+                <View style={[styles.detailSection, { borderBottomColor: theme.colors.borderLight }]}>
+                  <Text style={[styles.detailLabel, { color: theme.colors.textTertiary }]}>Teacher</Text>
+                  <Text style={[styles.detailValue, { color: theme.colors.text }]}>
+                    {selectedRecord.teacher?.name || selectedRecord.teacherName || 'Unknown'}
+                  </Text>
+                  {selectedRecord.teacher?.employeeId && (
+                    <Text style={[styles.detailSubValue, { color: theme.colors.textSecondary }]}>
+                      ID: {selectedRecord.teacher.employeeId}
+                    </Text>
+                  )}
+                </View>
+
+                {/* Date & Day */}
+                <View style={[styles.detailSection, { borderBottomColor: theme.colors.borderLight }]}>
+                    <Text style={[styles.detailLabel, { color: theme.colors.textTertiary }]}>Date</Text>
+                    <Text style={[styles.detailValue, { color: theme.colors.text }]}>
+                      {formatDate(selectedRecord.date)}
+                    </Text>
+                    {selectedRecord.day && (
+                      <Text style={[styles.detailSubValue, { color: theme.colors.textSecondary }]}>
+                        Day {selectedRecord.day}
+                      </Text>
+                  )}
+                </View>
+
+                {/* Status */}
+                <View style={[styles.detailSection, { borderBottomColor: theme.colors.borderLight }]}>
+                    <Text style={[styles.detailLabel, { color: theme.colors.textTertiary }]}>Status</Text>
+                    <View style={[styles.statusBadgeLarge, { backgroundColor: (statusColor[selectedRecord.status] || '#999') + '20' }]}>
+                      <MaterialCommunityIcons 
+                        name={getStatusIcon(selectedRecord.status)} 
+                        size={18} 
+                        color={statusColor[selectedRecord.status] || '#999'} 
+                      />
+                      <Text style={[styles.statusTextLarge, { color: statusColor[selectedRecord.status] || '#999' }]}>
+                        {(selectedRecord.status || 'absent').charAt(0).toUpperCase() + (selectedRecord.status || 'absent').slice(1)}
+                      </Text>
+                    </View>
+                </View>
+
+                {/* Check In Time */}
+                {selectedRecord.checkInTime && (
+                    <View style={[styles.detailSection, { borderBottomColor: theme.colors.borderLight }]}>
+                      <Text style={[styles.detailLabel, { color: theme.colors.textTertiary }]}>Check In</Text>
+                      <View style={styles.detailTimeRow}>
+                        <MaterialCommunityIcons name="login" size={18} color={theme.colors.success} />
+                        <Text style={[styles.detailValue, { color: theme.colors.text, marginLeft: 8 }]}>
+                          {formatTime(selectedRecord.checkInTime)}
+                        </Text>
+                      </View>
+                    </View>
+                )}
+
+                {/* Check Out Time */}
+                {selectedRecord.checkOutTime && (
+                    <View style={[styles.detailSection, { borderBottomColor: theme.colors.borderLight }]}>
+                      <Text style={[styles.detailLabel, { color: theme.colors.textTertiary }]}>Check Out</Text>
+                      <View style={styles.detailTimeRow}>
+                        <MaterialCommunityIcons name="logout" size={18} color={theme.colors.error} />
+                        <Text style={[styles.detailValue, { color: theme.colors.text, marginLeft: 8 }]}>
+                          {formatTime(selectedRecord.checkOutTime)}
+                        </Text>
+                      </View>
+                    </View>
+                )}
+
+                {/* Working Hours */}
+                {selectedRecord.workingHours !== undefined && (
+                    <View style={[styles.detailSection, { borderBottomColor: theme.colors.borderLight }]}>
+                      <Text style={[styles.detailLabel, { color: theme.colors.textTertiary }]}>Working Hours</Text>
+                      <Text style={[styles.detailValue, { color: theme.colors.text }]}>
+                        {selectedRecord.workingHours.toFixed(2)} hours
+                      </Text>
+                    </View>
+                )}
+
+                {/* Location */}
+                {selectedRecord.location && (
+                    <View style={[styles.detailSection, { borderBottomColor: theme.colors.borderLight }]}>
+                      <Text style={[styles.detailLabel, { color: theme.colors.textTertiary }]}>Location</Text>
+                      {selectedRecord.location.address && (
+                        <View style={styles.detailLocationRow}>
+                          <MaterialCommunityIcons name="map-marker" size={16} color={theme.colors.primary} />
+                          <Text style={[styles.detailValue, { color: theme.colors.text, flex: 1, marginLeft: 8 }]}>
+                            {selectedRecord.location.address}
+                          </Text>
+                        </View>
+                      )}
+                      {selectedRecord.location.coordinates && (
+                        <Text style={[styles.detailSubValue, { color: theme.colors.textSecondary, marginTop: 4 }]}>
+                          Lat: {selectedRecord.location.coordinates[1]?.toFixed(6)}, 
+                          Lng: {selectedRecord.location.coordinates[0]?.toFixed(6)}
+                        </Text>
+                      )}
+                    </View>
+                )}
+
+                {/* Marked By */}
+                {selectedRecord.markedBy && (
+                    <View style={[styles.detailSection, { borderBottomColor: theme.colors.borderLight }]}>
+                      <Text style={[styles.detailLabel, { color: theme.colors.textTertiary }]}>Marked By</Text>
+                      <Text style={[styles.detailValue, { color: theme.colors.text }]}>
+                        {selectedRecord.markedBy.charAt(0).toUpperCase() + selectedRecord.markedBy.slice(1)}
+                      </Text>
+                    </View>
+                )}
+
+                {/* Auto Marked Info */}
+                {selectedRecord.autoMarked && (
+                    <View style={[styles.detailSection, { borderBottomColor: theme.colors.borderLight }]}>
+                      <Text style={[styles.detailLabel, { color: theme.colors.textTertiary }]}>Auto-Marked</Text>
+                      <View style={[styles.autoMarkedBadge, { backgroundColor: theme.colors.warning + '20' }]}>
+                        <MaterialCommunityIcons name="robot" size={16} color={theme.colors.warning} />
+                        <Text style={[styles.autoMarkedText, { color: theme.colors.warning }]}>
+                          Automatically marked
+                        </Text>
+                      </View>
+                      {selectedRecord.autoMarkedReason && (
+                        <Text style={[styles.detailSubValue, { color: theme.colors.textSecondary, marginTop: 6 }]}>
+                          Reason: {selectedRecord.autoMarkedReason}
+                        </Text>
+                      )}
+                      {selectedRecord.autoMarkedAt && (
+                        <Text style={[styles.detailSubValue, { color: theme.colors.textSecondary, marginTop: 4 }]}>
+                          At: {formatTime(selectedRecord.autoMarkedAt)}
+                        </Text>
+                      )}
+                    </View>
+                )}
+
+                {/* Remarks */}
+                {selectedRecord.remarks && (
+                    <View style={[styles.detailSection, { borderBottomColor: 'transparent' }]}>
+                      <Text style={[styles.detailLabel, { color: theme.colors.textTertiary }]}>Remarks</Text>
+                      <Text style={[styles.detailValue, { color: theme.colors.text }]}>
+                        {selectedRecord.remarks}
+                      </Text>
+                    </View>
+                )}
+              </View>
+            )}
+          </ScrollView>
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 };
 
@@ -208,6 +400,91 @@ const styles = StyleSheet.create({
   timeText: { fontSize: 12, fontWeight: '500' },
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, borderTopWidth: 1, paddingTop: 8, marginTop: 8 },
   locationText: { fontSize: 11, fontWeight: '500', flex: 1 },
+  
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalBox: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '85%',
+    paddingBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  modalCloseBtn: {
+    padding: 4,
+  },
+  modalContent: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
+  detailSection: {
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  detailLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  detailValue: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  detailSubValue: {
+    fontSize: 13,
+    fontWeight: '500',
+    marginTop: 4,
+  },
+  detailTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  detailLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  statusBadgeLarge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+  statusTextLarge: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  autoMarkedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    alignSelf: 'flex-start',
+  },
+  autoMarkedText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
 });
 
 export default AdminAttendanceScreen;

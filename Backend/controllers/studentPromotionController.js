@@ -14,7 +14,7 @@ const getNextStandard = (currentStandard) => {
 // Promote single student to next standard
 const promoteSingleStudent = async (req, res) => {
   try {
-    const { studentId, newStandard } = req.body;
+    const { studentId, newStandard, toStandard } = req.body;
 
     if (!studentId) {
       return res.status(400).json({ message: 'Student ID is required' });
@@ -26,8 +26,11 @@ const promoteSingleStudent = async (req, res) => {
       return res.status(404).json({ message: 'Student not found' });
     }
 
-    // If newStandard provided, use it; otherwise auto-calculate
-    const promotedStandard = newStandard || getNextStandard(student.standard);
+    // Save old standard before updating
+    const oldStandard = student.standard;
+
+    // If newStandard or toStandard provided, use it; otherwise auto-calculate
+    const promotedStandard = newStandard || toStandard || getNextStandard(student.standard);
 
     student.standard = promotedStandard;
     await student.save();
@@ -38,7 +41,7 @@ const promoteSingleStudent = async (req, res) => {
         id: student._id,
         name: student.name,
         grNumber: student.grNumber,
-        oldStandard: student.standard,
+        oldStandard: oldStandard,
         newStandard: promotedStandard
       }
     });
@@ -52,9 +55,13 @@ const promoteSingleStudent = async (req, res) => {
 // Bulk promote students by current standard
 const bulkPromoteStudents = async (req, res) => {
   try {
-    const { currentStandard, newStandard, studentIds } = req.body;
+    const { currentStandard, fromStandard, newStandard, toStandard, studentIds } = req.body;
 
-    if (!currentStandard && !studentIds) {
+    // Support both parameter naming conventions
+    const standard = currentStandard || fromStandard;
+    const targetStandard = newStandard || toStandard;
+
+    if (!standard && !studentIds) {
       return res.status(400).json({ 
         message: 'Either current standard or student IDs are required' 
       });
@@ -71,7 +78,7 @@ const bulkPromoteStudents = async (req, res) => {
     } else {
       // Promote all students in a standard
       studentsToPromote = await User.find({
-        standard: currentStandard,
+        standard: standard,
         role: 'student'
       });
     }
@@ -89,7 +96,7 @@ const bulkPromoteStudents = async (req, res) => {
     for (const student of studentsToPromote) {
       try {
         const oldStandard = student.standard;
-        const promotedStandard = newStandard || getNextStandard(student.standard);
+        const promotedStandard = targetStandard || getNextStandard(student.standard);
         
         student.standard = promotedStandard;
         await student.save();
