@@ -72,8 +72,37 @@ const LoginScreen = () => {
         [{ text: 'Got It' }]
       );
     } catch (error: any) {
-      const msg = error.response?.data?.message || error.message || 'Something went wrong. Please try again.';
-      Alert.alert('Error', msg);
+      console.error('Forgot Password Error:', error);
+      
+      let errorMessage = 'Something went wrong. Please try again.';
+      
+      // Network error (no internet or server down)
+      if (error.message === 'Network Error' || !error.response) {
+        errorMessage = 'Unable to connect to server.\n\n' +
+          '• Check your internet connection\n' +
+          '• The server might be temporarily unavailable\n' +
+          '• Please try again in a few moments';
+      }
+      // Rate limit error
+      else if (error.response?.status === 429) {
+        const retryAfter = error.response?.data?.retryAfter || 3600;
+        const minutes = Math.ceil(retryAfter / 60);
+        errorMessage = `Too many password reset attempts.\n\nPlease wait ${minutes} minutes before trying again.`;
+      }
+      // Email not found
+      else if (error.response?.status === 404) {
+        errorMessage = 'Email not registered.\n\nPlease check your email address or contact your administrator.';
+      }
+      // Server error
+      else if (error.response?.status >= 500) {
+        errorMessage = 'Server error. Please try again later or contact support.';
+      }
+      // Other errors
+      else {
+        errorMessage = error.response?.data?.message || error.message || errorMessage;
+      }
+      
+      Alert.alert('Password Reset Failed', errorMessage);
     } finally {
       setForgotLoading(false);
     }

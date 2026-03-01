@@ -45,12 +45,28 @@ class ApiService {
         return response;
       },
       async (error: AxiosError) => {
-        console.log('API Error:', error.message, error.response?.status);
+        console.error('API Error:', {
+          message: error.message,
+          status: error.response?.status,
+          url: error.config?.url,
+        });
+        
+        // Handle specific error cases
         if (error.response?.status === 401) {
-          // Token expired or invalid
+          // Token expired or invalid - clear auth data
           await AsyncStorage.removeItem('authToken');
           await AsyncStorage.removeItem('user');
         }
+        
+        // Add more context to network errors
+        if (error.message === 'Network Error') {
+          console.error('Network Error Details:', {
+            baseURL: this.api.defaults.baseURL,
+            url: error.config?.url,
+            method: error.config?.method,
+          });
+        }
+        
         return Promise.reject(error);
       }
     );
