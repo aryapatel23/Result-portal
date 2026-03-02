@@ -143,8 +143,8 @@ const requestLogger = (req, res, next) => {
   if (req.path.includes('/auth/')) {
     logSecurityEvent('Authentication attempt', {
       path: req.path,
-      email: req.body.email,
-      role: req.body.role,
+      email: req.body?.email || 'N/A',
+      role: req.body?.role || 'N/A',
     }, req);
   }
   

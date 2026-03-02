@@ -61,16 +61,34 @@ exports.loginUser = async (req, res) => {
 
     // --- ADMIN / TEACHER LOGIN ---
     if (!email || !password) {
-      return res.status(400).json({ message: "Please provide Email and Password" });
+      return res.status(400).json({ message: "Please provide Email/Employee ID and Password" });
     }
 
-    console.log(`Staff Login Attempt: Email="${email}"`);
+    console.log(`Staff Login Attempt: Email/ID="${email}"`);
 
     const inputEmail = email.trim();
     const inputPass = password.trim();
 
-    // DB Check for Teacher/Admin (Database Authentication Only)
-    const user = await User.findOne({ email: inputEmail });
+    // DB Check for Teacher/Admin - Support both email and employeeId
+    // Check if input looks like an email
+    const isEmailFormat = /\S+@\S+\.\S+/.test(inputEmail);
+    
+    let user;
+    if (isEmailFormat) {
+      // Search by email
+      user = await User.findOne({ email: inputEmail });
+      console.log(`Searching by email: ${inputEmail}`);
+    } else {
+      // Search by employeeId (for teachers) or email
+      user = await User.findOne({ 
+        $or: [
+          { employeeId: inputEmail },
+          { email: inputEmail }
+        ]
+      });
+      console.log(`Searching by employeeId/username: ${inputEmail}`);
+    }
+    
     if (!user) {
       console.log("User not found in DB");
       return res.status(401).json({ message: "Invalid credentials" });

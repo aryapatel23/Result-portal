@@ -32,9 +32,10 @@ const validateLogin = [
   body('email')
     .if(body('role').not().equals('student'))
     .trim()
-    .isEmail()
-    .normalizeEmail()
-    .withMessage('Invalid email address'),
+    .notEmpty()
+    .withMessage('Email or Employee ID is required')
+    .isLength({ min: 3, max: 100 })
+    .withMessage('Email/Employee ID must be between 3 and 100 characters'),
   
   body('password')
     .if(body('role').not().equals('student'))

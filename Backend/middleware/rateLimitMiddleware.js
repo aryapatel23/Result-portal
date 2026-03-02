@@ -32,11 +32,25 @@ const generalLimiter = rateLimit({
 // Strict rate limiter for authentication endpoints
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Only 5 login attempts per 15 minutes
+  max: process.env.NODE_ENV === 'production' ? 5 : 20, // 5 in production, 20 in development
   skipSuccessfulRequests: true, // Don't count successful logins
   message: {
     success: false,
     message: 'Too many login attempts, please try again after 15 minutes'
+  },
+  skip: (req) => {
+    // In development, skip rate limiting for localhost
+    if (process.env.NODE_ENV !== 'production') {
+      const isLocalhost = req.ip === '127.0.0.1' || 
+                         req.ip === '::1' || 
+                         req.ip === '::ffff:127.0.0.1' ||
+                         req.hostname === 'localhost';
+      if (isLocalhost) {
+        console.log(`🔓 DEV: Skipping auth rate limit for localhost`);
+        return true;
+      }
+    }
+    return false;
   },
   handler: (req, res) => {
     console.error(`🚨 Login brute force attempt detected: ${req.ip}`);
@@ -51,10 +65,23 @@ const authLimiter = rateLimit({
 // Forgot password rate limiter
 const forgotPasswordLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 3, // Only 3 password reset requests per hour
+  max: process.env.NODE_ENV === 'production' ? 3 : 10, // 3 in production, 10 in development
   message: {
     success: false,
     message: 'Too many password reset attempts'
+  },
+  skip: (req) => {
+    // In development, skip rate limiting for localhost
+    if (process.env.NODE_ENV !== 'production') {
+      const isLocalhost = req.ip === '127.0.0.1' || 
+                         req.ip === '::1' || 
+                         req.ip === '::ffff:127.0.0.1' ||
+                         req.hostname === 'localhost';
+      if (isLocalhost) {
+        return true;
+      }
+    }
+    return false;
   },
   handler: (req, res) => {
     console.error(`🚨 Password reset abuse detected: ${req.ip}`);

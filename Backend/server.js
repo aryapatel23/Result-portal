@@ -2,6 +2,7 @@ const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const compression = require("compression");
+const mongoSanitize = require("express-mongo-sanitize");
 const connectDB = require("./config/db");
 const { initAttendanceCron } = require("./cron/attendanceCron");
 const { startTeacherAttendanceCron } = require("./cron/teacherAttendanceCron");
@@ -9,7 +10,6 @@ const { startTeacherAttendanceCron } = require("./cron/teacherAttendanceCron");
 // 🛡️ Security Middleware Imports
 const {
   helmetConfig,
-  mongoSanitizeConfig,
   hppConfig,
   customSecurityHeaders,
   sanitizeRequest,
@@ -113,8 +113,35 @@ app.use(compression({
   level: 6
 }));
 
-// 10. NoSQL injection protection
-app.use(mongoSanitizeConfig);
+// 10. NoSQL injection protection (with safe configuration)
+app.use((req, res, next) => {
+  try {
+    // Safely sanitize body
+    if (req.body && typeof req.body === 'object') {
+      req.body = mongoSanitize.sanitize(req.body, { replaceWith: '_' });
+    }
+    // Safely sanitize params
+    if (req.params && typeof req.params === 'object') {
+      req.params = mongoSanitize.sanitize(req.params, { replaceWith: '_' });
+    }
+    // Safely sanitize query (create new object instead of modifying frozen one)
+    if (req.query && typeof req.query === 'object') {
+      try {
+        const sanitizedQuery = mongoSanitize.sanitize(req.query, { replaceWith: '_' });
+        // Only replace if query is not frozen
+        if (!Object.isFrozen(req.query)) {
+          req.query = sanitizedQuery;
+        }
+      } catch (err) {
+        // If query is frozen, skip sanitization
+        console.warn('⚠️  Could not sanitize frozen query params');
+      }
+    }
+  } catch (error) {
+    console.error('❌ Sanitization error:', error.message);
+  }
+  next();
+});
 
 // 11. HTTP Parameter Pollution protection
 app.use(hppConfig);

@@ -1,5 +1,4 @@
 const helmet = require('helmet');
-const mongoSanitize = require('express-mongo-sanitize');
 const hpp = require('hpp');
 
 /**
@@ -47,14 +46,6 @@ const helmetConfig = helmet({
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
   // XSS Filter
   xssFilter: true,
-});
-
-// MongoDB Injection Protection
-const mongoSanitizeConfig = mongoSanitize({
-  replaceWith: '_', // Replace $ and . with _
-  onSanitize: ({ req, key }) => {
-    console.warn(`⚠️  NoSQL injection attempt detected: ${key}`);
-  },
 });
 
 // HTTP Parameter Pollution Protection
@@ -119,7 +110,6 @@ const preventCommonAttacks = (req, res, next) => {
 
 module.exports = {
   helmetConfig,
-  mongoSanitizeConfig,
   hppConfig,
   customSecurityHeaders,
   sanitizeRequest,
