@@ -124,7 +124,7 @@ const LoginModal = ({ isOpen, onClose, initialRole = 'student' }) => {
                                 <p className="text-gray-500 mt-2 font-medium">Enter your email to receive a new password</p>
                             </div>
 
-                            <form onSubmit={handleForgotPassword} className="space-y-6">
+                            <form onSubmit={handleForgotPassword} noValidate className="space-y-6">
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Email Address</label>
                                     <div className="relative">
@@ -197,7 +197,7 @@ const LoginModal = ({ isOpen, onClose, initialRole = 'student' }) => {
                     </div>
 
                     {/* Login Form */}
-                    <form onSubmit={handleLogin} className="space-y-6">
+                    <form onSubmit={handleLogin} noValidate className="space-y-6">
                         {activeTab === 'student' ? (
                             <>
                                 <div className="space-y-2">
@@ -231,12 +231,14 @@ const LoginModal = ({ isOpen, onClose, initialRole = 'student' }) => {
                         ) : (
                             <>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Email Address</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">
+                                        {activeTab === 'teacher' ? 'Email or Employee ID' : 'Email Address'}
+                                    </label>
                                     <div className="relative">
                                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-300" />
                                         <input
-                                            type="email"
-                                            placeholder="name@school.com"
+                                            type={activeTab === 'teacher' ? "text" : "email"}
+                                            placeholder={activeTab === 'teacher' ? "email@school.com or EMP001" : "email@school.com"}
                                             className="w-full bg-white border border-gray-200 rounded-2xl pl-12 pr-4 py-4 text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all shadow-sm"
                                             value={authData.email}
                                             onChange={(e) => setAuthData({ ...authData, email: e.target.value })}

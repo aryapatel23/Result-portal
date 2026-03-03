@@ -21,14 +21,15 @@ export const loginUser = createAsyncThunk(
     'auth/login',
     async ({ role, credentials }, { rejectWithValue }) => {
         try {
-            let response;
-            if (role === 'student') {
-                response = await axios.post('/student/login', credentials);
-            } else {
-                response = await axios.post('/auth/login', credentials);
-                if (response.data.user.role !== role) {
-                    throw new Error(`This login is for ${role}s only`);
-                }
+            // Use unified /auth/login endpoint for all roles
+            const response = await axios.post('/auth/login', { 
+                ...credentials, 
+                role 
+            });
+            
+            // Verify the returned role matches what was requested
+            if (response.data.user.role !== role) {
+                throw new Error(`This login is for ${role}s only`);
             }
 
             const data = response.data;
