@@ -2,12 +2,22 @@ import axios, { AxiosInstance, AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-// API Base URL - Configure for real device access
-const API_BASE_URL = 'https://result-portal-tkom.onrender.com/api';
+// API Configuration
+// For LOCAL DEVELOPMENT: Use your computer's local IP address
+// For PRODUCTION: Use the deployed backend URL
+const USE_LOCAL_BACKEND = true; // Set to false for production
+
+const LOCAL_API_URL = 'http://192.168.1.14:5000/api'; // Your computer's Wi-Fi IP
+const PRODUCTION_API_URL = 'https://result-portal-tkom.onrender.com/api';
+
+// Select API based on environment
+const API_BASE_URL = USE_LOCAL_BACKEND ? LOCAL_API_URL : PRODUCTION_API_URL;
 
 // For local development on real device:
-// Replace 'localhost' with your computer's local IP address
-// Example: 'http://192.168.1.100:5000/api'
+// 1. Make sure your phone and computer are on the SAME Wi-Fi network
+// 2. Set USE_LOCAL_BACKEND = true
+// 3. Update LOCAL_API_URL with your computer's IP address
+// 4. Make sure backend is running on http://localhost:5000
 
 class ApiService {
   private api: AxiosInstance;

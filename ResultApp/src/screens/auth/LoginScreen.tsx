@@ -290,21 +290,21 @@ const LoginScreen = () => {
               </>
             ) : (
               <>
-                {/* Email */}
+                {/* Email or Employee ID */}
                 <View style={styles.fieldGroup}>
                   <Text style={[styles.fieldLabel, { color: theme.colors.textSecondary }]}>
-                    Email Address
+                    {role === 'teacher' ? 'Email or Employee ID' : 'Email Address'}
                   </Text>
                   <View style={[styles.inputWrap, { backgroundColor: theme.colors.inputBg, borderColor: theme.colors.border }]}>
                     <MaterialCommunityIcons name="email-outline" size={20} color={theme.colors.textTertiary} />
                     <TextInput
                       style={[styles.input, { color: theme.colors.text }]}
-                      placeholder="name@school.com"
+                      placeholder={role === 'teacher' ? 'email@school.com or EMP001' : 'email@school.com'}
                       placeholderTextColor={theme.colors.textTertiary}
                       value={email}
                       onChangeText={setEmail}
                       autoCapitalize="none"
-                      keyboardType="email-address"
+                      keyboardType={role === 'teacher' ? 'default' : 'email-address'}
                       autoCorrect={false}
                       editable={!loading}
                     />
