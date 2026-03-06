@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 General Questions & Discussion
+    url: https://github.com/aryapatel23/Result-portal/discussions
+    about: Ask questions and discuss ideas with the community
+  - name: 📚 Documentation
+    url: https://github.com/aryapatel23/Result-portal#readme
+    about: Check our comprehensive documentation
+  - name: 🔒 Security Vulnerability
+    url: https://github.com/aryapatel23/Result-portal/security/policy
+    about: Report security vulnerabilities privately
+  - name: 💼 Enterprise Support
+    url: mailto:support@resultportal.com
+    about: Contact us for enterprise-level support
