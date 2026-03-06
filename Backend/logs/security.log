@@ -1,0 +1,270 @@
+[2026-03-01T07:18:24.883Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.7705
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"teacher1@school.com","role":"teacher"}
+---
+[2026-03-01T07:18:55.321Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"rajesh.kumar@school.com","role":"N/A"}
+---
+[2026-03-01T07:19:15.582Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"vipulunjha@gmail.com","role":"N/A"}
+---
+[2026-03-01T07:19:17.248Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"vipulunjha@gmail.com","role":"N/A"}
+---
+[2026-03-01T07:19:19.878Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.7705
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"rajesh.kumar@school.com","role":"teacher"}
+---
+[2026-03-01T07:21:03.083Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"rajesh.kumar@school.com","role":"N/A"}
+---
+[2026-03-01T07:21:32.921Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"rajesh.kumar@school.com","role":"N/A"}
+---
+[2026-03-01T07:21:42.724Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"rajesh.kumar@school.com","role":"N/A"}
+---
+[2026-03-01T07:21:58.691Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"rajesh.kumar@school.com","role":"N/A"}
+---
+[2026-03-01T07:22:07.037Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"rajesh.kumar@school.com","role":"N/A"}
+---
+[2026-03-01T07:22:19.542Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.7705
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"EMP001","role":"teacher"}
+---
+[2026-03-01T07:22:47.369Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"rajesh.kumar@school.com","role":"N/A"}
+---
+[2026-03-01T07:23:08.106Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"priya.sharma@school.com","role":"N/A"}
+---
+[2026-03-01T07:23:45.858Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"priya.sharma@school.com","role":"N/A"}
+---
+[2026-03-01T07:27:36.582Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.7705
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"rajesh.kumar@school.com","role":"teacher"}
+---
+[2026-03-01T07:28:22.574Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"priya.sharma@school.com","role":"N/A"}
+---
+[2026-03-01T07:29:27.137Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"priya.sharma@school.com","role":"N/A"}
+---
+[2026-03-01T07:29:57.082Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"rajesh.kumar@school.com","role":"N/A"}
+---
+[2026-03-01T07:30:32.435Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"rajesh.kumar@school.com","role":"N/A"}
+---
+[2026-03-01T07:31:20.804Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.7705
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"rajesh.kumar@school.com","role":"teacher"}
+---
+[2026-03-01T07:31:56.989Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.7705
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"EMP001","role":"teacher"}
+---
+[2026-03-01T07:33:19.269Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"rajesh.kumar@school.com","role":"N/A"}
+---
+[2026-03-01T07:33:29.223Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.7705
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"rajesh.kumar@school.com","role":"teacher"}
+---
+[2026-03-01T07:33:50.153Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.7705
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"EMP001","role":"teacher"}
+---
+[2026-03-01T07:34:16.657Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.7705
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"EMP001","role":"teacher"}
+---
+[2026-03-01T07:34:27.274Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.7705
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"N/A","role":"student"}
+---
+[2026-03-01T07:34:40.546Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"rajesh.kumar@school.com","role":"N/A"}
+---
+[2026-03-01T07:37:26.178Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"rajesh.kumar@school.com","role":"N/A"}
+---
+[2026-03-01T07:37:27.435Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"rajesh.kumar@school.com","role":"N/A"}
+---
+[2026-03-01T07:37:31.536Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"rajesh.kumar@school.com","role":"N/A"}
+---
+[2026-03-01T07:37:55.458Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.7705
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"rajesh.kumar@school.com","role":"teacher"}
+---
+[2026-03-01T07:37:56.093Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.7705
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"EMP001","role":"teacher"}
+---
+[2026-03-01T07:37:56.610Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.7705
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"EMP002","role":"teacher"}
+---
+[2026-03-01T07:38:08.224Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.7705
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"rajesh.kumar@school.com","role":"teacher"}
+---
+[2026-03-01T07:38:25.136Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.7705
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"EMP001","role":"teacher"}
+---
+[2026-03-01T07:39:47.549Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"rajesh.kumar@school.com","role":"N/A"}
+---
+[2026-03-01T07:43:26.032Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"rajesh.kumar@school.com","role":"teacher"}
+---
+[2026-03-01T07:43:52.420Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"vipulunjha@gmail.com","role":"admin"}
+---
+[2026-03-01T07:48:17.474Z] SECURITY: Authentication attempt
+IP: 192.168.1.19
+User-Agent: okhttp/4.9.2
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"rajesh.kumar@school.com","role":"teacher"}
+---
+[2026-03-01T07:48:41.884Z] SECURITY: Authentication attempt
+IP: 192.168.1.19
+User-Agent: okhttp/4.9.2
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"vipulunjha@gmail.com","role":"admin"}
+---
+[2026-03-01T08:48:02.563Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Mobile Safari/537.36
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"rajesh.kumar@school.com","role":"teacher"}
+---
+[2026-03-01T08:48:55.112Z] SECURITY: Authentication attempt
+IP: 127.0.0.1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"vipulunjha@gmail.com","role":"admin"}
+---
+[2026-03-01T08:50:41.047Z] SECURITY: Authentication attempt
+IP: 192.168.1.19
+User-Agent: okhttp/4.9.2
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"N/A","role":"student"}
+---
+[2026-03-01T08:52:24.528Z] SECURITY: Authentication attempt
+IP: 192.168.1.19
+User-Agent: okhttp/4.9.2
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"rajesh.kumar@school.com","role":"teacher"}
+---
+[2026-03-01T08:55:30.809Z] SECURITY: Authentication attempt
+IP: 192.168.1.19
+User-Agent: okhttp/4.9.2
+User: Anonymous
+Details: {"path":"/api/auth/login","email":"vipulunjha@gmail.com","role":"admin"}
+---

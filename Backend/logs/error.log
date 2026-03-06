@@ -1,0 +1,192 @@
+[2026-02-28T05:57:28.763Z] ERROR: GET /api/entries
+IP: 10.42.109.196
+User: Anonymous
+Message: Cannot set property query of #<IncomingMessage> which has only a getter
+Stack: TypeError: Cannot set property query of #<IncomingMessage> which has only a getter
+    at D:\Result\Backend\node_modules\express-mongo-sanitize\index.js:113:18
+    at Array.forEach (<anonymous>)
+    at D:\Result\Backend\node_modules\express-mongo-sanitize\index.js:110:44
+    at Layer.handleRequest (D:\Result\Backend\node_modules\router\lib\layer.js:152:17)
+    at trimPrefix (D:\Result\Backend\node_modules\router\index.js:342:13)
+    at D:\Result\Backend\node_modules\router\index.js:297:9
+    at processParams (D:\Result\Backend\node_modules\router\index.js:582:12)
+    at next (D:\Result\Backend\node_modules\router\index.js:291:5)
+    at compression (D:\Result\Backend\node_modules\compression\index.js:243:5)
+    at Layer.handleRequest (D:\Result\Backend\node_modules\router\lib\layer.js:152:17)
+---
+[2026-02-28T05:57:30.083Z] ERROR: GET /api/entries
+IP: 10.42.109.196
+User: Anonymous
+Message: Cannot set property query of #<IncomingMessage> which has only a getter
+Stack: TypeError: Cannot set property query of #<IncomingMessage> which has only a getter
+    at D:\Result\Backend\node_modules\express-mongo-sanitize\index.js:113:18
+    at Array.forEach (<anonymous>)
+    at D:\Result\Backend\node_modules\express-mongo-sanitize\index.js:110:44
+    at Layer.handleRequest (D:\Result\Backend\node_modules\router\lib\layer.js:152:17)
+    at trimPrefix (D:\Result\Backend\node_modules\router\index.js:342:13)
+    at D:\Result\Backend\node_modules\router\index.js:297:9
+    at processParams (D:\Result\Backend\node_modules\router\index.js:582:12)
+    at next (D:\Result\Backend\node_modules\router\index.js:291:5)
+    at compression (D:\Result\Backend\node_modules\compression\index.js:243:5)
+    at Layer.handleRequest (D:\Result\Backend\node_modules\router\lib\layer.js:152:17)
+---
+[2026-02-28T05:57:31.543Z] ERROR: GET /api/entries
+IP: 10.42.109.196
+User: Anonymous
+Message: Cannot set property query of #<IncomingMessage> which has only a getter
+Stack: TypeError: Cannot set property query of #<IncomingMessage> which has only a getter
+    at D:\Result\Backend\node_modules\express-mongo-sanitize\index.js:113:18
+    at Array.forEach (<anonymous>)
+    at D:\Result\Backend\node_modules\express-mongo-sanitize\index.js:110:44
+    at Layer.handleRequest (D:\Result\Backend\node_modules\router\lib\layer.js:152:17)
+    at trimPrefix (D:\Result\Backend\node_modules\router\index.js:342:13)
+    at D:\Result\Backend\node_modules\router\index.js:297:9
+    at processParams (D:\Result\Backend\node_modules\router\index.js:582:12)
+    at next (D:\Result\Backend\node_modules\router\index.js:291:5)
+    at compression (D:\Result\Backend\node_modules\compression\index.js:243:5)
+    at Layer.handleRequest (D:\Result\Backend\node_modules\router\lib\layer.js:152:17)
+---
+[2026-02-28T05:57:32.672Z] ERROR: GET /api/entries
+IP: 10.42.109.196
+User: Anonymous
+Message: Cannot set property query of #<IncomingMessage> which has only a getter
+Stack: TypeError: Cannot set property query of #<IncomingMessage> which has only a getter
+    at D:\Result\Backend\node_modules\express-mongo-sanitize\index.js:113:18
+    at Array.forEach (<anonymous>)
+    at D:\Result\Backend\node_modules\express-mongo-sanitize\index.js:110:44
+    at Layer.handleRequest (D:\Result\Backend\node_modules\router\lib\layer.js:152:17)
+    at trimPrefix (D:\Result\Backend\node_modules\router\index.js:342:13)
+    at D:\Result\Backend\node_modules\router\index.js:297:9
+    at processParams (D:\Result\Backend\node_modules\router\index.js:582:12)
+    at next (D:\Result\Backend\node_modules\router\index.js:291:5)
+    at compression (D:\Result\Backend\node_modules\compression\index.js:243:5)
+    at Layer.handleRequest (D:\Result\Backend\node_modules\router\lib\layer.js:152:17)
+---
+[2026-02-28T05:57:33.795Z] ERROR: GET /api/entries
+IP: 10.42.109.196
+User: Anonymous
+Message: Cannot set property query of #<IncomingMessage> which has only a getter
+Stack: TypeError: Cannot set property query of #<IncomingMessage> which has only a getter
+    at D:\Result\Backend\node_modules\express-mongo-sanitize\index.js:113:18
+    at Array.forEach (<anonymous>)
+    at D:\Result\Backend\node_modules\express-mongo-sanitize\index.js:110:44
+    at Layer.handleRequest (D:\Result\Backend\node_modules\router\lib\layer.js:152:17)
+    at trimPrefix (D:\Result\Backend\node_modules\router\index.js:342:13)
+    at D:\Result\Backend\node_modules\router\index.js:297:9
+    at processParams (D:\Result\Backend\node_modules\router\index.js:582:12)
+    at next (D:\Result\Backend\node_modules\router\index.js:291:5)
+    at compression (D:\Result\Backend\node_modules\compression\index.js:243:5)
+    at Layer.handleRequest (D:\Result\Backend\node_modules\router\lib\layer.js:152:17)
+---
+[2026-02-28T06:08:06.838Z] ERROR: POST /api/auth/forgot-password
+IP: 127.0.0.1
+User: Anonymous
+Message: Cannot read properties of undefined (reading 'email')
+Stack: TypeError: Cannot read properties of undefined (reading 'email')
+    at requestLogger (D:\Result\Backend\middleware\loggerMiddleware.js:142:23)
+    at Layer.handleRequest (D:\Result\Backend\node_modules\router\lib\layer.js:152:17)
+    at trimPrefix (D:\Result\Backend\node_modules\router\index.js:342:13)
+    at D:\Result\Backend\node_modules\router\index.js:297:9
+    at processParams (D:\Result\Backend\node_modules\router\index.js:582:12)
+    at next (D:\Result\Backend\node_modules\router\index.js:291:5)
+    at logger (D:\Result\Backend\node_modules\morgan\index.js:144:5)
+    at Layer.handleRequest (D:\Result\Backend\node_modules\router\lib\layer.js:152:17)
+    at trimPrefix (D:\Result\Backend\node_modules\router\index.js:342:13)
+    at D:\Result\Backend\node_modules\router\index.js:297:9
+---
+[2026-02-28T06:26:04.466Z] ERROR: POST /api/auth/forgot-password
+IP: 127.0.0.1
+User: Anonymous
+Message: Cannot read properties of undefined (reading 'email')
+Stack: TypeError: Cannot read properties of undefined (reading 'email')
+    at requestLogger (D:\Result\Backend\middleware\loggerMiddleware.js:142:23)
+    at Layer.handleRequest (D:\Result\Backend\node_modules\router\lib\layer.js:152:17)
+    at trimPrefix (D:\Result\Backend\node_modules\router\index.js:342:13)
+    at D:\Result\Backend\node_modules\router\index.js:297:9
+    at processParams (D:\Result\Backend\node_modules\router\index.js:582:12)
+    at next (D:\Result\Backend\node_modules\router\index.js:291:5)
+    at logger (D:\Result\Backend\node_modules\morgan\index.js:144:5)
+    at Layer.handleRequest (D:\Result\Backend\node_modules\router\lib\layer.js:152:17)
+    at trimPrefix (D:\Result\Backend\node_modules\router\index.js:342:13)
+    at D:\Result\Backend\node_modules\router\index.js:297:9
+---
+[2026-03-01T06:26:09.305Z] ERROR: POST /api/auth/forgot-password
+IP: 127.0.0.1
+User: Anonymous
+Message: Cannot read properties of undefined (reading 'email')
+Stack: TypeError: Cannot read properties of undefined (reading 'email')
+    at requestLogger (D:\Result\Backend\middleware\loggerMiddleware.js:142:23)
+    at Layer.handleRequest (D:\Result\Backend\node_modules\router\lib\layer.js:152:17)
+    at trimPrefix (D:\Result\Backend\node_modules\router\index.js:342:13)
+    at D:\Result\Backend\node_modules\router\index.js:297:9
+    at processParams (D:\Result\Backend\node_modules\router\index.js:582:12)
+    at next (D:\Result\Backend\node_modules\router\index.js:291:5)
+    at logger (D:\Result\Backend\node_modules\morgan\index.js:144:5)
+    at Layer.handleRequest (D:\Result\Backend\node_modules\router\lib\layer.js:152:17)
+    at trimPrefix (D:\Result\Backend\node_modules\router\index.js:342:13)
+    at D:\Result\Backend\node_modules\router\index.js:297:9
+---
+[2026-03-01T06:29:20.666Z] ERROR: POST /api/auth/forgot-password
+IP: 127.0.0.1
+User: Anonymous
+Message: Cannot read properties of undefined (reading 'email')
+Stack: TypeError: Cannot read properties of undefined (reading 'email')
+    at requestLogger (D:\Result\Backend\middleware\loggerMiddleware.js:146:23)
+    at Layer.handleRequest (D:\Result\Backend\node_modules\router\lib\layer.js:152:17)
+    at trimPrefix (D:\Result\Backend\node_modules\router\index.js:342:13)
+    at D:\Result\Backend\node_modules\router\index.js:297:9
+    at processParams (D:\Result\Backend\node_modules\router\index.js:582:12)
+    at next (D:\Result\Backend\node_modules\router\index.js:291:5)
+    at logger (D:\Result\Backend\node_modules\morgan\index.js:144:5)
+    at Layer.handleRequest (D:\Result\Backend\node_modules\router\lib\layer.js:152:17)
+    at trimPrefix (D:\Result\Backend\node_modules\router\index.js:342:13)
+    at D:\Result\Backend\node_modules\router\index.js:297:9
+---
+[2026-03-01T06:31:25.057Z] ERROR: POST /api/auth/forgot-password
+IP: 127.0.0.1
+User: Anonymous
+Message: Cannot read properties of undefined (reading 'email')
+Stack: TypeError: Cannot read properties of undefined (reading 'email')
+    at requestLogger (D:\Result\Backend\middleware\loggerMiddleware.js:146:23)
+    at Layer.handleRequest (D:\Result\Backend\node_modules\router\lib\layer.js:152:17)
+    at trimPrefix (D:\Result\Backend\node_modules\router\index.js:342:13)
+    at D:\Result\Backend\node_modules\router\index.js:297:9
+    at processParams (D:\Result\Backend\node_modules\router\index.js:582:12)
+    at next (D:\Result\Backend\node_modules\router\index.js:291:5)
+    at logger (D:\Result\Backend\node_modules\morgan\index.js:144:5)
+    at Layer.handleRequest (D:\Result\Backend\node_modules\router\lib\layer.js:152:17)
+    at trimPrefix (D:\Result\Backend\node_modules\router\index.js:342:13)
+    at D:\Result\Backend\node_modules\router\index.js:297:9
+---
+[2026-03-01T06:33:17.515Z] ERROR: POST /api/auth/forgot-password
+IP: 127.0.0.1
+User: Anonymous
+Message: Cannot read properties of undefined (reading 'email')
+Stack: TypeError: Cannot read properties of undefined (reading 'email')
+    at requestLogger (D:\Result\Backend\middleware\loggerMiddleware.js:146:23)
+    at Layer.handleRequest (D:\Result\Backend\node_modules\router\lib\layer.js:152:17)
+    at trimPrefix (D:\Result\Backend\node_modules\router\index.js:342:13)
+    at D:\Result\Backend\node_modules\router\index.js:297:9
+    at processParams (D:\Result\Backend\node_modules\router\index.js:582:12)
+    at next (D:\Result\Backend\node_modules\router\index.js:291:5)
+    at logger (D:\Result\Backend\node_modules\morgan\index.js:144:5)
+    at Layer.handleRequest (D:\Result\Backend\node_modules\router\lib\layer.js:152:17)
+    at trimPrefix (D:\Result\Backend\node_modules\router\index.js:342:13)
+    at D:\Result\Backend\node_modules\router\index.js:297:9
+---
+[2026-03-01T07:08:12.006Z] ERROR: GET /api/student-management
+IP: 127.0.0.1
+User: Anonymous
+Message: Cannot set property query of #<IncomingMessage> which has only a getter
+Stack: TypeError: Cannot set property query of #<IncomingMessage> which has only a getter
+    at D:\Result\Backend\node_modules\express-mongo-sanitize\index.js:113:18
+    at Array.forEach (<anonymous>)
+    at D:\Result\Backend\node_modules\express-mongo-sanitize\index.js:110:44
+    at Layer.handleRequest (D:\Result\Backend\node_modules\router\lib\layer.js:152:17)
+    at trimPrefix (D:\Result\Backend\node_modules\router\index.js:342:13)
+    at D:\Result\Backend\node_modules\router\index.js:297:9
+    at processParams (D:\Result\Backend\node_modules\router\index.js:582:12)
+    at next (D:\Result\Backend\node_modules\router\index.js:291:5)
+    at compression (D:\Result\Backend\node_modules\compression\index.js:243:5)
+    at Layer.handleRequest (D:\Result\Backend\node_modules\router\lib\layer.js:152:17)
+---
