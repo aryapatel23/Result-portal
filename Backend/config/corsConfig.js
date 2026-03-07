@@ -7,10 +7,12 @@
 const whitelist = [
   'http://localhost:5173', // Vite dev server
   'http://localhost:5174', // Vite dev server (alternative port)
+  'http://localhost:5175', // Vite dev server (alternative port 2)
   'http://localhost:3000', // React dev server
   'http://localhost:3001', // Alternative React port
   'http://localhost:19006', // React Native Expo
   'https://result-portal-tkom.onrender.com', // Production backend
+  'https://kamli-primary-school.vercel.app', // Production frontend (Vercel)
   // Add your production frontend URLs here
   // 'https://yourfrontend.com',
   // 'https://www.yourfrontend.com',
