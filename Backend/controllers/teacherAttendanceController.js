@@ -1,5 +1,6 @@
 const TeacherAttendance = require('../models/TeacherAttendance');
 const User = require('../models/User');
+const mongoose = require('mongoose');
 
 // Load environment variables
 require('dotenv').config();
