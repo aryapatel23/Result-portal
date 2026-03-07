@@ -76,18 +76,16 @@ const tabBarScreenOptions = (theme: any) => ({
   tabBarInactiveTintColor: theme.colors.textTertiary,
   tabBarStyle: {
     backgroundColor: theme.colors.tabBar,
-    borderTopColor: theme.colors.tabBarBorder,
+    borderTopColor: theme.colors.border,
     borderTopWidth: 1,
     height: Platform.OS === 'ios' ? 85 : 65,
     paddingTop: 8,
     paddingBottom: Platform.OS === 'ios' ? 28 : 10,
-    elevation: 0,
-    shadowOpacity: 0,
   },
   tabBarLabelStyle: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600' as const,
-    marginTop: 2,
+    marginTop: 4,
   },
 });
 
@@ -95,12 +93,13 @@ const renderTabIcon = (theme: any) => ({ route }: any) => ({
   tabBarIcon: ({ focused, color }: { focused: boolean; color: string }) => {
     const icons = TAB_ICONS[route.name] || TAB_ICONS.Home;
     return (
-      <View style={focused ? [styles.activeTab, { backgroundColor: theme.colors.primaryLight }] : undefined}>
+      <View style={styles.iconContainer}>
         <MaterialCommunityIcons
-          name={focused ? icons.focused : icons.default}
-          size={focused ? 24 : 22}
-          color={color}
+          name={icons.focused}
+          size={26}
+          color={focused ? theme.colors.primary : color}
         />
+        {focused && <View style={[styles.activeIndicator, { backgroundColor: theme.colors.primary }]} />}
       </View>
     );
   },
@@ -126,6 +125,8 @@ const TeacherTabs = () => {
     <Tab.Navigator screenOptions={({ route }) => ({ ...tabBarScreenOptions(theme), ...renderTabIcon(theme)({ route }) })}>
       <Tab.Screen name="Home" component={TeacherDashboard} />
       <Tab.Screen name="Students" component={TeacherStudentsScreen} />
+      <Tab.Screen name="Results" component={TeacherResults} />
+      <Tab.Screen name="Attendance" component={TeacherAttendance} />
       <Tab.Screen name="Profile" component={TeacherProfile} />
     </Tab.Navigator>
   );
@@ -213,10 +214,18 @@ const AppNavigator = () => {
 };
 
 const styles = StyleSheet.create({
-  activeTab: {
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-    borderRadius: 16,
+  iconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 50,
+    height: 32,
+  },
+  activeIndicator: {
+    position: 'absolute',
+    bottom: -2,
+    width: 40,
+    height: 3,
+    borderRadius: 2,
   },
 });
 

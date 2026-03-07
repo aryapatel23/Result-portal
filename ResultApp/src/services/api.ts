@@ -5,7 +5,7 @@ import { Platform } from 'react-native';
 // API Configuration
 // For LOCAL DEVELOPMENT: Use your computer's local IP address
 // For PRODUCTION: Use the deployed backend URL
-const USE_LOCAL_BACKEND = true; // Set to false for production
+const USE_LOCAL_BACKEND = false; // Set to false for production
 
 const LOCAL_API_URL = 'http://192.168.1.14:5000/api'; // Your computer's Wi-Fi IP
 const PRODUCTION_API_URL = 'https://result-portal-tkom.onrender.com/api';

@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Platform,
   PermissionsAndroid,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -39,6 +40,17 @@ const TeacherAttendanceScreen = ({ navigation }: any) => {
   const [locationError, setLocationError] = useState('');
   const [tab, setTab] = useState<'today' | 'history'>('today');
 
+  // Configure Geolocation for Android
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      // Set configuration for better location accuracy
+      Geolocation.setRNConfiguration({
+        skipPermissionRequests: false,
+        authorizationLevel: 'always',
+      });
+    }
+  }, []);
+
   const fetchData = useCallback(async () => {
     try {
       const [todayRes, historyRes] = await Promise.all([
@@ -66,16 +78,47 @@ const TeacherAttendanceScreen = ({ navigation }: any) => {
   const requestLocationPermission = async () => {
     if (Platform.OS === 'android') {
       try {
+        // First check if permission is already granted
+        const checkResult = await PermissionsAndroid.check(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+        );
+        
+        if (checkResult) {
+          return true;
+        }
+
+        // Request permission
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
           {
-            title: 'Location Permission',
-            message: 'This app needs location access to mark attendance.',
-            buttonPositive: 'OK',
+            title: 'Location Access Required',
+            message: 'This app needs to access your location to mark attendance and verify your presence.',
+            buttonPositive: 'Allow',
+            buttonNegative: 'Deny',
           }
         );
-        return granted === PermissionsAndroid.RESULTS.GRANTED;
-      } catch { return false; }
+
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          return true;
+        } else if (granted === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
+          // Permission permanently denied, show dialog to open settings
+          Alert.alert(
+            'Permission Required',
+            'Location permission is required to mark attendance. Please enable it in app settings.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { 
+                text: 'Open Settings', 
+                onPress: () => Linking.openSettings()
+              }
+            ]
+          );
+        }
+        return false;
+      } catch (err) {
+        console.warn('Permission request error:', err);
+        return false;
+      }
     }
     return true;
   };
@@ -83,28 +126,86 @@ const TeacherAttendanceScreen = ({ navigation }: any) => {
   const getLocation = useCallback(async () => {
     const hasPermission = await requestLocationPermission();
     if (!hasPermission) {
-      setLocationError('Location permission denied');
+      setLocationError('Location permission denied. Tap retry to enable.');
       return;
     }
+
+    setLocationError('Getting your location...');
 
     Geolocation.getCurrentPosition(
       (pos: any) => {
         setLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
         setLocationError('');
+        console.log('Location obtained:', pos.coords.latitude, pos.coords.longitude);
       },
       (err: any) => {
-        setLocationError(err.message || 'Unable to get location');
+        console.error('Geolocation error:', err);
+        let errorMessage = 'Unable to get location';
+        
+        switch (err.code) {
+          case 1:
+            errorMessage = 'Location permission denied';
+            break;
+          case 2:
+            errorMessage = 'Location unavailable. Enable GPS in settings.';
+            break;
+          case 3:
+            errorMessage = 'Location request timed out. Try again.';
+            break;
+          default:
+            errorMessage = err.message || 'Unable to get location';
+        }
+        
+        setLocationError(errorMessage);
+        
+        // If location services are disabled, prompt user
+        if (err.code === 2) {
+          Alert.alert(
+            'Location Services Disabled',
+            'Please enable Location/GPS in your device settings to mark attendance.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Open Settings', onPress: () => Linking.openSettings() }
+            ]
+          );
+        }
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+      { 
+        enableHighAccuracy: true, 
+        timeout: 20000, 
+        maximumAge: 5000,
+        distanceFilter: 10
+      }
     );
   }, []);
 
-  useEffect(() => { getLocation(); }, [getLocation]);
+  useEffect(() => { 
+    // Request location when component mounts
+    const initLocation = async () => {
+      console.log('Initializing location services...');
+      await getLocation();
+    };
+    initLocation();
+  }, [getLocation]);
+
+  // Also try to get location when tab changes to 'today'
+  useEffect(() => {
+    if (tab === 'today' && !location && !locationError) {
+      getLocation();
+    }
+  }, [tab, location, locationError, getLocation]);
 
   const handleMarkAttendance = async () => {
     if (selectedStatus !== 'Leave' && !location) {
-      Alert.alert('Location Required', 'Please enable location services to mark attendance.');
-      getLocation();
+      Alert.alert(
+        'Location Required', 
+        'Your location is needed to verify attendance. Please ensure:\n\n1. Location/GPS is enabled on your device\n2. App has location permission\n3. You are in an area with good GPS signal',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Retry', onPress: getLocation },
+          { text: 'Settings', onPress: () => Linking.openSettings() }
+        ]
+      );
       return;
     }
 
