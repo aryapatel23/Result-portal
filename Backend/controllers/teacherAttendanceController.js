@@ -29,15 +29,35 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 // Helper: Get Current IST Date Details
 const getISTTime = () => {
   const now = new Date();
-  const istDateString = now.toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata' });
-  const istDate = new Date(istDateString);
+
+  // Create a formatter for IST
+  const options = {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  };
+
+  const formatter = new Intl.DateTimeFormat('en-US', options);
+  const parts = formatter.formatToParts(now);
+  const dateParts = {};
+  parts.forEach(({ type, value }) => {
+    dateParts[type] = value;
+  });
+
+  // Construct a date object representing the start of the day in IST
+  const istDate = new Date(`${dateParts.year}-${dateParts.month}-${dateParts.day}T00:00:00.000+05:30`);
 
   return {
-    now, // UTC actual
-    istDate, // 00:00:00 IST
-    day: istDate.getDate(),
-    monthStr: `${String(istDate.getMonth() + 1).padStart(2, '0')}-${istDate.getFullYear()}`, // MM-YYYY
-    year: istDate.getFullYear(),
+    now,
+    istDate,
+    day: parseInt(dateParts.day, 10),
+    monthStr: `${dateParts.month}-${dateParts.year}`, // MM-YYYY
+    year: parseInt(dateParts.year, 10),
     timeStr: now.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
@@ -58,16 +78,34 @@ exports.markAttendance = async (req, res) => {
     // Get teacher details
     const teacher = await User.findById(teacherId);
     if (!teacher) return res.status(404).json({ message: 'User not found' });
-    
+
     // Check if teacher is active
     if (teacher.isActive === false) {
-      return res.status(403).json({ 
+      return res.status(403).json({
         message: 'Attendance marking is disabled for inactive teachers',
         reason: 'Your account has been deactivated. Please contact admin.'
       });
     }
 
     const { istDate, day, monthStr, year, timeStr } = getISTTime();
+
+    // 0. Sunday Check (if configured)
+    const SystemConfig = require('../models/SystemConfig');
+    const config = await SystemConfig.findOne({ key: 'default_config' });
+    const settings = config?.teacherAttendanceSettings || { excludeWeekends: true };
+
+    if (settings.excludeWeekends && istDate.getDay() === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Attendance cannot be marked on Sundays (Weekend holiday)'
+      });
+    }
+
+    // Validate date components to prevent 500 errors on save
+    if (isNaN(day) || isNaN(year) || istDate.toString() === 'Invalid Date') {
+      console.error('❌ Invalid IST Date calculation:', { istDate, day, monthStr, year });
+      return res.status(500).json({ message: 'Internal date calculation error' });
+    }
 
     // 1. Find or Initialize Monthly Document
     let attendanceDoc = await TeacherAttendance.findOne({
@@ -177,6 +215,17 @@ exports.markAttendance = async (req, res) => {
 
   } catch (error) {
     console.error('Error marking attendance:', error);
+
+    // Check if it's a Mongoose validation error
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: messages
+      });
+    }
+
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -255,10 +304,10 @@ exports.getMyHistory = async (req, res) => {
 exports.getAllAttendance = async (req, res) => {
   try {
     const { date, status } = req.query;
-    
+
     if (!date) {
       // If no date provided, return error
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: 'Date parameter is required',
         attendance: []
       });
@@ -271,7 +320,7 @@ exports.getAllAttendance = async (req, res) => {
     const year = requestedDate.getFullYear();
 
     // Get all active teachers
-    const allTeachers = await User.find({ 
+    const allTeachers = await User.find({
       role: 'teacher',
       isActive: { $ne: false }
     }).select('name email employeeId');
@@ -287,7 +336,7 @@ exports.getAllAttendance = async (req, res) => {
     // Process existing attendance records
     docs.forEach(doc => {
       if (!doc.teacher) return; // Skip if teacher was deleted
-      
+
       const record = doc.records.find(r => r.day === day);
       if (record) {
         markedTeacherIds.add(doc.teacher._id.toString());
@@ -360,7 +409,7 @@ exports.getAllAttendance = async (req, res) => {
       return a.employeeId.localeCompare(b.employeeId);
     });
 
-    res.json({ 
+    res.json({
       attendance: filteredRecords,
       summary: {
         total: allTeachers.length,
@@ -482,10 +531,10 @@ exports.markAttendanceByAdmin = async (req, res) => {
 
     const teacher = await User.findById(teacherId);
     if (!teacher) return res.status(404).json({ message: 'Teacher not found' });
-    
+
     // Check if teacher is active
     if (teacher.role === 'teacher' && teacher.isActive === false) {
-      return res.status(403).json({ 
+      return res.status(403).json({
         message: 'Cannot mark attendance for inactive teacher',
         teacherName: teacher.name
       });
@@ -594,7 +643,7 @@ exports.triggerAutoAttendance = async (req, res) => {
   try {
     const { autoMarkTeacherAttendance } = require('../cron/teacherAttendanceCron');
     const forceRun = req.body.force === true || req.query.force === 'true';
-    
+
     console.log('🔄 Admin triggered auto-attendance marking...');
     if (forceRun) {
       console.log('⚠️  FORCE MODE: Running even on weekends/holidays');
