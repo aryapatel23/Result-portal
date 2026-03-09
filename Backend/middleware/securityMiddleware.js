@@ -12,14 +12,14 @@ const helmetConfig = helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"],
-      fontSrc: ["'self'", "https:", "data:"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https:", "http://localhost:*"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https:", "http://localhost:*"],
+      imgSrc: ["'self'", "data:", "https:", "http://localhost:*", "blob:"],
+      connectSrc: ["'self'", "https:", "http://localhost:*", "ws://localhost:*"],
+      fontSrc: ["'self'", "https:", "data:", "http://localhost:*"],
       objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      frameSrc: ["'none'"],
+      mediaSrc: ["'self'", "https:", "http://localhost:*"],
+      frameSrc: ["'self'", "https:", "http://localhost:*"],
     },
   },
   // Cross Origin Embedder Policy
@@ -60,14 +60,14 @@ const hppConfig = hpp({
 const customSecurityHeaders = (req, res, next) => {
   // Remove sensitive headers
   res.removeHeader('X-Powered-By');
-  
+
   // Add custom security headers
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   res.setHeader('Permissions-Policy', 'geolocation=(self), microphone=(), camera=()');
-  
+
   next();
 };
 
@@ -90,7 +90,7 @@ const sanitizeRequest = (req, res, next) => {
 // Prevent common attacks
 const preventCommonAttacks = (req, res, next) => {
   const userAgent = req.headers['user-agent'] || '';
-  
+
   // Block known malicious patterns
   const maliciousPatterns = [
     /sqlmap/i,
@@ -99,12 +99,12 @@ const preventCommonAttacks = (req, res, next) => {
     /masscan/i,
     /acunetix/i,
   ];
-  
+
   if (maliciousPatterns.some(pattern => pattern.test(userAgent))) {
     console.error('🚨 Malicious user agent detected:', userAgent);
     return res.status(403).json({ message: 'Forbidden' });
   }
-  
+
   next();
 };
 
