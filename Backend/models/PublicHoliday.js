@@ -39,21 +39,21 @@ const publicHolidaySchema = new mongoose.Schema({
 publicHolidaySchema.index({ date: 1 });
 
 // Update the updatedAt timestamp before saving
-publicHolidaySchema.pre('save', function(next) {
+publicHolidaySchema.pre('save', function (next) {
   this.updatedAt = Date.now();
   next();
 });
 
 // Static method to check if a date is a holiday
-publicHolidaySchema.statics.isHoliday = async function(date) {
+publicHolidaySchema.statics.isHoliday = async function (date) {
   try {
     // Create date range for the entire day
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
-    
+
     const endOfDay = new Date(date);
     endOfDay.setHours(23, 59, 59, 999);
-    
+
     // Check for exact date match
     const holiday = await this.findOne({
       date: {
@@ -61,26 +61,25 @@ publicHolidaySchema.statics.isHoliday = async function(date) {
         $lte: endOfDay
       }
     });
-    
+
     if (holiday) {
       return { isHoliday: true, holiday };
     }
-    
+
     // Check for recurring holidays (same month and day)
     const month = date.getMonth();
     const day = date.getDate();
-    
-    const recurringHoliday = await this.findOne({
-      isRecurring: true
-    });
-    
-    if (recurringHoliday) {
-      const holidayDate = new Date(recurringHoliday.date);
+
+    // Find all recurring holidays and check if any match month/day
+    const recurringHolidays = await this.find({ isRecurring: true });
+
+    for (const rh of recurringHolidays) {
+      const holidayDate = new Date(rh.date);
       if (holidayDate.getMonth() === month && holidayDate.getDate() === day) {
-        return { isHoliday: true, holiday: recurringHoliday };
+        return { isHoliday: true, holiday: rh };
       }
     }
-    
+
     return { isHoliday: false, holiday: null };
   } catch (error) {
     console.error('Error checking holiday:', error);
@@ -89,10 +88,10 @@ publicHolidaySchema.statics.isHoliday = async function(date) {
 };
 
 // Static method to get all holidays for a year
-publicHolidaySchema.statics.getYearHolidays = async function(year) {
+publicHolidaySchema.statics.getYearHolidays = async function (year) {
   const startDate = new Date(year, 0, 1);
   const endDate = new Date(year, 11, 31, 23, 59, 59);
-  
+
   return await this.find({
     $or: [
       {
@@ -109,18 +108,18 @@ publicHolidaySchema.statics.getYearHolidays = async function(year) {
 };
 
 // Static method to get upcoming holidays
-publicHolidaySchema.statics.getUpcomingHolidays = async function(limit = 5) {
+publicHolidaySchema.statics.getUpcomingHolidays = async function (limit = 5) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+
   return await this.find({
     date: {
       $gte: today
     }
   })
-  .sort({ date: 1 })
-  .limit(limit)
-  .populate('createdBy', 'name email');
+    .sort({ date: 1 })
+    .limit(limit)
+    .populate('createdBy', 'name email');
 };
 
 module.exports = mongoose.model('PublicHoliday', publicHolidaySchema);
