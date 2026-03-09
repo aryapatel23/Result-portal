@@ -21,10 +21,10 @@ router.get('/health', (req, res) => {
 // Detailed health check with system info (cached for 30 seconds)
 router.get('/status', (req, res) => {
   const memoryUsage = process.memoryUsage();
-  
+
   // Cache this endpoint to reduce CPU usage
   res.setHeader('Cache-Control', 'public, max-age=30');
-  
+
   res.status(200).json({
     status: 'OK',
     timezone: process.env.TZ || 'System Default',
@@ -41,26 +41,26 @@ router.get('/status', (req, res) => {
 router.get('/cron-status', async (req, res) => {
   // Cache to reduce database load
   res.setHeader('Cache-Control', 'public, max-age=120');
-  
+
   const currentTime = new Date();
-  const istTime = currentTime.toLocaleString('en-US', { 
+  const istTime = currentTime.toLocaleString('en-US', {
     timeZone: 'Asia/Kolkata',
     hour12: false,
     hour: '2-digit',
     minute: '2-digit'
   });
-  
+
   // Try to get teacher cron status and settings
   let teacherCronStatus = null;
   let teacherSettings = null;
-  
+
   try {
     const { getCronStatus } = require('../cron/teacherAttendanceCron');
     teacherCronStatus = getCronStatus();
   } catch (error) {
     // Silent fail - don't log on every request
   }
-  
+
   try {
     const SystemConfig = require('../models/SystemConfig');
     const config = await SystemConfig.findOne({ key: 'default_config' })
@@ -72,7 +72,7 @@ router.get('/cron-status', async (req, res) => {
   } catch (error) {
     // Silent fail - don't log on every request
   }
-  
+
   // Calculate actual cron time from deadline
   let cronScheduleTime = '18:05'; // default
   if (teacherSettings && teacherSettings.deadlineTime) {
@@ -85,14 +85,10 @@ router.get('/cron-status', async (req, res) => {
     }
     cronScheduleTime = `${String(cronHours).padStart(2, '0')}:${String(cronMinutes).padStart(2, '0')}`;
   }
-  
+
   res.status(200).json({
     status: 'OK',
     cronJobs: {
-      studentAttendance: {
-        schedule: '20:00 IST',
-        enabled: true
-      },
       teacherAttendance: {
         schedule: cronScheduleTime,
         deadline: teacherSettings?.deadlineTime || '18:00',
@@ -116,13 +112,13 @@ function formatUptime(seconds) {
   const hours = Math.floor((seconds % 86400) / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const secs = Math.floor(seconds % 60);
-  
+
   const parts = [];
   if (days > 0) parts.push(`${days}d`);
   if (hours > 0) parts.push(`${hours}h`);
   if (minutes > 0) parts.push(`${minutes}m`);
   if (secs > 0 || parts.length === 0) parts.push(`${secs}s`);
-  
+
   return parts.join(' ');
 }
 

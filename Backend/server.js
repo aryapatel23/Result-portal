@@ -4,7 +4,6 @@ const cors = require("cors");
 const compression = require("compression");
 const mongoSanitize = require("express-mongo-sanitize");
 const connectDB = require("./config/db");
-const { initAttendanceCron } = require("./cron/attendanceCron");
 const { startTeacherAttendanceCron } = require("./cron/teacherAttendanceCron");
 
 // 🛡️ Security Middleware Imports
@@ -240,7 +239,7 @@ app.use((req, res, next) => {
 app.use(logError);
 app.use((err, req, res, next) => {
   console.error('❌ Global error handler:', err.message);
-  
+
   // Mongoose duplicate key error
   if (err.code === 11000) {
     const field = Object.keys(err.keyPattern)[0];
@@ -249,7 +248,7 @@ app.use((err, req, res, next) => {
       message: `${field} already exists`
     });
   }
-  
+
   // Mongoose validation error
   if (err.name === 'ValidationError') {
     const errors = Object.values(err.errors).map(e => e.message);
@@ -259,7 +258,7 @@ app.use((err, req, res, next) => {
       errors
     });
   }
-  
+
   // JWT errors
   if (err.name === 'JsonWebTokenError') {
     return res.status(401).json({
@@ -267,14 +266,14 @@ app.use((err, req, res, next) => {
       message: 'Invalid token'
     });
   }
-  
+
   if (err.name === 'TokenExpiredError') {
     return res.status(401).json({
       success: false,
       message: 'Token expired'
     });
   }
-  
+
   // Default error
   res.status(err.status || 500).json({
     success: false,
@@ -294,24 +293,17 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🕐 Timezone: ${process.env.TZ}`);
   console.log(`💾 Memory Limit: ${process.env.NODE_OPTIONS || 'Default'}`);
-  
+
   // Start Automated Attendance Cron Jobs after server is running
   console.log('\n🚀 Initializing Automated Cron Jobs...\n');
-  
-  try {
-    initAttendanceCron(); // Student attendance (8:00 PM IST)
-    console.log('✅ Student Attendance Cron initialized');
-  } catch (error) {
-    console.error('❌ Error initializing Student Attendance Cron:', error.message);
-  }
-  
+
   try {
     startTeacherAttendanceCron(); // Teacher attendance (6:05 PM IST)
     console.log('✅ Teacher Attendance Cron initialized');
   } catch (error) {
     console.error('❌ Error initializing Teacher Attendance Cron:', error.message);
   }
-  
+
   console.log('\n✅ All Cron Jobs Started!');
   console.log('💡 Using timezone:', process.env.TZ || 'System Default');
   console.log('💡 Health check: /api/health/ping');
