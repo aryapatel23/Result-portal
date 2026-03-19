@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, RefreshControl,
-  StatusBar, StyleSheet, ActivityIndicator, Modal,
+  StatusBar, StyleSheet, ActivityIndicator, Modal, TextInput, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -18,6 +18,13 @@ const AdminAttendanceScreen = ({ navigation }: any) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showManualModal, setShowManualModal] = useState(false);
+  const [teachers, setTeachers] = useState<any[]>([]);
+  const [manualTeacherId, setManualTeacherId] = useState('');
+  const [manualDate, setManualDate] = useState(new Date());
+  const [manualStatus, setManualStatus] = useState('Present');
+  const [manualRemarks, setManualRemarks] = useState('');
+  const [isSubmittingManual, setIsSubmittingManual] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -38,6 +45,55 @@ const AdminAttendanceScreen = ({ navigation }: any) => {
   }, [selectedDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const fetchTeachers = useCallback(async () => {
+    try {
+      const res = await apiService.getAllTeachers({ activeOnly: 'true' });
+      const list = Array.isArray(res) ? res : (res?.data || []);
+      setTeachers(list);
+    } catch (e: any) {
+      if (__DEV__) console.log('Teachers fetch err:', e.message);
+    }
+  }, []);
+
+  useEffect(() => { fetchTeachers(); }, [fetchTeachers]);
+
+  const statusOptions = ['Present', 'Absent', 'Half-Day', 'Leave'];
+
+  const openManualModal = () => {
+    setManualTeacherId('');
+    setManualDate(selectedDate);
+    setManualStatus('Present');
+    setManualRemarks('');
+    setShowManualModal(true);
+  };
+
+  const submitManualAttendance = async () => {
+    if (!manualTeacherId) {
+      Alert.alert('Validation', 'Please select a teacher.');
+      return;
+    }
+
+    try {
+      setIsSubmittingManual(true);
+      const date = manualDate.toISOString().split('T')[0];
+      await apiService.adminMarkAttendance({
+        teacherId: manualTeacherId,
+        date,
+        status: manualStatus,
+        remarks: manualRemarks?.trim() || 'Marked by Admin (App)'
+      });
+
+      setShowManualModal(false);
+      fetchData();
+      Alert.alert('Success', 'Manual attendance saved successfully.');
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || e?.message || 'Failed to save attendance';
+      Alert.alert('Error', msg);
+    } finally {
+      setIsSubmittingManual(false);
+    }
+  };
 
   const openDetailModal = (record: any) => {
     setSelectedRecord(record);
@@ -97,7 +153,9 @@ const AdminAttendanceScreen = ({ navigation }: any) => {
           <MaterialCommunityIcons name="arrow-left" size={24} color={theme.colors.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Teacher Attendance</Text>
-        <View style={{ width: 32 }} />
+        <TouchableOpacity onPress={openManualModal} style={styles.manualBtn}>
+          <MaterialCommunityIcons name="plus" size={20} color="#FFFFFF" />
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -366,6 +424,141 @@ const AdminAttendanceScreen = ({ navigation }: any) => {
           </View>
         </View>
       </Modal>
+
+      {/* Manual Attendance Modal */}
+      <Modal
+        visible={showManualModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowManualModal(false)}
+      >
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <View style={[styles.modalBox, styles.manualModalBox, { backgroundColor: theme.colors.background }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: theme.colors.borderLight }]}>
+              <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Manual Attendance</Text>
+              <TouchableOpacity onPress={() => setShowManualModal(false)} style={styles.modalCloseBtn}>
+                <MaterialCommunityIcons name="close" size={24} color={theme.colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+              <ScrollView
+                style={styles.modalContent}
+                contentContainerStyle={styles.manualModalContentContainer}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              >
+              <Text style={[styles.formLabel, { color: theme.colors.textTertiary }]}>Date</Text>
+              <DatePickerInput
+                value={manualDate}
+                onChange={setManualDate}
+                mode="date"
+                maximumDate={new Date()}
+              />
+
+              <Text style={[styles.formLabel, { color: theme.colors.textTertiary, marginTop: 14 }]}>Select Teacher</Text>
+              <View style={[styles.teacherListBox, { borderColor: theme.colors.borderLight, backgroundColor: theme.colors.card }]}>
+                {teachers.length === 0 ? (
+                  <Text style={[styles.emptyTeacherText, { color: theme.colors.textTertiary }]}>No active teachers found.</Text>
+                ) : (
+                    <ScrollView
+                      style={styles.teacherListScroll}
+                      contentContainerStyle={styles.teacherListScrollContent}
+                      nestedScrollEnabled
+                      showsVerticalScrollIndicator
+                    >
+                      {teachers.map((t: any) => {
+                        const selected = manualTeacherId === t._id;
+                        return (
+                          <TouchableOpacity
+                            key={t._id}
+                            onPress={() => setManualTeacherId(t._id)}
+                            style={[
+                              styles.teacherItem,
+                              {
+                                borderColor: selected ? theme.colors.primary : theme.colors.borderLight,
+                                backgroundColor: selected ? theme.colors.primaryLight : 'transparent'
+                              }
+                            ]}
+                          >
+                            <View style={{ flex: 1 }}>
+                              <Text style={[styles.teacherName, { color: theme.colors.text }]}>{t.name}</Text>
+                              <Text style={[styles.teacherMeta, { color: theme.colors.textTertiary }]}>{t.employeeId || 'No Employee ID'}</Text>
+                            </View>
+                            {selected && <MaterialCommunityIcons name="check-circle" size={18} color={theme.colors.primary} />}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
+                )}
+              </View>
+
+              <Text style={[styles.formLabel, { color: theme.colors.textTertiary, marginTop: 14 }]}>Status</Text>
+              <View style={styles.statusChipsWrap}>
+                {statusOptions.map((s) => {
+                  const active = s === manualStatus;
+                  return (
+                    <TouchableOpacity
+                      key={s}
+                      onPress={() => setManualStatus(s)}
+                      style={[
+                        styles.statusChip,
+                        {
+                          borderColor: active ? theme.colors.primary : theme.colors.borderLight,
+                          backgroundColor: active ? theme.colors.primaryLight : theme.colors.card
+                        }
+                      ]}
+                    >
+                      <Text style={[styles.statusChipText, { color: active ? theme.colors.primary : theme.colors.textSecondary }]}>{s}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <Text style={[styles.formLabel, { color: theme.colors.textTertiary, marginTop: 14 }]}>Remarks (Optional)</Text>
+              <TextInput
+                value={manualRemarks}
+                onChangeText={setManualRemarks}
+                placeholder="Reason for manual entry"
+                placeholderTextColor={theme.colors.textTertiary}
+                style={[
+                  styles.remarksInput,
+                  {
+                    color: theme.colors.text,
+                    borderColor: theme.colors.borderLight,
+                    backgroundColor: theme.colors.card
+                  }
+                ]}
+                multiline
+                numberOfLines={3}
+              />
+            </ScrollView>
+
+            <View style={[styles.modalActionRow, { borderTopColor: theme.colors.borderLight, backgroundColor: theme.colors.background }] }>
+              <TouchableOpacity
+                onPress={() => setShowManualModal(false)}
+                style={[styles.actionBtn, { borderColor: theme.colors.border, backgroundColor: theme.colors.cardAlt }]}
+                disabled={isSubmittingManual}
+              >
+                <Text style={[styles.actionBtnText, { color: theme.colors.textSecondary }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={submitManualAttendance}
+                style={[styles.actionBtn, styles.actionBtnPrimary, { backgroundColor: theme.colors.primary }]}
+                disabled={isSubmittingManual}
+              >
+                {isSubmittingManual ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={[styles.actionBtnText, { color: '#FFFFFF' }]}>Save Attendance</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </>
   );
 };
@@ -377,6 +570,14 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
   backBtn: { padding: 4 },
   headerTitle: { fontSize: 18, fontWeight: '700', flex: 1, marginLeft: 12 },
+  manualBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#0D9488',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   content: { padding: 16 },
   datePickerWrap: { marginBottom: 16 },
   summaryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
@@ -413,6 +614,10 @@ const styles = StyleSheet.create({
     maxHeight: '85%',
     paddingBottom: 20,
   },
+  manualModalBox: {
+    maxHeight: '92%',
+    paddingBottom: 0,
+  },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -431,6 +636,9 @@ const styles = StyleSheet.create({
   modalContent: {
     paddingHorizontal: 20,
     paddingTop: 16,
+  },
+  manualModalContentContainer: {
+    paddingBottom: 18,
   },
   detailSection: {
     paddingVertical: 16,
@@ -484,6 +692,109 @@ const styles = StyleSheet.create({
   autoMarkedText: {
     fontSize: 13,
     fontWeight: '600',
+  },
+  formLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+  },
+  readOnlyDate: {
+    borderWidth: 1,
+    borderRadius: 10,
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+  },
+  readOnlyDateText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  teacherListBox: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 8,
+    height: 200,
+    overflow: 'hidden',
+  },
+  teacherListScroll: {
+    flex: 1,
+  },
+  teacherListScrollContent: {
+    paddingBottom: 4,
+  },
+  emptyTeacherText: {
+    fontSize: 13,
+    textAlign: 'center',
+    paddingVertical: 10,
+  },
+  teacherItem: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  teacherName: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  teacherMeta: {
+    marginTop: 2,
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  statusChipsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  statusChip: {
+    borderWidth: 1,
+    borderRadius: 18,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  statusChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  remarksInput: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    textAlignVertical: 'top',
+    minHeight: 84,
+  },
+  modalActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 0,
+    marginBottom: 0,
+    borderTopWidth: 1,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 16,
+  },
+  actionBtn: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionBtnPrimary: {
+    borderWidth: 0,
+  },
+  actionBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
 

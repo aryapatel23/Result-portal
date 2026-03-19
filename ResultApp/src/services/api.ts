@@ -250,8 +250,8 @@ class ApiService {
   }
 
   // Teacher management
-  async getAllTeachers() {
-    const response = await this.api.get('/admin/teachers');
+  async getAllTeachers(params?: { activeOnly?: string }) {
+    const response = await this.api.get('/admin/teachers', { params });
     return response.data;
   }
 
