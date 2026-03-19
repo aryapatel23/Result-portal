@@ -34,6 +34,8 @@ const AdminAttendanceView = () => {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [teachers, setTeachers] = useState([]);
   const [manualAttendance, setManualAttendance] = useState({
+    mode: 'create',
+    recordId: null,
     teacherId: '',
     status: 'Present',
     date: new Date().toISOString().split('T')[0],
@@ -130,20 +132,32 @@ const AdminAttendanceView = () => {
 
   const handleManualMarkSubmit = async (e) => {
     e.preventDefault();
+    if (!manualAttendance.teacherId || !manualAttendance.date) {
+      toast.error('Please select teacher and date');
+      return;
+    }
+
     try {
       const token = localStorage.getItem('token');
       await axios.post(
         '/admin/attendance/mark',
-        manualAttendance,
+        {
+          teacherId: manualAttendance.teacherId,
+          status: manualAttendance.status,
+          date: manualAttendance.date,
+          remarks: manualAttendance.remarks
+        },
         {
           headers: { Authorization: `Bearer ${token}` }
         }
       );
-      toast.success('Attendance marked successfully');
+      toast.success(manualAttendance.mode === 'edit' ? 'Attendance updated successfully' : 'Attendance marked successfully');
       setShowMarkModal(false);
       fetchAttendance();
       fetchTodaySummary();
       setManualAttendance({
+        mode: 'create',
+        recordId: null,
         teacherId: '',
         status: 'Present',
         date: new Date().toISOString().split('T')[0],
@@ -168,6 +182,29 @@ const AdminAttendanceView = () => {
     } catch (error) {
       toast.error('Failed to delete attendance');
     }
+  };
+
+  const openManualModal = (record = null) => {
+    if (record) {
+      setManualAttendance({
+        mode: 'edit',
+        recordId: record._id,
+        teacherId: record.teacherId?.toString?.() || '',
+        status: record.status || 'Present',
+        date: record.date ? new Date(record.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        remarks: record.remarks || ''
+      });
+    } else {
+      setManualAttendance({
+        mode: 'create',
+        recordId: null,
+        teacherId: '',
+        status: 'Present',
+        date: new Date().toISOString().split('T')[0],
+        remarks: ''
+      });
+    }
+    setShowMarkModal(true);
   };
 
   const getStatusColor = (status) => {
@@ -227,11 +264,11 @@ const AdminAttendanceView = () => {
               Automation Settings
             </button>
             <button
-              onClick={() => setShowMarkModal(true)}
+              onClick={() => openManualModal()}
               className="flex items-center justify-center px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-400 font-semibold transition"
             >
               <Edit className="h-5 w-5 mr-2" />
-              Mark Manual Attendance
+              Manual Attendance
             </button>
           </div>
         </div>
@@ -424,6 +461,13 @@ const AdminAttendanceView = () => {
                                 </button>
                               )}
                               <button
+                                onClick={() => openManualModal(record)}
+                                className="text-indigo-600 hover:text-indigo-900"
+                                title="Edit / Mark Manually"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+                              <button
                                 onClick={() => handleDelete(record._id)}
                                 className="text-red-600 hover:text-red-900"
                                 title="Delete"
@@ -434,14 +478,12 @@ const AdminAttendanceView = () => {
                           )}
                           {record.isPending && (
                             <button
-                              onClick={() => {
-                                setManualAttendance(prev => ({
-                                  ...prev,
-                                  teacherId: record.teacherId,
-                                  status: 'Present'
-                                }));
-                                setShowMarkModal(true);
-                              }}
+                              onClick={() => openManualModal({
+                                teacherId: record.teacherId,
+                                status: 'Present',
+                                date: new Date().toISOString(),
+                                remarks: 'Marked by Admin'
+                              })}
                               className="text-indigo-600 hover:text-indigo-900 font-medium flex items-center"
                               title="Mark Attendance"
                             >
@@ -586,8 +628,12 @@ const AdminAttendanceView = () => {
                       <Edit className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-gray-900">Mark Attendance</h3>
-                      <p className="text-gray-500 text-xs mt-0.5">Record teacher attendance manually</p>
+                      <h3 className="text-xl font-bold text-gray-900">
+                        {manualAttendance.mode === 'edit' ? 'Update Attendance' : 'Mark Attendance'}
+                      </h3>
+                      <p className="text-gray-500 text-xs mt-0.5">
+                        {manualAttendance.mode === 'edit' ? 'Modify existing teacher attendance' : 'Record teacher attendance manually'}
+                      </p>
                     </div>
                   </div>
                   <button
@@ -812,7 +858,7 @@ const AdminAttendanceView = () => {
                     }`}
                   >
                     <CheckCircle className="h-4 w-4 mr-1.5" />
-                    Save Attendance
+                    {manualAttendance.mode === 'edit' ? 'Update Attendance' : 'Save Attendance'}
                   </button>
                 </div>
               </form>
