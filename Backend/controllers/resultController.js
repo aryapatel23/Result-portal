@@ -75,9 +75,13 @@ const uploadResult = async (req, res) => {
       return res.status(401).json({ message: 'User not authenticated' });
     }
 
-    const existingResult = await Result.findOne({ grNumber });
+    const existingResult = await Result.findOne({
+      grNumber,
+      term: term || 'Term-1',
+      academicYear: academicYear || '2024-25'
+    });
     if (existingResult) {
-      return res.status(400).json({ message: 'Result for this GR Number already exists' });
+      return res.status(400).json({ message: 'Result already exists for this student in selected term and academic year' });
     }
 
     const newResult = new Result({ 
@@ -123,6 +127,14 @@ const getResultById = async (req, res) => {
     if (!result) {
       return res.status(404).json({ message: "Result not found" });
     }
+
+    const requesterId = String(req.user?.id || req.user?._id || '');
+
+    // Teacher can only access their own uploaded results
+    if (req.user?.role === 'teacher' && result.uploadedBy?.toString() !== requesterId) {
+      return res.status(403).json({ message: 'You can only access results you uploaded' });
+    }
+
     res.json(result);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -131,10 +143,19 @@ const getResultById = async (req, res) => {
 
 const deleteResult = async (req, res) => {
   try {
-    const result = await Result.findByIdAndDelete(req.params.id);
+    const result = await Result.findById(req.params.id);
     if (!result) {
       return res.status(404).json({ message: 'Result not found' });
     }
+
+    const requesterId = String(req.user?.id || req.user?._id || '');
+
+    // Teacher can only delete their own uploaded results
+    if (req.user?.role === 'teacher' && result.uploadedBy?.toString() !== requesterId) {
+      return res.status(403).json({ message: 'You can only delete results you uploaded' });
+    }
+
+    await Result.findByIdAndDelete(req.params.id);
     res.status(200).json({ message: 'Result deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Server Error', error });
@@ -169,16 +190,35 @@ const deleteResult = async (req, res) => {
 const updateResult = async (req, res) => {
   try {
     const { id } = req.params;
+    const result = await Result.findById(id);
+
+    if (!result) {
+      return res.status(404).json({ message: "Result not found" });
+    }
+
+    const requesterId = String(req.user?.id || req.user?._id || '');
+
+    // Teacher can only update their own uploaded results
+    if (req.user?.role === 'teacher' && result.uploadedBy?.toString() !== requesterId) {
+      return res.status(403).json({ message: 'You can only edit results you uploaded' });
+    }
+
+    const updates = { ...req.body };
+
+    // Normalize subjects payload from frontend before validation
+    if (Array.isArray(updates.subjects)) {
+      updates.subjects = updates.subjects.map((s) => ({
+        name: s.name,
+        marks: Number(s.marks),
+        maxMarks: Number(s.maxMarks),
+      }));
+    }
 
     const updatedResult = await Result.findByIdAndUpdate(
       id,
-      { $set: req.body },  // dynamically update only provided fields
+      { $set: updates },
       { new: true, runValidators: true }
     );
-
-    if (!updatedResult) {
-      return res.status(404).json({ message: "Result not found" });
-    }
 
     res.json({
       message: "Result updated successfully",
