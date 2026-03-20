@@ -28,14 +28,20 @@ const protectAdmin = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log('✅ protectAdmin: Token decoded, Role:', decoded.role, 'User ID:', decoded.id);
+    const normalizedRole = String(decoded.role || '').toLowerCase();
+    const normalizedId = decoded.id || decoded._id;
+    console.log('✅ protectAdmin: Token decoded, Role:', decoded.role, 'User ID:', normalizedId);
     
-    if (decoded.role !== 'admin') {
+    if (normalizedRole !== 'admin') {
       console.log('❌ protectAdmin: Not an admin, role is:', decoded.role);
       return res.status(403).json({ message: 'Admin access required', success: false });
     }
     
-    req.user = decoded;
+    req.user = {
+      ...decoded,
+      role: normalizedRole,
+      id: normalizedId,
+    };
     console.log('✅ protectAdmin: Admin authenticated successfully');
     next();
   } catch (error) {
@@ -54,12 +60,20 @@ const protectTeacher = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const normalizedRole = String(decoded.role || '').toLowerCase();
+    const normalizedId = decoded.id || decoded._id;
+
     console.log('🔐 protectTeacher: Decoded role:', decoded.role);
-    if (decoded.role !== 'teacher' && decoded.role !== 'admin') {
+    if (normalizedRole !== 'teacher' && normalizedRole !== 'admin') {
       console.log('❌ protectTeacher: Forbidden role:', decoded.role);
       return res.status(403).json({ message: 'Teacher or Admin access required' });
     }
-    req.user = decoded;
+
+    req.user = {
+      ...decoded,
+      role: normalizedRole,
+      id: normalizedId,
+    };
     next();
   } catch (error) {
     console.log('❌ protectTeacher: Token error:', error.message);
