@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Plus, Trash2, Save, BookOpen } from "lucide-react";
 import toast from "react-hot-toast";
+import axios from '../api/axios';
 
 const EditResult = () => {
     const { id } = useParams();
@@ -19,9 +20,8 @@ const EditResult = () => {
 
     const fetchResult = async () => {
         try {
-            const res = await fetch(`https://result-portal-tkom.onrender.com/api/results/${id}`);
-            if (!res.ok) throw new Error("Failed to fetch result");
-            const data = await res.json();
+            const res = await axios.get(`/results/${id}`);
+            const data = res.data;
             setFormData({
                 studentName: data.studentName,
                 grNumber: data.grNumber,
@@ -80,18 +80,23 @@ const EditResult = () => {
         setIsSubmitting(true);
 
         try {
-            const res = await fetch(`https://result-portal-tkom.onrender.com/api/results/${id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
-            });
+            const payload = {
+                ...formData,
+                subjects: formData.subjects.map((s) => ({
+                    name: s.name,
+                    marks: Number(s.marks),
+                    maxMarks: Number(s.maxMarks),
+                })),
+            };
 
-            if (!res.ok) throw new Error("Failed to update result");
+            await axios.put(`/results/${id}`, payload, {
+                headers: { "Content-Type": "application/json" },
+            });
 
             toast.success("Result updated successfully", { duration: 3000 });
             navigate("/admin/results");
         } catch (error) {
-            toast.error(error.message || "Update failed");
+            toast.error(error.response?.data?.message || error.message || "Update failed");
         } finally {
             setIsSubmitting(false);
         }

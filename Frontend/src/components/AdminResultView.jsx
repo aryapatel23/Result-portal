@@ -50,6 +50,14 @@ const AdminResultView = () => {
   const [studentInfo, setStudentInfo] = useState(null);
 
   const navigate = useNavigate();
+  const storedUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('user') || '{}');
+    } catch {
+      return {};
+    }
+  })();
+  const currentRole = storedUser?.role || 'admin';
 
   useEffect(() => {
     // Get student info from localStorage if coming from Manage Students
@@ -71,7 +79,7 @@ const AdminResultView = () => {
 
   useEffect(() => {
     // Dispatch fetchResults action
-    dispatch(fetchResults({ role: 'admin' }));
+    dispatch(fetchResults({ role: currentRole }));
   }, [dispatch]);
 
   // Enrich results when reduxResults change
@@ -296,6 +304,10 @@ const AdminResultView = () => {
   };
 
   const handleEdit = (id) => {
+    if (currentRole === 'teacher') {
+      navigate(`/teacher/edit-result/${id}`);
+      return;
+    }
     navigate(`/admin/edit-result/${id}`);
   };
 
