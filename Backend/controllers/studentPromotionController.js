@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const { normalizeStandard, buildStandardQuery } = require('../utils/standardFormatter');
 
 // Get standard mapping for promotion
 const getNextStandard = (currentStandard) => {
@@ -30,7 +31,7 @@ const promoteSingleStudent = async (req, res) => {
     const oldStandard = student.standard;
 
     // If newStandard or toStandard provided, use it; otherwise auto-calculate
-    const promotedStandard = newStandard || toStandard || getNextStandard(student.standard);
+    const promotedStandard = normalizeStandard(newStandard || toStandard || getNextStandard(student.standard));
 
     student.standard = promotedStandard;
     await student.save();
@@ -78,7 +79,7 @@ const bulkPromoteStudents = async (req, res) => {
     } else {
       // Promote all students in a standard
       studentsToPromote = await User.find({
-        standard: standard,
+        ...buildStandardQuery(standard),
         role: 'student'
       });
     }
@@ -96,7 +97,7 @@ const bulkPromoteStudents = async (req, res) => {
     for (const student of studentsToPromote) {
       try {
         const oldStandard = student.standard;
-        const promotedStandard = targetStandard || getNextStandard(student.standard);
+        const promotedStandard = normalizeStandard(targetStandard || getNextStandard(student.standard));
         
         student.standard = promotedStandard;
         await student.save();
@@ -141,10 +142,10 @@ const getStudentsByStandard = async (req, res) => {
     console.log(`Fetching students for standard: ${standard}`);
 
     // Create regex pattern to match different formats: "9", "Grade 9", "STD 9", "Standard 9"
-    const standardPattern = new RegExp(`(^${standard}$|grade\\s*${standard}|std\\s*${standard}|standard\\s*${standard})`, 'i');
+    const standardPattern = buildStandardQuery(standard);
 
     const students = await User.find({ 
-      standard: standardPattern, 
+      ...standardPattern,
       role: 'student' 
     }).select('_id name grNumber standard email').lean();
 
@@ -156,7 +157,7 @@ const getStudentsByStandard = async (req, res) => {
     res.status(200).json({
       total: students.length,
       students: students,
-      standard: standard
+      standard: normalizeStandard(standard)
     });
 
   } catch (error) {

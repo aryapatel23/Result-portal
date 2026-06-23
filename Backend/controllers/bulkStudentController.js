@@ -2,7 +2,7 @@ const User = require('../models/User');
 const XLSX = require('xlsx');
 const path = require('path');
 const fs = require('fs');
-const { formatStandard } = require('../utils/standardFormatter');
+const { formatStandard, normalizeStandard } = require('../utils/standardFormatter');
 
 // Bulk upload students via Excel
 const bulkUploadStudents = async (req, res) => {
@@ -33,6 +33,17 @@ const bulkUploadStudents = async (req, res) => {
       total: data.length
     };
 
+    // Role-based validation
+    let teacherClass = null;
+    if (req.user.role === 'teacher') {
+      const teacher = await User.findById(req.user.id);
+      if (!teacher || !teacher.classTeacher) {
+        fs.unlinkSync(filePath);
+        return res.status(403).json({ message: 'Access denied. You must be assigned as a class teacher to upload students.' });
+      }
+      teacherClass = teacher.classTeacher;
+    }
+
     // Process each row
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
@@ -59,6 +70,15 @@ const bulkUploadStudents = async (req, res) => {
           continue;
         }
 
+        // Validate teacher class standard
+        if (req.user.role === 'teacher' && normalizeStandard(standard) !== teacherClass) {
+          results.errors.push({
+            row: rowNumber,
+            grNumber: grNumber || 'N/A',
+            error: `Access denied. You can only upload students for your assigned class (${teacherClass}).`
+          });
+          continue;
+        }
         // Check if student already exists
         const existingStudent = await User.findOne({ 
           grNumber: grNumber,
@@ -81,8 +101,8 @@ const bulkUploadStudents = async (req, res) => {
           parsedDateOfBirth = XLSX.SSF.parse_date_code(dateOfBirth);
           parsedDateOfBirth = new Date(parsedDateOfBirth.y, parsedDateOfBirth.m - 1, parsedDateOfBirth.d);
         } else if (typeof dateOfBirth === 'string') {
-          // Try parsing DD/MM/YYYY format
-          const parts = dateOfBirth.split('/');
+          // Try parsing DD-MM-YYYY format
+          const parts = dateOfBirth.split('-');
           if (parts.length === 3) {
             parsedDateOfBirth = new Date(parts[2], parts[1] - 1, parts[0]);
           } else {
@@ -96,7 +116,7 @@ const bulkUploadStudents = async (req, res) => {
           results.errors.push({
             row: rowNumber,
             grNumber: grNumber,
-            error: 'Invalid date format. Use DD/MM/YYYY'
+            error: 'Invalid date format. Use DD-MM-YYYY'
           });
           continue;
         }
@@ -116,7 +136,7 @@ const bulkUploadStudents = async (req, res) => {
           email: studentEmail,
           password: hashedPassword,
           dateOfBirth: parsedDateOfBirth,
-          standard: standard.toString().trim(),
+          standard: normalizeStandard(standard),
           penNo: penNo ? penNo.toString().trim() : undefined,
           aadharNumber: aadharNumber ? aadharNumber.toString().trim() : undefined,
           childUID: childUID ? childUID.toString().trim() : undefined,
@@ -261,6 +281,16 @@ const registerSingleStudent = async (req, res) => {
       });
     }
 
+    // Role-based validation
+    if (req.user.role === 'teacher') {
+      const teacher = await User.findById(req.user.id);
+      if (!teacher || normalizeStandard(standard) !== teacher.classTeacher) {
+        return res.status(403).json({ 
+          message: `Access denied. You can only register students for your assigned class (${teacher ? teacher.classTeacher : 'None'}).` 
+        });
+      }
+    }
+
     // Check if student already exists
     const existingStudent = await User.findOne({ 
       grNumber: grNumber.trim(),
@@ -296,7 +326,7 @@ const registerSingleStudent = async (req, res) => {
       email: studentEmail,
       password: hashedPassword,
       dateOfBirth: dob,
-      standard: standard.trim(),
+      standard: normalizeStandard(standard),
       penNo: penNo ? penNo.trim() : undefined,
       aadharNumber: aadharNumber ? aadharNumber.trim() : undefined,
       childUID: childUID ? childUID.trim() : undefined,

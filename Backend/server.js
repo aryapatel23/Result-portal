@@ -16,14 +16,6 @@ const {
 } = require("./middleware/securityMiddleware");
 
 const {
-  generalLimiter,
-  authLimiter,
-  forgotPasswordLimiter,
-  uploadLimiter,
-  createUserLimiter,
-} = require("./middleware/rateLimitMiddleware");
-
-const {
   devLogger,
   prodLogger,
   consoleLogger,
@@ -46,6 +38,15 @@ if (process.env.NODE_ENV === 'production') {
 
 connectDB();
 
+// Ensure uploads directory exists to prevent bulk upload errors
+const fs = require('fs');
+const pathModule = require('path');
+const uploadsDir = pathModule.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+  console.log('📁 Created uploads directory at:', uploadsDir);
+}
+
 const app = express();
 
 // ===============================
@@ -57,7 +58,7 @@ app.get('/api/health/ping', (req, res) => {
   res.status(200).send('pong');
 });
 
-// 1. Trust proxy (for rate limiting behind reverse proxy)
+// 1. Trust proxy
 app.set('trust proxy', 1);
 
 // 2. Helmet - Security headers
@@ -151,9 +152,6 @@ app.use(sanitizeRequest);
 // 13. Prevent common attacks
 app.use(preventCommonAttacks);
 
-// 14. General API rate limiting
-app.use('/api/', generalLimiter);
-
 // ===============================
 // HEALTH CHECK ROUTES (BEFORE AUTH)
 // ===============================
@@ -163,7 +161,7 @@ app.use("/api/health", require("./routes/healthRoutes"));
 // API ROUTES WITH SPECIFIC RATE LIMITERS
 // ===============================
 
-// Authentication routes (with specific rate limiting applied in routes)
+// Authentication routes
 app.use("/api/auth", require("./routes/authRoutes"));
 
 // Profile routes
@@ -184,9 +182,9 @@ app.use("/api/student", require("./routes/studentRoutes"));
 // Timetable routes
 app.use("/api/timetable", require("./routes/timetableRoutes"));
 
-// Bulk operations (with upload rate limit)
-app.use("/api/bulk-students", uploadLimiter, require("./routes/bulkStudentRoutes"));
-app.use("/api/bulk-results", uploadLimiter, require("./routes/bulkResultRoutes"));
+// Bulk operations
+app.use("/api/bulk-students", require("./routes/bulkStudentRoutes"));
+app.use("/api/bulk-results", require("./routes/bulkResultRoutes"));
 
 // Student management
 app.use("/api/student-promotion", require("./routes/studentPromotionRoutes"));
@@ -199,8 +197,8 @@ app.use("/api/pdf", require("./routes/pdfRoutes"));
 app.use("/api/teacher-attendance", require("./routes/teacherAttendanceRoutes"));
 app.use("/api/admin/attendance", require("./routes/adminAttendanceRoutes"));
 
-// Face registration (with upload rate limit)
-app.use("/api/face", uploadLimiter, require("./routes/faceRegistrationRoutes"));
+// Face registration
+app.use("/api/face", require("./routes/faceRegistrationRoutes"));
 
 // System configuration
 app.use("/api/system-config", require("./routes/systemConfigRoutes"));
@@ -216,7 +214,6 @@ console.log('✅ All routes registered with security middleware');
 console.log('🛡️  Security features enabled:');
 console.log('   ✓ Helmet (Security Headers)');
 console.log('   ✓ CORS Protection');
-console.log('   ✓ Rate Limiting');
 console.log('   ✓ NoSQL Injection Protection');
 console.log('   ✓ XSS Protection');
 console.log('   ✓ Request Sanitization');

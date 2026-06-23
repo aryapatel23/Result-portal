@@ -1,6 +1,6 @@
 const User = require('../models/User');
 const Result = require('../models/Result');
-const { formatStandard } = require('../utils/standardFormatter');
+const { formatStandard, normalizeStandard, buildStandardQuery } = require('../utils/standardFormatter');
 
 // @desc    Get all students with pagination and filters
 // @route   GET /api/student-management
@@ -27,11 +27,25 @@ exports.getAllStudents = async (req, res) => {
       ];
     }
 
-    // Standard filter with flexible matching
-    if (standard) {
-      query.standard = {
-        $regex: new RegExp(`^${standard}$|grade\\s*${standard}|std\\s*${standard}|standard\\s*${standard}`, 'i')
-      };
+    // Role-based validation/filtering
+    if (req.user.role === 'teacher') {
+      const teacher = await User.findById(req.user.id);
+      if (!teacher || !teacher.classTeacher) {
+        return res.json({
+          success: true,
+          students: [],
+          pagination: {
+            total: 0,
+            page: parseInt(page),
+            limit: parseInt(limit),
+            pages: 0
+          }
+        });
+      }
+      query.standard = teacher.classTeacher;
+    } else if (standard) {
+      // Standard filter with flexible matching (Admins)
+      Object.assign(query, buildStandardQuery(standard));
     }
 
     // Sorting
@@ -89,6 +103,14 @@ exports.getStudentById = async (req, res) => {
       return res.status(404).json({ message: 'Student not found' });
     }
 
+    // Role-based validation
+    if (req.user.role === 'teacher') {
+      const teacher = await User.findById(req.user.id);
+      if (!teacher || teacher.classTeacher !== student.standard) {
+        return res.status(403).json({ message: 'Access denied. You can only view details of students in your assigned class.' });
+      }
+    }
+
     // Get all results for this student
     const results = await Result.find({ grNumber: student.grNumber })
       .sort({ createdAt: -1 })
@@ -110,7 +132,7 @@ exports.getStudentById = async (req, res) => {
 // @access  Teacher/Admin
 exports.updateStudent = async (req, res) => {
   try {
-    const { name, email, dob, dateOfBirth, standard, parentContact } = req.body;
+    const { name, email, dob, dateOfBirth, standard, parentContact, penNo, aadharNumber, childUID, mobile } = req.body;
     
     const student = await User.findById(req.params.id);
     
@@ -118,12 +140,30 @@ exports.updateStudent = async (req, res) => {
       return res.status(404).json({ message: 'Student not found' });
     }
 
+    // Role-based validation
+    if (req.user.role === 'teacher') {
+      const teacher = await User.findById(req.user.id);
+      if (!teacher || teacher.classTeacher !== student.standard) {
+        return res.status(403).json({ message: 'Access denied. You can only modify details of students in your assigned class.' });
+      }
+
+      // Teachers cannot change standard to a class other than their assigned one
+      if (standard && normalizeStandard(standard) !== teacher.classTeacher) {
+        return res.status(403).json({ message: 'Access denied. You cannot assign a student to a class other than your own.' });
+      }
+    }
+
     // Update fields
     if (name) student.name = name;
     if (email) student.email = email;
     if (dob || dateOfBirth) student.dateOfBirth = dob || dateOfBirth;
-    if (standard) student.standard = standard;
-    if (parentContact) student.parentContact = parentContact;
+    if (standard) student.standard = normalizeStandard(standard);
+    
+    if (req.body.hasOwnProperty('parentContact')) student.parentContact = parentContact || '';
+    if (req.body.hasOwnProperty('penNo')) student.penNo = penNo || '';
+    if (req.body.hasOwnProperty('aadharNumber')) student.aadharNumber = aadharNumber || '';
+    if (req.body.hasOwnProperty('childUID')) student.childUID = childUID || '';
+    if (req.body.hasOwnProperty('mobile')) student.mobile = mobile || '';
 
     await student.save();
 
@@ -137,7 +177,11 @@ exports.updateStudent = async (req, res) => {
         email: student.email,
         dob: student.dob,
         standard: student.standard,
-        parentContact: student.parentContact
+        parentContact: student.parentContact,
+        penNo: student.penNo,
+        aadharNumber: student.aadharNumber,
+        childUID: student.childUID,
+        mobile: student.mobile
       }
     });
   } catch (error) {
@@ -155,6 +199,14 @@ exports.deleteStudent = async (req, res) => {
     
     if (!student || student.role !== 'student') {
       return res.status(404).json({ message: 'Student not found' });
+    }
+
+    // Role-based validation
+    if (req.user.role === 'teacher') {
+      const teacher = await User.findById(req.user.id);
+      if (!teacher || teacher.classTeacher !== student.standard) {
+        return res.status(403).json({ message: 'Access denied. You can only delete students in your assigned class.' });
+      }
     }
 
     // Delete all results associated with this student
@@ -194,6 +246,18 @@ exports.bulkDeleteStudents = async (req, res) => {
       return res.status(404).json({ message: 'No students found to delete' });
     }
 
+    // Role-based validation
+    if (req.user.role === 'teacher') {
+      const teacher = await User.findById(req.user.id);
+      if (!teacher) {
+        return res.status(403).json({ message: 'Access denied.' });
+      }
+      const unauthorizedStudents = students.filter(s => s.standard !== teacher.classTeacher);
+      if (unauthorizedStudents.length > 0) {
+        return res.status(403).json({ message: 'Access denied. You can only delete students in your assigned class.' });
+      }
+    }
+
     // Get all GR numbers
     const grNumbers = students.map(s => s.grNumber);
 
@@ -227,12 +291,32 @@ exports.bulkDeleteStudents = async (req, res) => {
 // @access  Teacher/Admin
 exports.getStudentStats = async (req, res) => {
   try {
+    const query = { role: 'student' };
+
+    // Role-based validation
+    if (req.user.role === 'teacher') {
+      const teacher = await User.findById(req.user.id);
+      if (!teacher || !teacher.classTeacher) {
+        return res.json({
+          success: true,
+          stats: {
+            totalStudents: 0,
+            recentRegistrations: 0,
+            studentsWithEmail: 0,
+            studentsWithoutEmail: 0,
+            byStandard: []
+          }
+        });
+      }
+      query.standard = teacher.classTeacher;
+    }
+
     // Total students
-    const totalStudents = await User.countDocuments({ role: 'student' });
+    const totalStudents = await User.countDocuments(query);
 
     // Students by standard
     const studentsByStandard = await User.aggregate([
-      { $match: { role: 'student' } },
+      { $match: query },
       { 
         $group: { 
           _id: '$standard', 
@@ -246,13 +330,13 @@ exports.getStudentStats = async (req, res) => {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const recentRegistrations = await User.countDocuments({
-      role: 'student',
+      ...query,
       createdAt: { $gte: thirtyDaysAgo }
     });
 
     // Students with email vs without
     const studentsWithEmail = await User.countDocuments({
-      role: 'student',
+      ...query,
       email: { $exists: true, $ne: '' }
     });
 
@@ -290,10 +374,15 @@ exports.exportStudents = async (req, res) => {
       ];
     }
 
-    if (standard) {
-      query.standard = {
-        $regex: new RegExp(`^${standard}$|grade\\s*${standard}|std\\s*${standard}|standard\\s*${standard}`, 'i')
-      };
+    // Role-based validation
+    if (req.user.role === 'teacher') {
+      const teacher = await User.findById(req.user.id);
+      if (!teacher || !teacher.classTeacher) {
+        return res.status(403).json({ message: 'Access denied. No assigned class found.' });
+      }
+      query.standard = teacher.classTeacher;
+    } else if (standard) {
+      Object.assign(query, buildStandardQuery(standard));
     }
 
     const students = await User.find(query)

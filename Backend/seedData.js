@@ -5,6 +5,7 @@ require('dotenv').config();
 const User = require('./models/User');
 const Result = require('./models/Result');
 const TeacherPerformance = require('./models/Teacher');
+const { normalizeStandard } = require('./utils/standardFormatter');
 
 const connectDB = async () => {
   try {
@@ -78,7 +79,7 @@ const seedData = async () => {
         name: 'Aryan Shah',
         grNumber: 'GR001',
         dateOfBirth: new Date('2010-05-15'),
-        standard: 'Grade 10',
+        standard: normalizeStandard('Grade 10'),
         email: 'aryan@student.com',
         role: 'student',
         password: 'student123' // In real app, this should be hashed
@@ -87,7 +88,7 @@ const seedData = async () => {
         name: 'Diya Mehta',
         grNumber: 'GR002',
         dateOfBirth: new Date('2010-08-22'),
-        standard: 'Grade 10',
+        standard: normalizeStandard('Grade 10'),
         email: 'diya@student.com',
         role: 'student',
         password: 'student123'
@@ -96,7 +97,7 @@ const seedData = async () => {
         name: 'Rohan Desai',
         grNumber: 'GR003',
         dateOfBirth: new Date('2011-03-10'),
-        standard: 'Grade 9',
+        standard: normalizeStandard('Grade 9'),
         email: 'rohan@student.com',
         role: 'student',
         password: 'student123'
@@ -105,7 +106,7 @@ const seedData = async () => {
         name: 'Ananya Singh',
         grNumber: 'GR004',
         dateOfBirth: new Date('2011-07-18'),
-        standard: 'Grade 9',
+        standard: normalizeStandard('Grade 9'),
         email: 'ananya@student.com',
         role: 'student',
         password: 'student123'
@@ -114,7 +115,7 @@ const seedData = async () => {
         name: 'Kabir Joshi',
         grNumber: 'GR005',
         dateOfBirth: new Date('2012-01-25'),
-        standard: 'Grade 8',
+        standard: normalizeStandard('Grade 8'),
         email: 'kabir@student.com',
         role: 'student',
         password: 'student123'
@@ -132,7 +133,7 @@ const seedData = async () => {
         studentName: 'Aryan Shah',
         grNumber: 'GR001',
         dateOfBirth: new Date('2010-05-15'),
-        standard: 'Grade 10',
+        standard: normalizeStandard('Grade 10'),
         term: 'Term-1',
         academicYear: '2024-25',
         subjects: [
@@ -151,7 +152,7 @@ const seedData = async () => {
         studentName: 'Diya Mehta',
         grNumber: 'GR002',
         dateOfBirth: new Date('2010-08-22'),
-        standard: 'Grade 10',
+        standard: normalizeStandard('Grade 10'),
         term: 'Term-1',
         academicYear: '2024-25',
         subjects: [
@@ -170,7 +171,7 @@ const seedData = async () => {
         studentName: 'Rohan Desai',
         grNumber: 'GR003',
         dateOfBirth: new Date('2011-03-10'),
-        standard: 'Grade 9',
+        standard: normalizeStandard('Grade 9'),
         term: 'Term-1',
         academicYear: '2024-25',
         subjects: [
@@ -189,7 +190,7 @@ const seedData = async () => {
         studentName: 'Ananya Singh',
         grNumber: 'GR004',
         dateOfBirth: new Date('2011-07-18'),
-        standard: 'Grade 9',
+        standard: normalizeStandard('Grade 9'),
         term: 'Term-1',
         academicYear: '2024-25',
         subjects: [
@@ -208,7 +209,7 @@ const seedData = async () => {
         studentName: 'Kabir Joshi',
         grNumber: 'GR005',
         dateOfBirth: new Date('2012-01-25'),
-        standard: 'Grade 8',
+        standard: normalizeStandard('Grade 8'),
         term: 'Term-1',
         academicYear: '2024-25',
         subjects: [

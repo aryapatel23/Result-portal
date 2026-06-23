@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { normalizeStandard } = require('../utils/standardFormatter');
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -29,7 +30,8 @@ const userSchema = new mongoose.Schema({
     type: Date
   },
   standard: {
-    type: String
+    type: String,
+    set: normalizeStandard
   },
   penNo: {
     type: String,

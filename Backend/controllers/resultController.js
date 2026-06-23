@@ -61,6 +61,7 @@
 
 
 const Result = require('../models/Result');
+const { normalizeStandard, buildStandardQuery } = require('../utils/standardFormatter');
 
 const uploadResult = async (req, res) => {
   try {
@@ -88,7 +89,7 @@ const uploadResult = async (req, res) => {
       studentName, 
       grNumber, 
       dateOfBirth, 
-      standard, 
+      standard: normalizeStandard(standard), 
       subjects, 
       remarks,
       uploadedBy: req.user.id,
@@ -110,7 +111,7 @@ const uploadResult = async (req, res) => {
 const getAllResultsForAdmin = async (req, res) => {
   try {
     const { standard } = req.query;
-    const query = standard ? { standard } : {};
+    const query = standard ? buildStandardQuery(standard) : {};
 
     const results = await Result.find(query).populate('uploadedBy', 'name employeeId email');
 

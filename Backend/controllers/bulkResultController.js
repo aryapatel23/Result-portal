@@ -1,7 +1,7 @@
 const Result = require('../models/Result');
 const User = require('../models/User');
 const XLSX = require('xlsx');
-const { formatStandard } = require('../utils/standardFormatter');
+const { formatStandard, normalizeStandard } = require('../utils/standardFormatter');
 const fs = require('fs');
 
 // Bulk upload results via Excel
@@ -109,7 +109,7 @@ const bulkUploadResults = async (req, res) => {
           grNumber: row.grNumber.toString().trim(),
           studentName: row.studentName.trim(),
           dateOfBirth: row.dateOfBirth ? new Date(row.dateOfBirth) : student.dob,
-          standard: row.standard.toString().trim(),
+          standard: normalizeStandard(row.standard),
           term: row.term || 'Term-1',
           academicYear: row.academicYear || '2024-25',
           subjects: subjects,

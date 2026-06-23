@@ -1,10 +1,14 @@
 const mongoose = require('mongoose');
+const { normalizeStandard } = require('../utils/standardFormatter');
 
 const studentSchema = new mongoose.Schema({
   studentName: String,
   grNumber: String,
   dateOfBirth: String,
-  standard: String,
+  standard: {
+    type: String,
+    set: normalizeStandard
+  },
   subjects: [
     {
       name: String,

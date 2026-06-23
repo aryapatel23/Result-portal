@@ -7,8 +7,8 @@ require('dotenv').config();
 
 // School location from environment variables
 const SCHOOL_LOCATION = {
-  latitude: parseFloat(process.env.SCHOOL_LATITUDE) || 22.81713251852116,
-  longitude: parseFloat(process.env.SCHOOL_LONGITUDE) || 72.47335209589137,
+  latitude: parseFloat(process.env.SCHOOL_LATITUDE) || 23.812955209605857,
+  longitude: parseFloat(process.env.SCHOOL_LONGITUDE) || 72.38391071359614,
   maxDistance: parseFloat(process.env.SCHOOL_ATTENDANCE_RADIUS_KM) || 3
 };
 

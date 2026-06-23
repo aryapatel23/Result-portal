@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { normalizeStandard } = require('../utils/standardFormatter');
 
 const subjectSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -21,7 +22,8 @@ const resultSchema = new mongoose.Schema({
   },
   standard: { 
     type: String, 
-    required: true 
+    required: true,
+    set: normalizeStandard
   },
   subjects: [subjectSchema],
   remarks: { 

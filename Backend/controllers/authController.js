@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const { sendPasswordResetEmail } = require("../utils/emailService");
+const { normalizeStandard } = require('../utils/standardFormatter');
 
 // Admin/Teacher Login
 // Unified Login (Admin, Teacher, Student)
@@ -162,7 +163,7 @@ exports.registerStudent = async (req, res) => {
       name,
       grNumber,
       dateOfBirth: new Date(dateOfBirth),
-      standard,
+      standard: normalizeStandard(standard),
       email,
       phone,
       role: 'student',
