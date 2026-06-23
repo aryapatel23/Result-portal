@@ -249,7 +249,7 @@ const TeacherEditResult = () => {
                                 <option value="">Select Standard</option>
                                 <option value="Balvatika">Balvatika</option>
                                 {[...Array(8)].map((_, i) => (
-                                    <option key={i + 1} value={`${i + 1}`}>
+                                    <option key={i + 1} value={`STD-${i + 1}`}>
                                         STD-{i + 1}
                                     </option>
                                 ))}

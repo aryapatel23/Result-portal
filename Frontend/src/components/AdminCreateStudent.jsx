@@ -147,14 +147,14 @@ const AdminCreateStudent = () => {
                   >
                     <option value="">Select Standard</option>
                     <option value="Balvatika">Balvatika</option>
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                    <option value="6">6</option>
-                    <option value="7">7</option>
-                    <option value="8">8</option>
+                    <option value="STD-1">STD-1</option>
+                    <option value="STD-2">STD-2</option>
+                    <option value="STD-3">STD-3</option>
+                    <option value="STD-4">STD-4</option>
+                    <option value="STD-5">STD-5</option>
+                    <option value="STD-6">STD-6</option>
+                    <option value="STD-7">STD-7</option>
+                    <option value="STD-8">STD-8</option>
                   </select>
                 </div>
               </div>

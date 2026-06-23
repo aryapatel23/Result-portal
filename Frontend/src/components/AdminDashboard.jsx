@@ -234,6 +234,16 @@ const AdminDashboard = () => {
             </button>
 
             <button
+              onClick={() => navigate('/admin/manage-students')}
+              className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-teal-300 rounded-lg hover:border-teal-500 hover:bg-teal-50 transition-all group"
+            >
+              <div className="bg-teal-100 rounded-full p-4 group-hover:bg-teal-200 transition-colors">
+                <Users className="h-8 w-8 text-teal-600" />
+              </div>
+              <p className="mt-3 text-sm font-semibold text-gray-900">Manage Students</p>
+            </button>
+
+            <button
               onClick={() => navigate('/admin/bulk-upload-students')}
               className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-orange-300 rounded-lg hover:border-orange-500 hover:bg-orange-50 transition-all group"
             >
