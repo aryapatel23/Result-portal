@@ -1,91 +1,137 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from '../api/axios';
 import toast from 'react-hot-toast';
-import { Briefcase, Mail, Lock, Phone, BookOpen, Users, ArrowLeft } from 'lucide-react';
+import {
+  Briefcase, Mail, Lock, Phone, BookOpen, Plus, Trash2,
+  ArrowLeft, GraduationCap, ShieldCheck, User
+} from 'lucide-react';
+import { SCHOOL_STANDARDS, SCHOOL_SUBJECTS } from '../utils/schoolConstants';
 
-const AdminCreateTeacher = () => {
+const ROLES = [
+  {
+    value: 'teacher',
+    label: 'Teacher',
+    icon: GraduationCap,
+    description: 'Can upload results for assigned classes/subjects. May be designated as a class teacher.',
+    color: 'indigo',
+  },
+  {
+    value: 'admin',
+    label: 'Administrator',
+    icon: ShieldCheck,
+    description: 'Full system access — manage teachers, students, results and all settings.',
+    color: 'rose',
+  },
+];
+
+const AdminCreateStaff = () => {
   const navigate = useNavigate();
+
+  const [selectedRole, setSelectedRole] = useState('teacher');
   const [formData, setFormData] = useState({
     name: '',
     employeeId: '',
     email: '',
-    password: '',
-    confirmPassword: '',
-    subjects: '',
-    classTeacher: '',
-    assignedClasses: [],
     phone: '',
+    classTeacher: '',
   });
-  const [showClassDropdown, setShowClassDropdown] = useState(false);
+
+  // Teaching assignments — only used when role is 'teacher'
+  const [teachingAssignments, setTeachingAssignments] = useState([
+    { standard: '', subject: '' },
+  ]);
+
   const [loading, setLoading] = useState(false);
-  const dropdownRef = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowClassDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  /* ── Teaching Assignment helpers ─────────────────────────── */
+  const handleAssignmentChange = (index, field, value) => {
+    setTeachingAssignments((prev) =>
+      prev.map((a, i) => (i === index ? { ...a, [field]: value } : a))
+    );
+  };
+
+  const handleAddAssignment = () => {
+    setTeachingAssignments((prev) => [...prev, { standard: '', subject: '' }]);
+  };
+
+  const handleRemoveAssignment = (index) => {
+    if (teachingAssignments.length === 1) {
+      toast.error('At least one teaching assignment is required');
+      return;
+    }
+    setTeachingAssignments((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  /* ── Submit ──────────────────────────────────────────────── */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation
-    if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match!');
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      toast.error('Password must be at least 6 characters!');
-      return;
+    // Validate teacher-specific assignments
+    if (selectedRole === 'teacher') {
+      const validAssignments = teachingAssignments.filter(
+        (a) => a.standard.trim() && a.subject.trim()
+      );
+      if (validAssignments.length === 0) {
+        toast.error('Please add at least one valid teaching assignment (standard + subject).');
+        return;
+      }
+      const keys = validAssignments.map((a) => `${a.standard}::${a.subject.toLowerCase()}`);
+      if (new Set(keys).size !== keys.length) {
+        toast.error('Duplicate assignments found. Each standard-subject pair must be unique.');
+        return;
+      }
     }
 
     setLoading(true);
-
     try {
       const token = localStorage.getItem('token');
-      
-      // Split comma-separated values into arrays
-      const teacherData = {
+
+      const payload = {
         name: formData.name,
         employeeId: formData.employeeId,
         email: formData.email,
-        password: formData.password,
-        subjects: formData.subjects.split(',').map(s => s.trim()).filter(s => s),
-        classTeacher: formData.classTeacher.trim() || null,
-        assignedClasses: formData.assignedClasses,
         phone: formData.phone,
+        role: selectedRole,
       };
 
-      const response = await axios.post('/admin/teachers', teacherData, {
+      if (selectedRole === 'teacher') {
+        const validAssignments = teachingAssignments.filter(
+          (a) => a.standard.trim() && a.subject.trim()
+        );
+        payload.classTeacher = formData.classTeacher.trim() || null;
+        payload.teachingAssignments = validAssignments;
+        payload.subjects = [];
+        payload.assignedClasses = [];
+      }
+
+      const response = await axios.post('/admin/teachers', payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
+      const roleLabel = selectedRole === 'admin' ? 'Admin' : 'Teacher';
       toast.success(
-        `Teacher created successfully! ${response.data.emailSent ? '📧 Welcome email sent to ' + formData.email : ''}`,
+        `${roleLabel} account created! ${
+          response.data.emailSent
+            ? `📧 Credentials sent to ${formData.email}`
+            : ''
+        }`,
         { duration: 5000 }
       );
       navigate('/admin/dashboard');
     } catch (error) {
-      console.error('Error creating teacher:', error);
-      toast.error(error.response?.data?.message || 'Failed to create teacher');
+      console.error('Error creating staff:', error);
+      toast.error(error.response?.data?.message || 'Failed to create account');
     } finally {
       setLoading(false);
     }
   };
+
+  const isAdmin = selectedRole === 'admin';
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
@@ -99,26 +145,90 @@ const AdminCreateTeacher = () => {
         </button>
 
         <div className="bg-white rounded-lg shadow-md p-8">
-          <div className="flex items-center mb-6">
-            <div className="bg-indigo-100 rounded-full p-3">
-              <Briefcase className="h-8 w-8 text-indigo-600" />
+          {/* Header */}
+          <div className="flex items-center mb-8">
+            <div className={`rounded-full p-3 ${isAdmin ? 'bg-rose-100' : 'bg-indigo-100'}`}>
+              {isAdmin
+                ? <ShieldCheck className="h-8 w-8 text-rose-600" />
+                : <Briefcase className="h-8 w-8 text-indigo-600" />
+              }
             </div>
             <div className="ml-4">
-              <h2 className="text-2xl font-bold text-gray-900">Create New Teacher</h2>
-              <p className="text-gray-600">Add a new teacher to the system</p>
+              <h2 className="text-2xl font-bold text-gray-900">Create Staff Account</h2>
+              <p className="text-gray-600">Add a new teacher or administrator to the system</p>
             </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Basic Information */}
+
+            {/* ── Role Selector ───────────────────────────────────── */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-3">
+                Account Role <span className="text-red-500">*</span>
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {ROLES.map((r) => (
+                  <button
+                    key={r.value}
+                    type="button"
+                    onClick={() => setSelectedRole(r.value)}
+                    className={`text-left p-4 rounded-lg border-2 transition-all ${
+                      selectedRole === r.value
+                        ? r.value === 'admin'
+                          ? 'border-rose-500 bg-rose-50'
+                          : 'border-indigo-500 bg-indigo-50'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <r.icon className={`h-5 w-5 ${
+                        selectedRole === r.value
+                          ? r.value === 'admin' ? 'text-rose-600' : 'text-indigo-600'
+                          : 'text-gray-500'
+                      }`} />
+                      <span className={`font-semibold text-sm ${
+                        selectedRole === r.value
+                          ? r.value === 'admin' ? 'text-rose-700' : 'text-indigo-700'
+                          : 'text-gray-700'
+                      }`}>
+                        {r.label}
+                      </span>
+                      {selectedRole === r.value && (
+                        <span className={`ml-auto text-xs px-2 py-0.5 rounded-full font-medium ${
+                          r.value === 'admin'
+                            ? 'bg-rose-200 text-rose-800'
+                            : 'bg-indigo-200 text-indigo-800'
+                        }`}>
+                          Selected
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 leading-snug">{r.description}</p>
+                  </button>
+                ))}
+              </div>
+
+              {isAdmin && (
+                <div className="mt-3 flex items-start gap-2 p-3 bg-rose-50 border border-rose-200 rounded-md">
+                  <ShieldCheck className="h-4 w-4 text-rose-600 mt-0.5 shrink-0" />
+                  <p className="text-xs text-rose-700">
+                    <strong>Admin accounts</strong> have full access to the system. They can manage
+                    teachers, students, upload results for any class, and configure system settings.
+                    Create admin accounts only for trusted staff.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* ── Basic Information ─────────────────────────────── */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Full Name *
+                  Full Name <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Briefcase className="h-5 w-5 text-gray-400" />
+                    <User className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
                     type="text"
@@ -127,14 +237,14 @@ const AdminCreateTeacher = () => {
                     onChange={handleChange}
                     required
                     className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="Enter teacher name"
+                    placeholder="Enter full name"
                   />
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Employee ID *
+                  Employee ID <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -148,11 +258,11 @@ const AdminCreateTeacher = () => {
               </div>
             </div>
 
-            {/* Contact Information */}
+            {/* ── Contact ─────────────────────────────────────────── */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Address *
+                  Email Address <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -165,7 +275,7 @@ const AdminCreateTeacher = () => {
                     onChange={handleChange}
                     required
                     className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="teacher@school.com"
+                    placeholder="staff@school.com"
                   />
                 </div>
               </div>
@@ -184,177 +294,141 @@ const AdminCreateTeacher = () => {
                     value={formData.phone}
                     onChange={handleChange}
                     className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="+91 1234567890"
+                    placeholder="+91 9876543210"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Password */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Password *
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="password"
-                    name="password"
-                    value={formData.password}
+            {/* ── Auto-generated Password Note ───────────────────── */}
+            <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <Lock className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
+              <p className="text-xs text-blue-700">
+                A secure password will be <strong>auto-generated</strong> and emailed to the staff
+                member along with their login credentials. They can change it after first login.
+              </p>
+            </div>
+
+            {/* ── Teacher-only: Class Teacher & Teaching Assignments ─ */}
+            {!isAdmin && (
+              <>
+                {/* Class Teacher */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <GraduationCap className="inline h-4 w-4 mr-1 text-yellow-500" />
+                    Class Teacher Of (Primary Class)
+                  </label>
+                  <select
+                    name="classTeacher"
+                    value={formData.classTeacher}
                     onChange={handleChange}
-                    required
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="Minimum 6 characters"
-                  />
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="">None — Not a class teacher</option>
+                    {SCHOOL_STANDARDS.map((std) => (
+                      <option key={std} value={std}>{std}</option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Class teachers can upload all subjects for their primary class.
+                  </p>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Confirm Password *
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="password"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    required
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="Re-enter password"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Teaching Information */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Subjects (comma-separated) *
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <BookOpen className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  name="subjects"
-                  value={formData.subjects}
-                  onChange={handleChange}
-                  required
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="e.g., Mathematics, Physics, Chemistry"
-                />
-              </div>
-              <p className="mt-1 text-sm text-gray-500">Enter subjects separated by commas</p>
-            </div>
-
-            {/* Class Teacher */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Class Teacher Of (Primary Class)
-              </label>
-              <select
-                name="classTeacher"
-                value={formData.classTeacher}
-                onChange={handleChange}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="">None - Not a class teacher</option>
-                <option value="Balvatika">Balvatika</option>
-                {[...Array(8)].map((_, i) => (
-                  <option key={i + 1} value={`${i + 1}`}>
-                    STD-{i + 1}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1 text-sm text-gray-500">The ONE class this teacher is class teacher of (can upload results)</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Assigned Classes *
-              </label>
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  type="button"
-                  onClick={() => setShowClassDropdown(!showClassDropdown)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-left bg-white flex items-center justify-between hover:border-indigo-400 transition-colors"
-                >
-                  <span className="text-gray-700">
-                    {formData.assignedClasses.length > 0 ? `${formData.assignedClasses.length} classes selected` : 'Select classes'}
-                  </span>
-                  <Users className="h-5 w-5 text-gray-400" />
-                </button>
-                {showClassDropdown && (
-                  <div className="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                    {[...Array(12)].map((_, i) => {
-                      const className = `STD ${i + 1}`;
-                      const isSelected = formData.assignedClasses.includes(className);
-                      return (
-                        <label
-                          key={i}
-                          className="flex items-center px-3 py-2 hover:bg-indigo-50 cursor-pointer transition-colors"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setFormData({
-                                  ...formData,
-                                  assignedClasses: [...formData.assignedClasses, className]
-                                });
-                              } else {
-                                setFormData({
-                                  ...formData,
-                                  assignedClasses: formData.assignedClasses.filter(c => c !== className)
-                                });
-                              }
-                            }}
-                            className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                          />
-                          <span className="ml-2 text-sm text-gray-700">{className}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-              {formData.assignedClasses.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {formData.assignedClasses.map((cls) => (
-                    <span
-                      key={cls}
-                      className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+                {/* Teaching Assignments */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-800">
+                        <BookOpen className="inline h-4 w-4 mr-1 text-indigo-500" />
+                        Teaching Assignments <span className="text-red-500">*</span>
+                      </label>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Specify exactly which subject this teacher teaches in each class.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddAssignment}
+                      className="flex items-center px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-md hover:bg-indigo-100 text-sm font-medium transition-colors"
                     >
-                      {cls}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFormData({
-                            ...formData,
-                            assignedClasses: formData.assignedClasses.filter(c => c !== cls)
-                          });
-                        }}
-                        className="ml-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-blue-200"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-              <p className="mt-1 text-sm text-gray-500">All classes where teacher teaches (should include class teacher class)</p>
-            </div>
+                      <Plus className="h-4 w-4 mr-1" /> Add Assignment
+                    </button>
+                  </div>
 
-            {/* Submit Button */}
+                  <div className="space-y-3">
+                    {teachingAssignments.map((assignment, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <label className="block text-xs text-gray-500 mb-1">Standard</label>
+                          <select
+                            value={assignment.standard}
+                            onChange={(e) => handleAssignmentChange(index, 'standard', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500"
+                          >
+                            <option value="">Select Standard</option>
+                            {SCHOOL_STANDARDS.map((std) => (
+                              <option key={std} value={std}>{std}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="flex-1">
+                          <label className="block text-xs text-gray-500 mb-1">Subject</label>
+                          <input
+                            type="text"
+                            list={`subjects-list-${index}`}
+                            value={assignment.subject}
+                            onChange={(e) => handleAssignmentChange(index, 'subject', e.target.value)}
+                            placeholder="e.g. Mathematics"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500"
+                          />
+                          <datalist id={`subjects-list-${index}`}>
+                            {SCHOOL_SUBJECTS.map((s) => (
+                              <option key={s} value={s} />
+                            ))}
+                          </datalist>
+                        </div>
+
+                        <div className="pt-5">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveAssignment(index)}
+                            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
+                            title="Remove assignment"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Assignment summary preview */}
+                  {teachingAssignments.filter((a) => a.standard && a.subject).length > 0 && (
+                    <div className="mt-3 p-3 bg-indigo-50 border border-indigo-200 rounded-md">
+                      <p className="text-xs font-medium text-indigo-700 mb-2">📋 Assignment Summary:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {teachingAssignments
+                          .filter((a) => a.standard && a.subject)
+                          .map((a, i) => (
+                            <span
+                              key={i}
+                              className="px-2 py-1 bg-white border border-indigo-200 text-indigo-800 rounded text-xs font-medium"
+                            >
+                              {a.standard} → {a.subject}
+                            </span>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* ── Submit ─────────────────────────────────────────── */}
             <div className="flex items-center justify-end space-x-4 pt-6 border-t">
               <button
                 type="button"
@@ -366,7 +440,11 @@ const AdminCreateTeacher = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                className={`px-6 py-2 text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center ${
+                  isAdmin
+                    ? 'bg-rose-600 hover:bg-rose-700'
+                    : 'bg-indigo-600 hover:bg-indigo-700'
+                }`}
               >
                 {loading ? (
                   <>
@@ -374,7 +452,10 @@ const AdminCreateTeacher = () => {
                     Creating...
                   </>
                 ) : (
-                  'Create Teacher'
+                  <>
+                    {isAdmin ? <ShieldCheck className="h-4 w-4 mr-2" /> : <Briefcase className="h-4 w-4 mr-2" />}
+                    Create {isAdmin ? 'Admin' : 'Teacher'}
+                  </>
                 )}
               </button>
             </div>
@@ -385,4 +466,4 @@ const AdminCreateTeacher = () => {
   );
 };
 
-export default AdminCreateTeacher;
+export default AdminCreateStaff;

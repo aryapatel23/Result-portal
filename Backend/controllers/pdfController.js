@@ -140,7 +140,7 @@ exports.generateReportCard = async (req, res) => {
       doc.fontSize(9)
         .font('Helvetica')
         .fillColor('#000000')
-        .text('Devaraj Urs Education Society (R)', headerTextX, currentY + 5, { width: headerTextWidth, align: 'center' });
+        .text('ગુજરાતમાં પ્રાથમિક શિક્ષણનું સંચાલન', headerTextX, currentY + 5, { width: headerTextWidth, align: 'center' });
 
       // School Name (Large, Bold)
       doc.fontSize(16)
@@ -155,7 +155,7 @@ exports.generateReportCard = async (req, res) => {
       // Address
       doc.fontSize(8)
         .font('Helvetica')
-        .text('Vidyadhaana Soudha, NH-4, Near Challakere Tollgate, Chitradurga - 577 501, Karnataka.',
+        .text('Kamli Anupam Primary School, Kamli, Unjha Taluka, Mahesana District - 384 140, Gujarat.',
           headerTextX, currentY + 50, { width: headerTextWidth, align: 'center' });
 
       currentY += 85;

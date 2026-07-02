@@ -19,6 +19,8 @@ import {
   Clock,
   ChevronDown,
   ChevronUp,
+  ShieldCheck,
+  GraduationCap,
 } from 'lucide-react';
 
 // Utility function to format standard display consistently
@@ -131,15 +133,26 @@ const AdminTeacherDetail = () => {
           Back to Dashboard
         </button>
 
-        {/* Teacher Info Card */}
+        {/* Teacher/Admin Info Card */}
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-8 mb-6">
           <div className="flex items-start justify-between">
             <div className="flex items-center space-x-6">
-              <div className="bg-gray-100 rounded-full p-6 border border-gray-200">
-                <Briefcase className="h-16 w-16 text-gray-700" />
+              <div className={`rounded-full p-6 border ${teacher.role === 'admin' ? 'bg-rose-50 border-rose-200' : 'bg-gray-100 border-gray-200'}`}>
+                <Briefcase className={`h-16 w-16 ${teacher.role === 'admin' ? 'text-rose-600' : 'text-gray-700'}`} />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">{teacher.name}</h1>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h1 className="text-3xl font-bold text-gray-900">{teacher.name}</h1>
+                  {teacher.role === 'admin' ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-100 text-rose-700 border border-rose-200 rounded-full text-sm font-semibold">
+                      <ShieldCheck className="h-4 w-4 text-rose-600" /> Administrator
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-full text-sm font-semibold">
+                      <GraduationCap className="h-4 w-4 text-indigo-600" /> Teacher
+                    </span>
+                  )}
+                </div>
                 <div className="mt-2 space-y-1">
                   <p className="flex items-center text-gray-600">
                     <Mail className="h-4 w-4 mr-2" />
@@ -165,6 +178,7 @@ const AdminTeacherDetail = () => {
                 </div>
               </div>
             </div>
+
             
             {/* Action Buttons */}
             <div className="flex space-x-3">
@@ -183,43 +197,63 @@ const AdminTeacherDetail = () => {
             </div>
           </div>
 
-          {/* Subjects and Classes */}
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-gray-500 text-sm mb-2 font-medium">Subjects</p>
-              <div className="flex flex-wrap gap-2">
-                {teacher.subjects?.map((subject, idx) => (
-                  <span
-                    key={idx}
-                    className="px-3 py-1 bg-gray-100 text-gray-700 border border-gray-200 rounded-full text-sm"
-                  >
-                    {subject}
+          {/* Teaching Assignments & Class Teacher — only for teachers */}
+          {teacher.role !== 'admin' ? (
+            <div className="mt-6 space-y-4">
+              {/* Class Teacher badge */}
+              {teacher.classTeacher && (
+                <div className="flex items-center gap-3">
+                  <p className="text-gray-500 text-sm font-medium whitespace-nowrap">📚 Class Teacher Of:</p>
+                  <span className="px-4 py-1.5 bg-yellow-50 text-yellow-800 border-2 border-yellow-300 rounded-full text-sm font-semibold">
+                    {teacher.classTeacher}
                   </span>
-                ))}
-              </div>
-            </div>
-            {teacher.classTeacher && (
+                  <span className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-2 py-0.5">
+                    Can upload all subjects for this class
+                  </span>
+                </div>
+              )}
+
+              {/* Teaching Assignments table */}
               <div>
-                <p className="text-gray-500 text-sm mb-2 font-medium">📚 Class Teacher Of</p>
-                <span className="px-4 py-2 bg-yellow-50 text-yellow-800 border-2 border-yellow-300 rounded-full text-sm font-semibold">
-                  {teacher.classTeacher}
-                </span>
-              </div>
-            )}
-            <div>
-              <p className="text-gray-500 text-sm mb-2 font-medium">Teaching Classes</p>
-              <div className="flex flex-wrap gap-2">
-                {teacher.assignedClasses?.map((cls, idx) => (
-                  <span
-                    key={idx}
-                    className="px-3 py-1 bg-gray-100 text-gray-700 border border-gray-200 rounded-full text-sm"
-                  >
-                    {cls}
-                  </span>
-                ))}
+                <p className="text-gray-500 text-sm font-medium mb-2">📖 Teaching Assignments (Subject → Class)</p>
+                {teacher.teachingAssignments && teacher.teachingAssignments.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {teacher.teachingAssignments.map((ta, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-800 border border-indigo-200 rounded-lg text-sm font-medium"
+                      >
+                        <span className="font-semibold">{ta.subject}</span>
+                        <span className="text-indigo-400">›</span>
+                        <span className="text-indigo-600">{ta.standard}</span>
+                      </span>
+                    ))}
+                  </div>
+                ) : teacher.subjects && teacher.subjects.length > 0 ? (
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap gap-2">
+                      {teacher.subjects.map((s, idx) => (
+                        <span key={idx} className="px-3 py-1 bg-gray-100 text-gray-700 border border-gray-200 rounded-full text-sm">{s}</span>
+                      ))}
+                    </div>
+                    <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-2 py-1 inline-block">
+                      ⚠ Edit this teacher to assign specific class-subject mappings.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400 italic">No teaching assignments configured. Edit teacher to add.</p>
+                )}
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="mt-6 flex items-start gap-3 p-4 bg-rose-50 border border-rose-200 rounded-lg">
+              <ShieldCheck className="h-6 w-6 text-rose-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-rose-800">Administrator Account</p>
+                <p className="text-xs text-rose-600">Full system access — can manage all teachers, students, and results.</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Statistics Cards */}

@@ -4,23 +4,26 @@ const TeacherPerformance = require('../models/Teacher');
 const bcrypt = require('bcryptjs');
 const { sendTeacherWelcomeEmail, sendEmailUpdateNotification } = require('../utils/emailService');
 
-// Get all teachers with performance overview
+// Get all staff (teachers + admins) with performance overview
 const getAllTeachers = async (req, res) => {
   try {
-    // Support filtering by active status for attendance operations
-    const { activeOnly } = req.query;
-    const query = { role: 'teacher' };
-    
-    // Filter for active teachers only if requested
+    const { activeOnly, role } = req.query;
+
+    // By default, return both teachers and admins for the staff management panel
+    // Pass ?role=teacher to get only teachers (e.g. for attendance)
+    const query = role
+      ? { role }
+      : { role: { $in: ['teacher', 'admin'] } };
+
     if (activeOnly === 'true') {
       query.isActive = { $ne: false };
     }
-    
+
     const teachers = await User.find(query)
       .select('-password')
       .sort({ createdAt: -1 });
 
-    // Get performance data for each teacher
+    // Get performance data for each teacher (admins will just have 0 results)
     const teachersWithPerformance = await Promise.all(
       teachers.map(async (teacher) => {
         const results = await Result.find({ uploadedBy: teacher._id });
@@ -38,20 +41,20 @@ const getAllTeachers = async (req, res) => {
 
     res.status(200).json(teachersWithPerformance);
   } catch (error) {
-    console.error('Error fetching teachers:', error);
+    console.error('Error fetching staff:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
 
-// Get detailed teacher performance
+// Get detailed staff profile (teacher or admin)
 const getTeacherPerformance = async (req, res) => {
   try {
     const { teacherId } = req.params;
     const { academicYear, term } = req.query;
 
     const teacher = await User.findById(teacherId).select('-password');
-    if (!teacher || teacher.role !== 'teacher') {
-      return res.status(404).json({ message: 'Teacher not found' });
+    if (!teacher || !['teacher', 'admin'].includes(teacher.role)) {
+      return res.status(404).json({ message: 'Staff member not found' });
     }
 
     // Get all performance records
@@ -91,6 +94,7 @@ const getTeacherPerformance = async (req, res) => {
         subjects: teacher.subjects,
         classTeacher: teacher.classTeacher,
         assignedClasses: teacher.assignedClasses,
+        teachingAssignments: teacher.teachingAssignments || [],
         isActive: teacher.isActive
       },
       overallStatistics: {
@@ -119,16 +123,24 @@ const generatePassword = (length = 6) => {
   return password;
 };
 
-// Create new teacher account
+// Create a new staff account (teacher or admin)
 const createTeacher = async (req, res) => {
   try {
-    const { name, email, employeeId, subjects, classTeacher, assignedClasses, phone } = req.body;
+    const {
+      name, email, employeeId, phone,
+      role,                    // 'teacher' (default) | 'admin'
+      // Teacher-specific
+      subjects, classTeacher, assignedClasses, teachingAssignments
+    } = req.body;
 
     if (!name || !email || !employeeId) {
       return res.status(400).json({ message: 'Please fill all required fields (Name, Email, Employee ID)' });
     }
 
-    // Check if teacher already exists
+    // Only 'teacher' and 'admin' roles can be created via this endpoint
+    const assignedRole = role === 'admin' ? 'admin' : 'teacher';
+
+    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: 'Email already registered' });
@@ -141,20 +153,26 @@ const createTeacher = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(plainPassword, salt);
 
-    const teacher = new User({
+    // Build the document — teacher-specific fields only apply to teachers
+    const userData = {
       name,
       email,
       password: hashedPassword,
-      role: 'teacher',
+      role: assignedRole,
       employeeId,
-      subjects: subjects || [],
-      classTeacher: classTeacher || null,
-      assignedClasses: assignedClasses || [],
       phone,
       isActive: true
-    });
+    };
 
-    await teacher.save();
+    if (assignedRole === 'teacher') {
+      userData.subjects = subjects || [];
+      userData.classTeacher = classTeacher || null;
+      userData.assignedClasses = assignedClasses || [];
+      userData.teachingAssignments = teachingAssignments || [];
+    }
+
+    const teacher = new User(userData);
+    await teacher.save(); // pre-save hook derives assignedClasses + subjects from teachingAssignments
 
     // Send welcome email with auto-generated credentials
     let emailSent = false;
@@ -162,29 +180,31 @@ const createTeacher = async (req, res) => {
       await sendTeacherWelcomeEmail({
         email: teacher.email,
         name: teacher.name,
-        password: plainPassword, // Send the auto-generated password (before hashing)
+        password: plainPassword,
         employeeId: teacher.employeeId
       });
       emailSent = true;
-      console.log(`✅ Welcome email with credentials sent to ${teacher.email}`);
+      console.log(`✅ Welcome email with credentials sent to ${teacher.email} [role: ${assignedRole}]`);
     } catch (emailError) {
       console.error('❌ Failed to send welcome email:', emailError);
-      // Don't fail the request if email fails - teacher is already created
     }
 
+    const roleLabel = assignedRole === 'admin' ? 'Admin' : 'Teacher';
     res.status(201).json({
-      message: `Teacher account created successfully! ${emailSent ? 'Login credentials sent to ' + teacher.email : 'Warning: Email could not be sent. Auto-generated password: ' + plainPassword}`,
+      message: `${roleLabel} account created successfully! ${emailSent ? 'Login credentials sent to ' + teacher.email : 'Warning: Email could not be sent. Auto-generated password: ' + plainPassword}`,
       emailSent,
+      role: assignedRole,
       teacher: {
         id: teacher._id,
         name: teacher.name,
         email: teacher.email,
+        role: teacher.role,
         employeeId: teacher.employeeId,
-        classTeacher: teacher.classTeacher
+        classTeacher: teacher.classTeacher || null
       }
     });
   } catch (error) {
-    console.error('Error creating teacher:', error);
+    console.error('Error creating staff account:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -195,49 +215,58 @@ const updateTeacher = async (req, res) => {
     const { teacherId } = req.params;
     const updates = req.body;
 
-    // Get the original teacher data before update
+    // Fetch the teacher document to update (so pre-save hooks fire on .save())
     const originalTeacher = await User.findById(teacherId);
     if (!originalTeacher) {
       return res.status(404).json({ message: 'Teacher not found' });
     }
 
-    // Check if email is being changed
+    // Track changes for email notification
     const emailChanged = updates.email && updates.email !== originalTeacher.email;
     const passwordChanged = updates.password && updates.password.trim() !== '';
-    const originalPassword = updates.password; // Store before hashing
+    const originalPassword = updates.password;
 
-    // Don't allow role change through this endpoint
-    delete updates.role;
+    // Apply scalar updates (role change never allowed)
+    if (updates.name !== undefined) originalTeacher.name = updates.name;
+    if (updates.email !== undefined) originalTeacher.email = updates.email;
+    if (updates.phone !== undefined) originalTeacher.phone = updates.phone;
+    if (updates.isActive !== undefined) originalTeacher.isActive = updates.isActive;
+    if (updates.classTeacher !== undefined) originalTeacher.classTeacher = updates.classTeacher || null;
 
-    // If password is being updated, hash it
+    // Update teachingAssignments — pre-save hook will rebuild assignedClasses + subjects
+    if (updates.teachingAssignments !== undefined) {
+      originalTeacher.teachingAssignments = updates.teachingAssignments;
+    }
+
+    // Fallback: if no teachingAssignments but explicit arrays sent, use them directly
+    if (updates.teachingAssignments === undefined) {
+      if (updates.subjects !== undefined) originalTeacher.subjects = updates.subjects;
+      if (updates.assignedClasses !== undefined) originalTeacher.assignedClasses = updates.assignedClasses;
+    }
+
+    // Hash password if being changed
     if (passwordChanged) {
+      const bcrypt = require('bcryptjs');
       const salt = await bcrypt.genSalt(10);
-      updates.password = await bcrypt.hash(updates.password, salt);
+      originalTeacher.password = await bcrypt.hash(updates.password, salt);
     }
 
-    const teacher = await User.findByIdAndUpdate(
-      teacherId,
-      updates,
-      { new: true, runValidators: true }
-    ).select('-password');
-
-    if (!teacher) {
-      return res.status(404).json({ message: 'Teacher not found' });
-    }
+    // .save() triggers the pre-save hook to sync assignedClasses + subjects
+    await originalTeacher.save();
+    const teacher = await User.findById(teacherId).select('-password');
 
     // Send email notification if email or password was changed
     if (emailChanged || passwordChanged) {
       try {
         await sendEmailUpdateNotification({
-          email: teacher.email, // Use new email
+          email: teacher.email,
           name: teacher.name,
-          password: passwordChanged ? originalPassword : null, // Send original password if changed
+          password: passwordChanged ? originalPassword : null,
           employeeId: teacher.employeeId
         });
         console.log(`✅ Update notification sent to ${teacher.email}`);
       } catch (emailError) {
         console.error('❌ Failed to send update notification:', emailError);
-        // Don't fail the request if email fails
       }
     }
 

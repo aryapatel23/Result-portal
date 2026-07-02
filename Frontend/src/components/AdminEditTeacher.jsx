@@ -1,43 +1,36 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from '../api/axios';
 import toast from 'react-hot-toast';
-import { Briefcase, Mail, Lock, Phone, BookOpen, Users, ArrowLeft, ToggleLeft, ToggleRight } from 'lucide-react';
+import {
+  Briefcase, Mail, Lock, Phone, BookOpen,
+  Plus, Trash2, ArrowLeft, GraduationCap, ShieldCheck, User
+} from 'lucide-react';
+import { SCHOOL_STANDARDS, SCHOOL_SUBJECTS } from '../utils/schoolConstants';
 
 const AdminEditTeacher = () => {
   const { teacherId } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [teacher, setTeacher] = useState(null); // Store original teacher data
+  const [originalEmail, setOriginalEmail] = useState('');
+  const [selectedRole, setSelectedRole] = useState('teacher');
   const [formData, setFormData] = useState({
     name: '',
     employeeId: '',
     email: '',
     password: '',
-    subjects: '',
     classTeacher: '',
-    assignedClasses: [],
     phone: '',
     isActive: true,
   });
-  const [showClassDropdown, setShowClassDropdown] = useState(false);
+  const [teachingAssignments, setTeachingAssignments] = useState([
+    { standard: '', subject: '' },
+  ]);
   const [updating, setUpdating] = useState(false);
-  const dropdownRef = useRef(null);
 
   useEffect(() => {
     fetchTeacherData();
   }, [teacherId]);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowClassDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const fetchTeacherData = async () => {
     try {
@@ -47,18 +40,33 @@ const AdminEditTeacher = () => {
       });
 
       const teacher = response.data.teacher;
-      setTeacher(teacher); // Store original teacher data
+      setOriginalEmail(teacher.email || '');
+      setSelectedRole(teacher.role || 'teacher');
       setFormData({
         name: teacher.name || '',
         employeeId: teacher.employeeId || '',
         email: teacher.email || '',
         password: '',
-        subjects: teacher.subjects?.join(', ') || '',
         classTeacher: teacher.classTeacher || '',
-        assignedClasses: teacher.assignedClasses || [],
         phone: teacher.phone || '',
         isActive: teacher.isActive !== false,
       });
+
+      // Load existing teachingAssignments; fall back to deriving from legacy arrays
+      if (teacher.teachingAssignments && teacher.teachingAssignments.length > 0) {
+        setTeachingAssignments(
+          teacher.teachingAssignments.map((ta) => ({
+            standard: ta.standard || '',
+            subject: ta.subject || '',
+          }))
+        );
+      } else if (teacher.assignedClasses && teacher.assignedClasses.length > 0) {
+        // Legacy migration: show one empty assignment per assigned class so admin can fill in subject
+        setTeachingAssignments(
+          teacher.assignedClasses.map((cls) => ({ standard: cls, subject: '' }))
+        );
+      }
+
       setLoading(false);
     } catch (error) {
       console.error('Error fetching teacher:', error);
@@ -68,30 +76,73 @@ const AdminEditTeacher = () => {
   };
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  /* ── Teaching Assignment helpers ────────────────────────────── */
+  const handleAssignmentChange = (index, field, value) => {
+    setTeachingAssignments((prev) =>
+      prev.map((a, i) => (i === index ? { ...a, [field]: value } : a))
+    );
+  };
+
+  const handleAddAssignment = () => {
+    setTeachingAssignments((prev) => [...prev, { standard: '', subject: '' }]);
+  };
+
+  const handleRemoveAssignment = (index) => {
+    if (teachingAssignments.length === 1) {
+      toast.error('At least one teaching assignment is required');
+      return;
+    }
+    setTeachingAssignments((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  /* ── Submit ─────────────────────────────────────────────────── */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setUpdating(true);
 
+    // Validate assignments only for teachers
+    if (selectedRole === 'teacher') {
+      const validAssignments = teachingAssignments.filter(
+        (a) => a.standard.trim() && a.subject.trim()
+      );
+      const keys = validAssignments.map((a) => `${a.standard}::${a.subject.toLowerCase()}`);
+      if (new Set(keys).size !== keys.length) {
+        toast.error('Duplicate assignments found. Each standard-subject pair must be unique.');
+        setUpdating(false);
+        return;
+      }
+    }
+
     try {
       const token = localStorage.getItem('token');
-      
       const updateData = {
         name: formData.name,
         email: formData.email,
-        subjects: formData.subjects.split(',').map(s => s.trim()).filter(s => s),
-        classTeacher: formData.classTeacher.trim() || null,
-        assignedClasses: formData.assignedClasses,
         phone: formData.phone,
         isActive: formData.isActive,
+        role: selectedRole,
       };
 
-      // Only include password if it's been filled
+      // Teacher-specific fields
+      if (selectedRole === 'teacher') {
+        const validAssignments = teachingAssignments.filter(
+          (a) => a.standard.trim() && a.subject.trim()
+        );
+        updateData.classTeacher = formData.classTeacher.trim() || null;
+        updateData.teachingAssignments = validAssignments;
+        updateData.subjects = [];
+        updateData.assignedClasses = [];
+      } else {
+        // Admin: clear teacher-specific fields
+        updateData.classTeacher = null;
+        updateData.teachingAssignments = [];
+        updateData.assignedClasses = [];
+        updateData.subjects = [];
+      }
+
       if (formData.password) {
         updateData.password = formData.password;
       }
@@ -100,10 +151,10 @@ const AdminEditTeacher = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const emailOrPasswordChanged = formData.email !== teacher.email || formData.password;
+      const emailOrPasswordChanged = formData.email !== originalEmail || formData.password;
       toast.success(
-        emailOrPasswordChanged 
-          ? 'Teacher updated successfully! 📧 Notification email sent.' 
+        emailOrPasswordChanged
+          ? 'Teacher updated! 📧 Notification email sent.'
           : 'Teacher updated successfully!',
         { duration: 5000 }
       );
@@ -127,6 +178,8 @@ const AdminEditTeacher = () => {
     );
   }
 
+  const isAdmin = selectedRole === 'admin';
+
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -139,23 +192,72 @@ const AdminEditTeacher = () => {
         </button>
 
         <div className="bg-white rounded-lg shadow-md p-8">
-          <div className="flex items-center mb-6">
-            <div className="bg-indigo-100 rounded-full p-3">
-              <Briefcase className="h-8 w-8 text-indigo-600" />
+          {/* Header */}
+          <div className="flex items-center mb-8">
+            <div className={`rounded-full p-3 ${isAdmin ? 'bg-rose-100' : 'bg-indigo-100'}`}>
+              {isAdmin
+                ? <ShieldCheck className="h-8 w-8 text-rose-600" />
+                : <Briefcase className="h-8 w-8 text-indigo-600" />
+              }
             </div>
             <div className="ml-4">
-              <h2 className="text-2xl font-bold text-gray-900">Edit Teacher</h2>
-              <p className="text-gray-600">Update teacher information</p>
+              <h2 className="text-2xl font-bold text-gray-900">Edit Staff Account</h2>
+              <p className="text-gray-600">Update staff information and {isAdmin ? 'admin access' : 'class-subject assignments'}</p>
             </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Basic Information */}
+            {/* ── Role Selector ───────────────────────────────────── */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-3">Account Role</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {[{ value: 'teacher', icon: GraduationCap, label: 'Teacher', desc: 'Manages results for assigned classes/subjects.' },
+                  { value: 'admin', icon: ShieldCheck, label: 'Administrator', desc: 'Full system access — all teachers, students, results.' }]
+                  .map((r) => (
+                    <button
+                      key={r.value}
+                      type="button"
+                      onClick={() => setSelectedRole(r.value)}
+                      className={`text-left p-4 rounded-lg border-2 transition-all ${
+                        selectedRole === r.value
+                          ? r.value === 'admin' ? 'border-rose-500 bg-rose-50' : 'border-indigo-500 bg-indigo-50'
+                          : 'border-gray-200 bg-white hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <r.icon className={`h-5 w-5 ${
+                          selectedRole === r.value
+                            ? r.value === 'admin' ? 'text-rose-600' : 'text-indigo-600'
+                            : 'text-gray-500'
+                        }`} />
+                        <span className={`font-semibold text-sm ${
+                          selectedRole === r.value
+                            ? r.value === 'admin' ? 'text-rose-700' : 'text-indigo-700'
+                            : 'text-gray-700'
+                        }`}>{r.label}</span>
+                        {selectedRole === r.value && (
+                          <span className={`ml-auto text-xs px-2 py-0.5 rounded-full font-medium ${
+                            r.value === 'admin' ? 'bg-rose-200 text-rose-800' : 'bg-indigo-200 text-indigo-800'
+                          }`}>Active</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500">{r.desc}</p>
+                    </button>
+                  ))}
+              </div>
+              {isAdmin && (
+                <div className="mt-3 flex items-start gap-2 p-3 bg-rose-50 border border-rose-200 rounded-md">
+                  <ShieldCheck className="h-4 w-4 text-rose-600 mt-0.5 shrink-0" />
+                  <p className="text-xs text-rose-700">
+                    Promoting to <strong>Admin</strong> grants full system access and clears all teaching assignments.
+                  </p>
+                </div>
+              )}
+            </div>
+            {/* ── Basic Information ─────────────────────────────── */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Full Name *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Briefcase className="h-5 w-5 text-gray-400" />
@@ -172,9 +274,7 @@ const AdminEditTeacher = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Employee ID *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Employee ID</label>
                 <input
                   type="text"
                   name="employeeId"
@@ -186,12 +286,10 @@ const AdminEditTeacher = () => {
               </div>
             </div>
 
-            {/* Contact Information */}
+            {/* ── Contact ─────────────────────────────────────────── */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Address *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Mail className="h-5 w-5 text-gray-400" />
@@ -208,9 +306,7 @@ const AdminEditTeacher = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Phone Number
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Phone className="h-5 w-5 text-gray-400" />
@@ -226,10 +322,10 @@ const AdminEditTeacher = () => {
               </div>
             </div>
 
-            {/* Password (Optional) */}
+            {/* ── Password ─────────────────────────────────────────── */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                New Password (leave blank to keep current)
+                New Password <span className="text-gray-400 text-xs">(leave blank to keep current)</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -246,130 +342,128 @@ const AdminEditTeacher = () => {
               </div>
             </div>
 
-            {/* Teaching Information */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Subjects (comma-separated) *
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <BookOpen className="h-5 w-5 text-gray-400" />
+            {!isAdmin && (
+              <>
+                {/* ── Class Teacher ───────────────────────────────────── */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <GraduationCap className="inline h-4 w-4 mr-1 text-yellow-500" />
+                    Class Teacher Of (Primary Class)
+                  </label>
+                  <select
+                    name="classTeacher"
+                    value={formData.classTeacher}
+                    onChange={handleChange}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="">None — Not a class teacher</option>
+                    {SCHOOL_STANDARDS.map((std) => (
+                      <option key={std} value={std}>{std}</option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-sm text-gray-500">
+                    The ONE class this teacher is the class teacher of (manages all results for that class).
+                  </p>
                 </div>
-                <input
-                  type="text"
-                  name="subjects"
-                  value={formData.subjects}
-                  onChange={handleChange}
-                  required
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="e.g., Mathematics, Physics, Chemistry"
-                />
-              </div>
-            </div>
 
-            {/* Class Teacher */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Class Teacher Of (Primary Class)
-              </label>
-              <select
-                name="classTeacher"
-                value={formData.classTeacher}
-                onChange={handleChange}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="">None - Not a class teacher</option>
-                {[...Array(12)].map((_, i) => (
-                  <option key={i + 1} value={`STD ${i + 1}`}>
-                    STD {i + 1}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1 text-sm text-gray-500">The ONE class this teacher is class teacher of (can upload results)</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Assigned Classes *
-              </label>
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  type="button"
-                  onClick={() => setShowClassDropdown(!showClassDropdown)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-left bg-white flex items-center justify-between hover:border-indigo-400 transition-colors"
-                >
-                  <span className="text-gray-700">
-                    {formData.assignedClasses.length > 0 ? `${formData.assignedClasses.length} classes selected` : 'Select classes'}
-                  </span>
-                  <Users className="h-5 w-5 text-gray-400" />
-                </button>
-                {showClassDropdown && (
-                  <div className="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                    {[...Array(12)].map((_, i) => {
-                      const className = `STD ${i + 1}`;
-                      const isSelected = formData.assignedClasses.includes(className);
-                      return (
-                        <label
-                          key={i}
-                          className="flex items-center px-3 py-2 hover:bg-indigo-50 cursor-pointer transition-colors"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setFormData({
-                                  ...formData,
-                                  assignedClasses: [...formData.assignedClasses, className]
-                                });
-                              } else {
-                                setFormData({
-                                  ...formData,
-                                  assignedClasses: formData.assignedClasses.filter(c => c !== className)
-                                });
-                              }
-                            }}
-                            className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                          />
-                          <span className="ml-2 text-sm text-gray-700">{className}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-              {formData.assignedClasses.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {formData.assignedClasses.map((cls) => (
-                    <span
-                      key={cls}
-                      className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+                {/* ── Teaching Assignments ────────────────────────────── */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-800">
+                        <BookOpen className="inline h-4 w-4 mr-1 text-indigo-500" />
+                        Teaching Assignments <span className="text-red-500">*</span>
+                      </label>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Which subject does this teacher teach in each class?
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddAssignment}
+                      className="flex items-center px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-md hover:bg-indigo-100 text-sm font-medium transition-colors"
                     >
-                      {cls}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFormData({
-                            ...formData,
-                            assignedClasses: formData.assignedClasses.filter(c => c !== cls)
-                          });
-                        }}
-                        className="ml-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-blue-200"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-              <p className="mt-1 text-sm text-gray-500">All classes where teacher teaches (should include class teacher class)</p>
-            </div>
+                      <Plus className="h-4 w-4 mr-1" /> Add Assignment
+                    </button>
+                  </div>
 
-            {/* Active Status */}
+                  <div className="space-y-3">
+                    {teachingAssignments.map((assignment, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <label className="block text-xs text-gray-500 mb-1">Standard</label>
+                          <select
+                            value={assignment.standard}
+                            onChange={(e) => handleAssignmentChange(index, 'standard', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500"
+                          >
+                            <option value="">Select Standard</option>
+                            {SCHOOL_STANDARDS.map((std) => (
+                              <option key={std} value={std}>{std}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="flex-1">
+                          <label className="block text-xs text-gray-500 mb-1">Subject</label>
+                          <input
+                            type="text"
+                            list={`subjects-list-${index}`}
+                            value={assignment.subject}
+                            onChange={(e) => handleAssignmentChange(index, 'subject', e.target.value)}
+                            placeholder="e.g. Mathematics"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500"
+                          />
+                          <datalist id={`subjects-list-${index}`}>
+                            {SCHOOL_SUBJECTS.map((s) => (
+                              <option key={s} value={s} />
+                            ))}
+                          </datalist>
+                        </div>
+
+                        <div className="pt-5">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveAssignment(index)}
+                            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
+                            title="Remove assignment"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {teachingAssignments.filter((a) => a.standard && a.subject).length > 0 && (
+                    <div className="mt-3 p-3 bg-indigo-50 border border-indigo-200 rounded-md">
+                      <p className="text-xs font-medium text-indigo-700 mb-2">📋 Assignment Summary:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {teachingAssignments
+                          .filter((a) => a.standard && a.subject)
+                          .map((a, i) => (
+                            <span
+                              key={i}
+                              className="px-2 py-1 bg-white border border-indigo-200 text-indigo-800 rounded text-xs font-medium"
+                            >
+                              {a.standard} → {a.subject}
+                            </span>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* ── Active Status ───────────────────────────────────── */}
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-md">
               <div>
-                <label className="text-sm font-medium text-gray-700">Teacher Status</label>
-                <p className="text-xs text-gray-500">Enable or disable teacher access</p>
+                <label className="text-sm font-medium text-gray-700">Account Status</label>
+                <p className="text-xs text-gray-500">Enable or disable login access for this {isAdmin ? 'admin' : 'teacher'}</p>
               </div>
               <button
                 type="button"
@@ -386,7 +480,7 @@ const AdminEditTeacher = () => {
               </button>
             </div>
 
-            {/* Submit Button */}
+            {/* ── Submit ─────────────────────────────────────────── */}
             <div className="flex items-center justify-end space-x-4 pt-6 border-t">
               <button
                 type="button"
@@ -398,7 +492,9 @@ const AdminEditTeacher = () => {
               <button
                 type="submit"
                 disabled={updating}
-                className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                className={`px-6 py-2 text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center ${
+                  isAdmin ? 'bg-rose-600 hover:bg-rose-700' : 'bg-indigo-600 hover:bg-indigo-700'
+                }`}
               >
                 {updating ? (
                   <>
@@ -406,7 +502,13 @@ const AdminEditTeacher = () => {
                     Updating...
                   </>
                 ) : (
-                  'Update Teacher'
+                  <>
+                    {isAdmin
+                      ? <ShieldCheck className="h-4 w-4 mr-2" />
+                      : <Briefcase className="h-4 w-4 mr-2" />
+                    }
+                    Update {isAdmin ? 'Admin' : 'Teacher'}
+                  </>
                 )}
               </button>
             </div>

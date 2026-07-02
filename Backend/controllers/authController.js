@@ -189,7 +189,7 @@ exports.registerStudent = async (req, res) => {
 // Teacher Registration (might be restricted to admin-only in production)
 exports.registerTeacher = async (req, res) => {
   try {
-    const { name, email, password, employeeId, subjects, assignedClasses, phone } = req.body;
+    const { name, email, password, employeeId, subjects, assignedClasses, teachingAssignments, phone } = req.body;
 
     if (!name || !email || !password || !employeeId) {
       return res.status(400).json({ message: "Please fill all required fields" });
@@ -214,11 +214,12 @@ exports.registerTeacher = async (req, res) => {
       employeeId,
       subjects: subjects || [],
       assignedClasses: assignedClasses || [],
+      teachingAssignments: teachingAssignments || [],
       phone,
       isActive: true
     });
 
-    await teacher.save();
+    await teacher.save(); // pre-save hook syncs assignedClasses + subjects from teachingAssignments
 
     // Generate token
     const token = jwt.sign(

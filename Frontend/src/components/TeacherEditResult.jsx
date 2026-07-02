@@ -5,6 +5,7 @@ import { updateResult } from '../redux/slices/resultSlice';
 import { Plus, Trash2, Save, BookOpen, ArrowLeft } from "lucide-react";
 import toast from "react-hot-toast";
 import axios from '../api/axios';
+import { SCHOOL_STANDARDS } from '../utils/schoolConstants';
 
 const TeacherEditResult = () => {
     const { id } = useParams();
@@ -248,9 +249,9 @@ const TeacherEditResult = () => {
                             >
                                 <option value="">Select Standard</option>
                                 <option value="Balvatika">Balvatika</option>
-                                {[...Array(8)].map((_, i) => (
-                                    <option key={i + 1} value={`STD-${i + 1}`}>
-                                        STD-{i + 1}
+                                {SCHOOL_STANDARDS.filter(s => s !== 'Balvatika').map((std) => (
+                                    <option key={std} value={std}>
+                                        {std}
                                     </option>
                                 ))}
                             </select>

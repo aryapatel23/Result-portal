@@ -58,14 +58,26 @@ const userSchema = new mongoose.Schema({
   },
   subjects: [{
     type: String
-  }], // Subjects teacher handles
+  }], // Subjects teacher handles — auto-derived from teachingAssignments via pre-save hook
   classTeacher: {
-    type: String, // The ONE class this teacher is class teacher of (e.g., "STD 9")
+    type: String, // The ONE class this teacher is class teacher of (e.g., "STD-3")
+    set: normalizeStandard,
     default: null
   },
   assignedClasses: [{
     type: String
-  }], // All classes teacher teaches subjects in (includes classTeacher class)
+  }], // All classes teacher teaches subjects in — auto-derived from teachingAssignments
+  // Explicit mapping: which subject the teacher teaches in which class
+  teachingAssignments: [{
+    standard: {
+      type: String,
+      set: normalizeStandard
+    },
+    subject: {
+      type: String,
+      trim: true
+    }
+  }],
   phone: {
     type: String
   },
@@ -93,9 +105,34 @@ const userSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+// ─── Pre-save hook ────────────────────────────────────────────────────────────
+// When a teacher has teachingAssignments defined, automatically keep the legacy
+// assignedClasses and subjects arrays in sync so all existing queries work.
+userSchema.pre('save', function (next) {
+  if (this.role === 'teacher' && this.teachingAssignments && this.teachingAssignments.length > 0) {
+    // Build a unique set of normalized standards from the teaching assignments
+    const classSet = new Set(this.teachingAssignments.map(ta => normalizeStandard(ta.standard)));
+    // Always include the classTeacher class in assignedClasses
+    if (this.classTeacher) classSet.add(normalizeStandard(this.classTeacher));
+    this.assignedClasses = Array.from(classSet).filter(Boolean);
+
+    // Build a unique set of subjects
+    const subjectSet = new Set(this.teachingAssignments.map(ta => ta.subject).filter(Boolean));
+    this.subjects = Array.from(subjectSet);
+  } else if (this.role === 'teacher' && this.classTeacher) {
+    // Even with no explicit assignments, ensure classTeacher is in assignedClasses
+    const normalized = normalizeStandard(this.classTeacher);
+    if (normalized && !this.assignedClasses.includes(normalized)) {
+      this.assignedClasses.push(normalized);
+    }
+  }
+  next();
+});
+
 // Index for faster queries
 userSchema.index({ email: 1 });
 userSchema.index({ grNumber: 1 });
 userSchema.index({ role: 1 });
+userSchema.index({ 'teachingAssignments.standard': 1 });
 
 module.exports = mongoose.model("User", userSchema);

@@ -2,7 +2,15 @@
  * Utility function to format standard display consistently across the application
  * Converts various formats (9, Grade-9, STD-9, Standard 9, etc.) to Std-{number} format
  * Handles special case for Balvatika
+ *
+ * School has fixed standards: Balvatika and STD-1 through STD-8.
  */
+
+/**
+ * The definitive list of valid standards for this school.
+ * Used by backend validation and shared with frontend via API if needed.
+ */
+const SCHOOL_STANDARDS = ['Balvatika', 'STD-1', 'STD-2', 'STD-3', 'STD-4', 'STD-5', 'STD-6', 'STD-7', 'STD-8'];
 const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const normalizeStandard = (standard) => {
@@ -58,4 +66,5 @@ const buildStandardQuery = (standard) => {
   };
 };
 
-module.exports = { formatStandard, normalizeStandard, buildStandardQuery };
+module.exports = { formatStandard, normalizeStandard, buildStandardQuery, SCHOOL_STANDARDS };
+

@@ -94,7 +94,8 @@ const getTeacherDashboard = async (req, res) => {
         employeeId: teacher.employeeId,
         subjects: teacher.subjects,
         classTeacher: teacher.classTeacher,
-        assignedClasses: teacher.assignedClasses
+        assignedClasses: teacher.assignedClasses,
+        teachingAssignments: teacher.teachingAssignments || []
       },
       statistics: {
         totalStudents: studentCount,

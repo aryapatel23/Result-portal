@@ -5,6 +5,7 @@ import { addResult } from '../redux/slices/resultSlice';
 import { Plus, Trash2, Save, BookOpen, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import axios from '../api/axios';
+import { SCHOOL_STANDARDS } from '../utils/schoolConstants';
 
 // 🎯 Subject mappings based on selected standard
 const standardSubjects = {
@@ -32,7 +33,8 @@ const TeacherPanel = () => {
   const dispatch = useDispatch();
   const [currentUser, setCurrentUser] = useState(null);
   const [assignedClasses, setAssignedClasses] = useState([]);
-  const [classTeacher, setClassTeacher] = useState(null); // The ONE class they're class teacher of
+  const [classTeacher, setClassTeacher] = useState(null);
+  const [teachingAssignments, setTeachingAssignments] = useState([]); // [{standard, subject}]
   const [formData, setFormData] = useState({
     studentName: '',
     grNumber: '',
@@ -73,8 +75,9 @@ const TeacherPanel = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.data.teacher) {
-        setClassTeacher(response.data.teacher.classTeacher); // The ONE class they're class teacher of
-        setAssignedClasses(response.data.teacher.assignedClasses); // All classes they teach
+        setClassTeacher(response.data.teacher.classTeacher);
+        setAssignedClasses(response.data.teacher.assignedClasses || []);
+        setTeachingAssignments(response.data.teacher.teachingAssignments || []);
       }
     } catch (error) {
       console.error('Error fetching teacher info:', error);
@@ -132,25 +135,35 @@ const TeacherPanel = () => {
     const { name, value } = e.target;
 
     if (name === "grNumber") {
-      // Update GR number
       setFormData(prev => ({ ...prev, grNumber: value }));
-
-      // Clear previous timeout
       if (fetchTimeout) clearTimeout(fetchTimeout);
-
-      // Set new timeout for debounced fetch (wait 800ms after user stops typing)
       if (value.length >= 3) {
-        const newTimeout = setTimeout(() => {
-          fetchStudentByGR(value);
-        }, 800);
+        const newTimeout = setTimeout(() => { fetchStudentByGR(value); }, 800);
         setFetchTimeout(newTimeout);
       }
     } else if (name === "standard") {
-      setFormData((prev) => ({
-        ...prev,
-        standard: value,
-        subjects: standardSubjects[value] || [{ id: crypto.randomUUID(), name: "", marks: "", maxMarks: "100" }],
-      }));
+      // When a standard is selected, prefill subjects based on teacher's assignment
+      let defaultSubjects;
+
+      const isClassTeacherClass = currentUser?.role === 'teacher' && value === classTeacher;
+
+      if (isClassTeacherClass) {
+        // Class teacher can enter all subjects — use predefined list or blank row
+        defaultSubjects = standardSubjects[value] || [{ id: crypto.randomUUID(), name: '', marks: '', maxMarks: '100' }];
+      } else if (currentUser?.role === 'teacher' && teachingAssignments.length > 0) {
+        // Non-class-teacher: prefill only the subject(s) assigned for this class
+        const assignedSubjects = teachingAssignments
+          .filter(ta => ta.standard === value)
+          .map(ta => ({ id: crypto.randomUUID(), name: ta.subject, marks: '', maxMarks: '100' }));
+        defaultSubjects = assignedSubjects.length > 0
+          ? assignedSubjects
+          : standardSubjects[value] || [{ id: crypto.randomUUID(), name: '', marks: '', maxMarks: '100' }];
+      } else {
+        // Admin or teacher without assignments: use predefined subjects or blank
+        defaultSubjects = standardSubjects[value] || [{ id: crypto.randomUUID(), name: '', marks: '', maxMarks: '100' }];
+      }
+
+      setFormData(prev => ({ ...prev, standard: value, subjects: defaultSubjects }));
     } else {
       setFormData({ ...formData, [name]: value });
     }
@@ -480,10 +493,8 @@ const TeacherPanel = () => {
                 ) : (
                   <>
                     <option value="Balvatika">Balvatika</option>
-                    {[...Array(12)].map((_, i) => (
-                      <option key={i + 1} value={`STD ${i + 1}`}>
-                        STD-{i + 1}
-                      </option>
+                    {SCHOOL_STANDARDS.filter(s => s !== 'Balvatika').map((std) => (
+                      <option key={std} value={std}>{std}</option>
                     ))}
                   </>
                 )}
