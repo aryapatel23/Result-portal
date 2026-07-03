@@ -80,8 +80,8 @@ const sendAttendanceAlert = async ({ email, name, date, status }) => {
   }
 };
 
-// Send welcome email to new teacher with credentials
-const sendTeacherWelcomeEmail = async ({ email, name, password, employeeId }) => {
+// Send welcome email to new staff (teacher or admin) with credentials
+const sendTeacherWelcomeEmail = async ({ email, name, password, employeeId, role = 'teacher' }) => {
   try {
     const transporter = nodemailer.createTransport({
       service: 'gmail',
@@ -91,10 +91,14 @@ const sendTeacherWelcomeEmail = async ({ email, name, password, employeeId }) =>
       }
     });
 
+    const isSystemAdmin = role === 'admin';
+    const roleLabel = isSystemAdmin ? 'Administrator' : 'Teacher';
+    const loginPath = isSystemAdmin ? '/admin/dashboard' : '/teacher/dashboard';
+
     const mailOptions = {
       from: '"Result Portal System" <no-reply@resultportal.com>',
       to: email,
-      subject: '🎉 Welcome to Result Portal - Your Teacher Account',
+      subject: `🎉 Welcome to Result Portal - Your ${roleLabel} Account`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff;">
           <div style="text-align: center; padding-bottom: 20px; border-bottom: 2px solid #f3f4f6;">
@@ -104,14 +108,14 @@ const sendTeacherWelcomeEmail = async ({ email, name, password, employeeId }) =>
           <div style="padding: 20px 0;">
             <p style="color: #374151; font-size: 16px;">Hello <strong>${name}</strong>,</p>
             <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">
-              Your teacher account has been successfully created! You can now access the Result Portal system.
+              Your <strong>${roleLabel.toLowerCase()}</strong> account has been successfully created! You can now access the Result Portal system.
             </p>
             
             <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #3b82f6;">
               <h3 style="color: #1e3a8a; margin: 0 0 16px 0; font-size: 18px;">Your Login Credentials</h3>
               
               <div style="margin-bottom: 12px;">
-                <p style="color: #6b7280; font-size: 12px; margin: 0 0 4px 0;">Employee ID:</p>
+                <p style="color: #6b7280; font-size: 12px; margin: 0 0 4px 0;">Employee ID / Username:</p>
                 <p style="color: #1f2937; font-size: 16px; font-weight: 600; margin: 0; font-family: monospace; background-color: #ffffff; padding: 8px; border-radius: 4px;">${employeeId}</p>
               </div>
               
@@ -133,7 +137,7 @@ const sendTeacherWelcomeEmail = async ({ email, name, password, employeeId }) =>
             </div>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.FRONTEND_URL || 'http://localhost:5175'}/teacher/dashboard" 
+              <a href="${process.env.FRONTEND_URL || 'http://localhost:5175'}${loginPath}" 
                  style="display: inline-block; background-color: #3b82f6; color: #ffffff; padding: 12px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
                 Login to Portal
               </a>
@@ -154,7 +158,7 @@ const sendTeacherWelcomeEmail = async ({ email, name, password, employeeId }) =>
 
     if (!process.env.EMAIL_USER) {
       console.log('⚠️ EMAIL_USER not set. Email would be sent to:', email);
-      console.log('📧 Teacher Login Details:');
+      console.log(`📧 ${roleLabel} Login Details:`);
       console.log(`   Email: ${email}`);
       console.log(`   Password: ${password}`);
       console.log(`   Employee ID: ${employeeId}`);
@@ -162,12 +166,12 @@ const sendTeacherWelcomeEmail = async ({ email, name, password, employeeId }) =>
     }
 
     const info = await transporter.sendMail(mailOptions);
-    console.log('📧 Welcome email sent to:', email);
+    console.log(`📧 Welcome email sent to ${email} [role: ${role}]`);
     return info;
 
   } catch (error) {
-    console.error('❌ Error sending welcome email:', error.message);
-    throw error; // Re-throw so caller knows it failed
+    console.error(`❌ Error sending welcome email for ${role}:`, error.message);
+    throw error;
   }
 };
 

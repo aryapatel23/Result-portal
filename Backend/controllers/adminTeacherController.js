@@ -182,7 +182,8 @@ const createTeacher = async (req, res) => {
         email: teacher.email,
         name: teacher.name,
         password: plainPassword,
-        employeeId: teacher.employeeId
+        employeeId: teacher.employeeId,
+        role: assignedRole
       });
       emailSent = true;
       console.log(`✅ Welcome email with credentials sent to ${teacher.email} [role: ${assignedRole}]`);
