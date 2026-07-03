@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { logoutUser, updateUser } from '../redux/slices/authSlice';
 import { Menu, X, User, LogOut, Bell, ChevronDown, UserCheck, BookOpen, LayoutDashboard, Clock, KeyRound } from 'lucide-react';
 import LanguageSwitcher from './LanguageSwitcher';
 import LoginModal from './LoginModal';
@@ -9,8 +11,10 @@ const Navbar = () => {
   const location = useLocation();
   const { pathname } = location;
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
+
   const [isOpen, setIsOpen] = useState(false);
-  const [user, setUser] = useState(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -19,17 +23,14 @@ const Navbar = () => {
   const [selectedRole, setSelectedRole] = useState('student');
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
-      // Auto-open change password modal if required
-      if (parsedUser.passwordResetRequired) {
-        setShowChangePassword(true);
-        setPasswordChangeRequired(true);
-      }
+    // Auto-open change password modal if required
+    if (user && user.passwordResetRequired) {
+      setShowChangePassword(true);
+      setPasswordChangeRequired(true);
+    } else {
+      setPasswordChangeRequired(false);
     }
-  }, [pathname]); // Re-check when route changes
+  }, [user, pathname]); // Re-check when user or route changes
 
   // Auto-open login modal when ?login= query param is present
   useEffect(() => {
@@ -51,7 +52,7 @@ const Navbar = () => {
       // Clean up the URL query param
       navigate('/', { replace: true });
     }
-  }, [location.search]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [location.search, user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isActive = (path) =>
     pathname === path
@@ -59,8 +60,7 @@ const Navbar = () => {
       : 'text-gray-700 hover:text-indigo-500 transition-colors duration-300';
 
   const handleLogout = () => {
-    localStorage.clear();
-    setUser(null);
+    dispatch(logoutUser());
     setShowProfileMenu(false);
     navigate('/');
   };
@@ -359,14 +359,8 @@ const Navbar = () => {
         }}
         required={passwordChangeRequired}
         onSuccess={() => {
-          // Update user data to clear the flag
-          const userData = localStorage.getItem('user');
-          if (userData) {
-            const user = JSON.parse(userData);
-            user.passwordResetRequired = false;
-            localStorage.setItem('user', JSON.stringify(user));
-            setUser(user);
-          }
+          // Update user data to clear the flag via Redux
+          dispatch(updateUser({ passwordResetRequired: false }));
           setPasswordChangeRequired(false);
           setShowChangePassword(false);
         }}
