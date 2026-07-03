@@ -23,7 +23,7 @@ const sendAttendanceAlert = async ({ email, name, date, status }) => {
       : 'Your attendance was not recorded by the end of the day.';
 
     const mailOptions = {
-      from: '"Result Portal System" <no-reply@resultportal.com>',
+      from: `"Result Portal System" <${process.env.EMAIL_USER || 'no-reply@resultportal.com'}>`,
       to: email,
       subject: `${icon} Attendance Auto-Marked: ${status}`,
       html: `
@@ -96,7 +96,7 @@ const sendTeacherWelcomeEmail = async ({ email, name, password, employeeId, role
     const loginPath = isSystemAdmin ? '/admin/dashboard' : '/teacher/dashboard';
 
     const mailOptions = {
-      from: '"Result Portal System" <no-reply@resultportal.com>',
+      from: `"Result Portal System" <${process.env.EMAIL_USER || 'no-reply@resultportal.com'}>`,
       to: email,
       subject: `🎉 Welcome to Result Portal - Your ${roleLabel} Account`,
       html: `
@@ -197,7 +197,7 @@ const sendEmailUpdateNotification = async ({ email, name, password, employeeId }
     ` : '';
 
     const mailOptions = {
-      from: '"Result Portal System" <no-reply@resultportal.com>',
+      from: `"Result Portal System" <${process.env.EMAIL_USER || 'no-reply@resultportal.com'}>`,
       to: email,
       subject: '🔔 Account Updated - Result Portal',
       html: `
@@ -264,7 +264,7 @@ const sendPasswordResetEmail = async ({ email, name, password }) => {
     });
 
     const mailOptions = {
-      from: '"Result Portal System" <no-reply@resultportal.com>',
+      from: `"Result Portal System" <${process.env.EMAIL_USER || 'no-reply@resultportal.com'}>`,
       to: email,
       subject: '🔑 Password Reset - Result Portal',
       html: `

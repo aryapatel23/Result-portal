@@ -114,15 +114,28 @@ const AdminCreateStaff = () => {
       });
 
       const roleLabel = selectedRole === 'admin' ? 'Admin' : 'Teacher';
-      toast.success(
-        `${roleLabel} account created! ${
-          response.data.emailSent
-            ? `📧 Credentials sent to ${formData.email}`
-            : ''
-        }`,
-        { duration: 5000 }
-      );
-      navigate('/admin/dashboard');
+      
+      if (response.data.emailSent) {
+        toast.success(
+          `${roleLabel} account created! Credentials sent to ${formData.email} 📧`,
+          { duration: 6000 }
+        );
+        navigate('/admin/dashboard');
+      } else {
+        // If email failed to send, alert the admin with the auto-generated password so it's not lost!
+        toast.success(`${roleLabel} account created successfully!`, { duration: 4000 });
+        
+        // Show an alert/toast containing the credentials so the admin can copy them
+        alert(
+          `⚠️ EMAIL NOTIFICATION FAILED!\n\n` +
+          `The account was created, but the welcome email could not be sent.\n` +
+          `Please copy and share these temporary login credentials with the user:\n\n` +
+          `Username / Employee ID: ${formData.employeeId}\n` +
+          `Temporary Password: ${response.data.plainPassword}\n\n` +
+          `Press OK after saving these credentials.`
+        );
+        navigate('/admin/dashboard');
+      }
     } catch (error) {
       console.error('Error creating staff:', error);
       toast.error(error.response?.data?.message || 'Failed to create account');

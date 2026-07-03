@@ -195,6 +195,7 @@ const createTeacher = async (req, res) => {
     res.status(201).json({
       message: `${roleLabel} account created successfully! ${emailSent ? 'Login credentials sent to ' + teacher.email : 'Warning: Email could not be sent. Auto-generated password: ' + plainPassword}`,
       emailSent,
+      plainPassword, // Return the password so the frontend can show it as backup
       role: assignedRole,
       teacher: {
         id: teacher._id,
