@@ -161,7 +161,8 @@ const createTeacher = async (req, res) => {
       role: assignedRole,
       employeeId,
       phone,
-      isActive: true
+      isActive: true,
+      passwordResetRequired: true  // Force password change on first login
     };
 
     if (assignedRole === 'teacher') {

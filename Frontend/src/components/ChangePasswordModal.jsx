@@ -32,14 +32,13 @@ const ChangePasswordModal = ({ isOpen, onClose, required = false, onSuccess }) =
       newErrors.newPassword = 'New password is required';
     } else if (formData.newPassword.length < 6) {
       newErrors.newPassword = 'Password must be at least 6 characters';
+    } else if (formData.newPassword === formData.oldPassword) {
+      newErrors.newPassword = 'New password must be different from your current password';
     }
     if (!formData.confirmPassword.trim()) {
-      newErrors.confirmPassword = 'Please confirm your password';
+      newErrors.confirmPassword = 'Please confirm your new password';
     } else if (formData.newPassword !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
-    }
-    if (formData.oldPassword && formData.newPassword && formData.oldPassword === formData.newPassword) {
-      newErrors.newPassword = 'New password must be different from current password';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -54,12 +53,17 @@ const ChangePasswordModal = ({ isOpen, onClose, required = false, onSuccess }) =
       await axios.put('/profile/change-password', {
         oldPassword: formData.oldPassword,
         newPassword: formData.newPassword,
+        confirmPassword: formData.confirmPassword,  // included for any future backend checks
       });
-      toast.success('Password changed successfully!');
+      toast.success('Password changed successfully! 🎉');
       if (onSuccess) onSuccess();
       if (!required) onClose();
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to change password';
+      // Show first validation error if available, else fallback message
+      const serverErrors = err.response?.data?.errors;
+      const msg = serverErrors?.[0]?.message
+        || err.response?.data?.message
+        || 'Failed to change password. Please try again.';
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -132,8 +136,8 @@ const ChangePasswordModal = ({ isOpen, onClose, required = false, onSuccess }) =
               required ? 'text-red-700' : 'text-amber-700'
             }`}>
               {required 
-                ? 'You are using a temporary password. For security, you must change it before continuing.' 
-                : 'Choose a strong password with at least 6 characters. We recommend using a mix of letters, numbers, and symbols.'
+                ? 'You are using a temporary auto-generated password. For security, you must set a new password before continuing.' 
+                : 'Choose a strong password with at least 6 characters. A mix of letters, numbers and symbols is recommended.'
               }
             </p>
           </div>
@@ -182,7 +186,7 @@ const ChangePasswordModal = ({ isOpen, onClose, required = false, onSuccess }) =
                   setFormData({ ...formData, newPassword: e.target.value });
                   setErrors({ ...errors, newPassword: '' });
                 }}
-                placeholder="Enter new password (min 6 characters)"
+                placeholder="Enter new password (min. 6 characters)"
                 className={`w-full px-4 py-2.5 pr-10 rounded-xl border ${
                   errors.newPassword ? 'border-red-400 bg-red-50' : 'border-gray-300'
                 } focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all`}
