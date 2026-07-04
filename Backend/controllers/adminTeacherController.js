@@ -175,6 +175,7 @@ const createTeacher = async (req, res) => {
 
     // Send welcome email with auto-generated credentials
     let emailSent = false;
+    let emailErrorMsg = null;
     try {
       await sendTeacherWelcomeEmail({
         email: teacher.email,
@@ -187,6 +188,7 @@ const createTeacher = async (req, res) => {
       console.log(`✅ Welcome email with credentials sent to ${teacher.email} [role: ${assignedRole}]`);
     } catch (emailError) {
       console.error('❌ Failed to send welcome email:', emailError);
+      emailErrorMsg = emailError.message;
     }
 
     const roleLabel = assignedRole === 'admin' ? 'Admin' : 'Teacher';
@@ -194,6 +196,7 @@ const createTeacher = async (req, res) => {
       message: `${roleLabel} account created successfully! ${emailSent ? 'Login credentials sent to ' + teacher.email : 'Warning: Email could not be sent. Auto-generated password: ' + plainPassword}`,
       emailSent,
       plainPassword, // Return the password so the frontend can show it as backup
+      emailError: emailErrorMsg,
       role: assignedRole,
       teacher: {
         id: teacher._id,
