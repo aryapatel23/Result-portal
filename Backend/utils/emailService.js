@@ -38,22 +38,38 @@ const createTransporter = () => {
   });
 };
 
+// Determine the sender address:
+//   On Render (Brevo)  → use BREVO_SMTP_USER (your Gmail address registered in Brevo)
+//   Locally (Gmail)    → use EMAIL_USER
+const SENDER_EMAIL = () =>
+  process.env.BREVO_SMTP_USER || process.env.EMAIL_USER || 'no-reply@resultportal.com';
 
 const FROM_ADDRESS = () =>
-  `"Kamli School - Result Portal" <${process.env.EMAIL_USER || 'no-reply@resultportal.com'}>`;
+  `"Kamli School - Result Portal" <${SENDER_EMAIL()}>`;
 
 /**
- * Guard: if EMAIL_USER is not set, log the details and skip the actual send.
- * Returns true if we should skip sending.
+ * Guard: skip sending if neither BREVO nor Gmail credentials are configured.
+ * Accepts EITHER BREVO_SMTP_USER (cloud) OR EMAIL_USER (local) as valid.
  */
 const shouldSkipEmail = (label, details) => {
-  if (!process.env.EMAIL_USER) {
-    console.log(`[Email] EMAIL_USER not configured — skipping ${label} email.`);
-    console.log('[Email] Would have sent:', JSON.stringify(details, null, 2));
+  const hasBrevo = !!(process.env.BREVO_SMTP_USER && process.env.BREVO_SMTP_PASS);
+  const hasGmail = !!process.env.EMAIL_USER;
+  if (!hasBrevo && !hasGmail) {
+    console.log(`[Email] No email credentials configured — skipping ${label} email.`);
+    console.log('[Email] Set BREVO_SMTP_USER + BREVO_SMTP_PASS (Render) or EMAIL_USER + EMAIL_PASSWORD (local).');
+    console.log('[Email] Would have sent to:', JSON.stringify(details, null, 2));
     return true;
   }
   return false;
 };
+
+// Log which transport is active on startup
+const activeTransport = (process.env.BREVO_SMTP_USER && process.env.BREVO_SMTP_PASS)
+  ? `Brevo SMTP (smtp-relay.brevo.com:587) as ${process.env.BREVO_SMTP_USER}`
+  : process.env.EMAIL_USER
+    ? `Gmail SMTP as ${process.env.EMAIL_USER} [local dev only]`
+    : 'NONE — no email credentials set';
+console.log(`[Email] Transport: ${activeTransport}`);
 
 // ---------------------------------------------------------------------------
 // 1. Attendance Auto-Mark Alert
