@@ -91,9 +91,11 @@ const sendAttendanceAlert = async ({ email, name, date, status }) => {
 // ---------------------------------------------------------------------------
 // 2. Welcome Email — new staff account (teacher OR admin)
 // ---------------------------------------------------------------------------
+// Send welcome email to new staff (teacher or admin) with credentials
 const sendTeacherWelcomeEmail = async ({ email, name, password, employeeId, role = 'teacher' }) => {
-  const roleLabel = role === 'admin' ? 'Administrator' : 'Teacher';
-  const loginPath = role === 'admin' ? '/admin/dashboard' : '/teacher/dashboard';
+  const isSystemAdmin = role === 'admin';
+  const roleLabel = isSystemAdmin ? 'Administrator' : 'Teacher';
+  const loginPath = isSystemAdmin ? '/admin/dashboard' : '/teacher/dashboard';
 
   if (shouldSkipEmail(`${roleLabel} welcome`, { email, name, employeeId, role })) {
     console.log(`[Email] Temporary password (log only): ${password}`);
@@ -102,78 +104,80 @@ const sendTeacherWelcomeEmail = async ({ email, name, password, employeeId, role
 
   try {
     const transporter = createTransporter();
+    
+    // Choose appropriate subject & message based on role
+    const subject = isSystemAdmin 
+      ? '🎉 Welcome to Result Portal - Your Administrator Account'
+      : '🎉 Welcome to Result Portal - Your Teacher Account';
+      
+    const accountCreatedText = isSystemAdmin
+      ? 'Your administrator account has been successfully created! You can now access the Result Portal system.'
+      : 'Your teacher account has been successfully created! You can now access the Result Portal system.';
+
     await transporter.sendMail({
-      from:    FROM_ADDRESS(),
-      to:      email,
-      subject: `[Result Portal] Welcome — Your ${roleLabel} Account Credentials`,
+      from: FROM_ADDRESS(),
+      to: email,
+      subject: subject,
       html: `
-        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;border:1px solid #e5e7eb;border-radius:12px;background:#ffffff;">
-          <div style="text-align:center;padding-bottom:20px;border-bottom:2px solid #f3f4f6;">
-            <h2 style="color:#1f2937;margin:0;">Welcome to Kamli School Result Portal</h2>
-            <p style="color:#6b7280;margin:8px 0 0 0;font-size:14px;">Your ${roleLabel} account has been created</p>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff;">
+          <div style="text-align: center; padding-bottom: 20px; border-bottom: 2px solid #f3f4f6;">
+            <h2 style="color: #1f2937; margin: 0;">🎓 Welcome to Result Portal</h2>
           </div>
-
-          <div style="padding:24px 0;">
-            <p style="color:#374151;font-size:16px;">Hello <strong>${name}</strong>,</p>
-            <p style="color:#6b7280;font-size:14px;line-height:1.6;">
-              Your <strong>${roleLabel.toLowerCase()}</strong> account has been successfully created.
-              You can now log in to the Result Portal using the credentials below.
+          
+          <div style="padding: 20px 0;">
+            <p style="color: #374151; font-size: 16px;">Hello <strong>${name}</strong>,</p>
+            <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">
+              ${accountCreatedText}
             </p>
-
-            <div style="background:#f0f9ff;padding:20px;border-radius:8px;margin:20px 0;border-left:4px solid #3b82f6;">
-              <h3 style="color:#1e3a8a;margin:0 0 16px 0;font-size:16px;">Your Login Credentials</h3>
-
-              <table style="width:100%;border-collapse:collapse;">
-                <tr>
-                  <td style="padding:6px 0;color:#6b7280;font-size:13px;width:140px;">Employee ID:</td>
-                  <td style="padding:6px 0;">
-                    <span style="font-family:monospace;font-size:15px;font-weight:600;color:#1f2937;background:#fff;padding:4px 10px;border-radius:4px;border:1px solid #e5e7eb;">${employeeId}</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding:6px 0;color:#6b7280;font-size:13px;">Email:</td>
-                  <td style="padding:6px 0;">
-                    <span style="font-family:monospace;font-size:15px;font-weight:600;color:#1f2937;background:#fff;padding:4px 10px;border-radius:4px;border:1px solid #e5e7eb;">${email}</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding:6px 0;color:#6b7280;font-size:13px;">Temporary Password:</td>
-                  <td style="padding:6px 0;">
-                    <span style="font-family:monospace;font-size:18px;font-weight:700;color:#1e3a8a;background:#fff;padding:4px 10px;border-radius:4px;border:1px solid #93c5fd;letter-spacing:3px;">${password}</span>
-                  </td>
-                </tr>
-              </table>
+            
+            <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #3b82f6;">
+              <h3 style="color: #1e3a8a; margin: 0 0 16px 0; font-size: 18px;">Your Login Credentials</h3>
+              
+              <div style="margin-bottom: 12px;">
+                <p style="color: #6b7280; font-size: 12px; margin: 0 0 4px 0;">Employee ID:</p>
+                <p style="color: #1f2937; font-size: 16px; font-weight: 600; margin: 0; font-family: monospace; background-color: #ffffff; padding: 8px; border-radius: 4px;">${employeeId}</p>
+              </div>
+              
+              <div style="margin-bottom: 12px;">
+                <p style="color: #6b7280; font-size: 12px; margin: 0 0 4px 0;">Email:</p>
+                <p style="color: #1f2937; font-size: 16px; font-weight: 600; margin: 0; font-family: monospace; background-color: #ffffff; padding: 8px; border-radius: 4px;">${email}</p>
+              </div>
+              
+              <div>
+                <p style="color: #6b7280; font-size: 12px; margin: 0 0 4px 0;">Password:</p>
+                <p style="color: #1f2937; font-size: 16px; font-weight: 600; margin: 0; font-family: monospace; background-color: #ffffff; padding: 8px; border-radius: 4px;">${password}</p>
+              </div>
             </div>
-
-            <div style="background:#fef3c7;padding:14px 16px;border-radius:8px;border-left:4px solid #f59e0b;margin:20px 0;">
-              <p style="color:#92400e;font-size:14px;margin:0;line-height:1.6;">
-                <strong>Important:</strong> You will be prompted to change this temporary password when you first log in. Please keep it confidential.
+            
+            <div style="background-color: #fef3c7; padding: 16px; border-radius: 8px; border-left: 4px solid #f59e0b; margin: 20px 0;">
+              <p style="color: #92400e; font-size: 14px; margin: 0; line-height: 1.6;">
+                <strong>⚠️ Important:</strong> Please change your password after your first login for security purposes.
               </p>
             </div>
-
-            <div style="text-align:center;margin:28px 0;">
-              <a href="${process.env.FRONTEND_URL || 'http://localhost:5175'}${loginPath}"
-                 style="display:inline-block;background:#3b82f6;color:#ffffff;padding:12px 36px;text-decoration:none;border-radius:8px;font-weight:600;font-size:15px;">
-                Log In to Portal
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.FRONTEND_URL || 'http://localhost:5175'}${loginPath}" 
+                 style="display: inline-block; background-color: #3b82f6; color: #ffffff; padding: 12px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                Login to Portal
               </a>
             </div>
-
-            <p style="color:#6b7280;font-size:13px;margin-top:20px;">
-              If you have any questions, please contact the school administrator.
+            
+            <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">
+              If you have any questions or need assistance, please contact the school administrator.
             </p>
           </div>
-
-          <div style="border-top:2px solid #f3f4f6;padding-top:16px;text-align:center;">
-            <p style="font-size:12px;color:#9ca3af;margin:0;">Kamli Anupam Primary School — Result Portal</p>
-            <p style="font-size:11px;color:#d1d5db;margin:4px 0 0 0;">Please do not reply to this automated email.</p>
+          
+          <div style="border-top: 2px solid #f3f4f6; padding-top: 16px; text-align: center;">
+            <p style="font-size: 12px; color: #9ca3af; margin: 0;">Result Portal Automated System</p>
+            <p style="font-size: 11px; color: #d1d5db; margin: 4px 0 0 0;">Please do not reply to this automated email</p>
           </div>
         </div>
-      `,
+      `
     });
     console.log(`[Email] Welcome email sent to ${email} [role: ${role}]`);
   } catch (error) {
     console.error(`[Email] Failed to send ${roleLabel} welcome email:`, error.message);
-    throw error; // Re-throw so caller can detect failure and show password as fallback
+    throw error;
   }
 };
 
