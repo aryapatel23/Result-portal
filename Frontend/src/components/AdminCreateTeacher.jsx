@@ -20,7 +20,7 @@ const ROLES = [
     value: 'admin',
     label: 'Administrator',
     icon: ShieldCheck,
-    description: 'Full system access — manage teachers, students, results and all settings.',
+    description: 'Full system access — manage teachers, students, results and settings. Can also be assigned as a class teacher.',
     color: 'rose',
   },
 ];
@@ -71,7 +71,7 @@ const AdminCreateStaff = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate teacher-specific assignments
+    // Validate teaching assignments only for teachers
     if (selectedRole === 'teacher') {
       const validAssignments = teachingAssignments.filter(
         (a) => a.standard.trim() && a.subject.trim()
@@ -99,15 +99,14 @@ const AdminCreateStaff = () => {
         role: selectedRole,
       };
 
-      if (selectedRole === 'teacher') {
-        const validAssignments = teachingAssignments.filter(
-          (a) => a.standard.trim() && a.subject.trim()
-        );
-        payload.classTeacher = formData.classTeacher.trim() || null;
-        payload.teachingAssignments = validAssignments;
-        payload.subjects = [];
-        payload.assignedClasses = [];
-      }
+      // Always include class teacher + assignments (both roles can have them)
+      const validAssignments = teachingAssignments.filter(
+        (a) => a.standard.trim() && a.subject.trim()
+      );
+      payload.classTeacher = formData.classTeacher.trim() || null;
+      payload.teachingAssignments = validAssignments;
+      payload.subjects = [];
+      payload.assignedClasses = [];
 
       const response = await axios.post('/admin/teachers', payload, {
         headers: { Authorization: `Bearer ${token}` },
@@ -322,124 +321,124 @@ const AdminCreateStaff = () => {
               </p>
             </div>
 
-            {/* ── Teacher-only: Class Teacher & Teaching Assignments ─ */}
-            {!isAdmin && (
-              <>
-                {/* Class Teacher */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <GraduationCap className="inline h-4 w-4 mr-1 text-yellow-500" />
-                    Class Teacher Of (Primary Class)
-                  </label>
-                  <select
-                    name="classTeacher"
-                    value={formData.classTeacher}
-                    onChange={handleChange}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+            {/* ── Class Teacher & Teaching Assignments (both roles) ─ */}
+            <>
+              {/* Class Teacher */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <GraduationCap className="inline h-4 w-4 mr-1 text-yellow-500" />
+                  Class Teacher Of (Primary Class)
+                </label>
+                <select
+                  name="classTeacher"
+                  value={formData.classTeacher}
+                  onChange={handleChange}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="">None — Not a class teacher</option>
+                  {SCHOOL_STANDARDS.map((std) => (
+                    <option key={std} value={std}>{std}</option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  Class teachers can upload all subjects for their primary class.
+                </p>
+              </div>
+
+              {/* Teaching Assignments */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-800">
+                      <BookOpen className="inline h-4 w-4 mr-1 text-indigo-500" />
+                      Teaching Assignments {selectedRole === 'teacher' && <span className="text-red-500">*</span>}
+                    </label>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {selectedRole === 'teacher'
+                        ? 'Specify exactly which subject this teacher teaches in each class.'
+                        : 'Optional — assign specific classes/subjects to this admin if needed.'}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddAssignment}
+                    className="flex items-center px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-md hover:bg-indigo-100 text-sm font-medium transition-colors"
                   >
-                    <option value="">None — Not a class teacher</option>
-                    {SCHOOL_STANDARDS.map((std) => (
-                      <option key={std} value={std}>{std}</option>
-                    ))}
-                  </select>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Class teachers can upload all subjects for their primary class.
-                  </p>
+                    <Plus className="h-4 w-4 mr-1" /> Add Assignment
+                  </button>
                 </div>
 
-                {/* Teaching Assignments */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-800">
-                        <BookOpen className="inline h-4 w-4 mr-1 text-indigo-500" />
-                        Teaching Assignments <span className="text-red-500">*</span>
-                      </label>
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        Specify exactly which subject this teacher teaches in each class.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleAddAssignment}
-                      className="flex items-center px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-md hover:bg-indigo-100 text-sm font-medium transition-colors"
+                <div className="space-y-3">
+                  {teachingAssignments.map((assignment, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg"
                     >
-                      <Plus className="h-4 w-4 mr-1" /> Add Assignment
-                    </button>
-                  </div>
-
-                  <div className="space-y-3">
-                    {teachingAssignments.map((assignment, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg"
-                      >
-                        <div className="flex-1">
-                          <label className="block text-xs text-gray-500 mb-1">Standard</label>
-                          <select
-                            value={assignment.standard}
-                            onChange={(e) => handleAssignmentChange(index, 'standard', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500"
-                          >
-                            <option value="">Select Standard</option>
-                            {SCHOOL_STANDARDS.map((std) => (
-                              <option key={std} value={std}>{std}</option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="flex-1">
-                          <label className="block text-xs text-gray-500 mb-1">Subject</label>
-                          <input
-                            type="text"
-                            list={`subjects-list-${index}`}
-                            value={assignment.subject}
-                            onChange={(e) => handleAssignmentChange(index, 'subject', e.target.value)}
-                            placeholder="e.g. Mathematics"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500"
-                          />
-                          <datalist id={`subjects-list-${index}`}>
-                            {SCHOOL_SUBJECTS.map((s) => (
-                              <option key={s} value={s} />
-                            ))}
-                          </datalist>
-                        </div>
-
-                        <div className="pt-5">
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveAssignment(index)}
-                            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
-                            title="Remove assignment"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Assignment summary preview */}
-                  {teachingAssignments.filter((a) => a.standard && a.subject).length > 0 && (
-                    <div className="mt-3 p-3 bg-indigo-50 border border-indigo-200 rounded-md">
-                      <p className="text-xs font-medium text-indigo-700 mb-2">📋 Assignment Summary:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {teachingAssignments
-                          .filter((a) => a.standard && a.subject)
-                          .map((a, i) => (
-                            <span
-                              key={i}
-                              className="px-2 py-1 bg-white border border-indigo-200 text-indigo-800 rounded text-xs font-medium"
-                            >
-                              {a.standard} → {a.subject}
-                            </span>
+                      <div className="flex-1">
+                        <label className="block text-xs text-gray-500 mb-1">Standard</label>
+                        <select
+                          value={assignment.standard}
+                          onChange={(e) => handleAssignmentChange(index, 'standard', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500"
+                        >
+                          <option value="">Select Standard</option>
+                          {SCHOOL_STANDARDS.map((std) => (
+                            <option key={std} value={std}>{std}</option>
                           ))}
+                        </select>
+                      </div>
+
+                      <div className="flex-1">
+                        <label className="block text-xs text-gray-500 mb-1">Subject</label>
+                        <input
+                          type="text"
+                          list={`subjects-list-${index}`}
+                          value={assignment.subject}
+                          onChange={(e) => handleAssignmentChange(index, 'subject', e.target.value)}
+                          placeholder="e.g. Mathematics"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500"
+                        />
+                        <datalist id={`subjects-list-${index}`}>
+                          {SCHOOL_SUBJECTS.map((s) => (
+                            <option key={s} value={s} />
+                          ))}
+                        </datalist>
+                      </div>
+
+                      <div className="pt-5">
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveAssignment(index)}
+                          className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
+                          title="Remove assignment"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
                     </div>
-                  )}
+                  ))}
                 </div>
-              </>
-            )}
+
+                {/* Assignment summary preview */}
+                {teachingAssignments.filter((a) => a.standard && a.subject).length > 0 && (
+                  <div className="mt-3 p-3 bg-indigo-50 border border-indigo-200 rounded-md">
+                    <p className="text-xs font-medium text-indigo-700 mb-2">Assignment Summary:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {teachingAssignments
+                        .filter((a) => a.standard && a.subject)
+                        .map((a, i) => (
+                          <span
+                            key={i}
+                            className="px-2 py-1 bg-white border border-indigo-200 text-indigo-800 rounded text-xs font-medium"
+                          >
+                            {a.standard} → {a.subject}
+                          </span>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
 
             {/* ── Submit ─────────────────────────────────────────── */}
             <div className="flex items-center justify-end space-x-4 pt-6 border-t">

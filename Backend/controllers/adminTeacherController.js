@@ -153,7 +153,7 @@ const createTeacher = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(plainPassword, salt);
 
-    // Build the document — teacher-specific fields only apply to teachers
+    // Build the document — both teachers and admins can have class assignments
     const userData = {
       name,
       email,
@@ -162,15 +162,13 @@ const createTeacher = async (req, res) => {
       employeeId,
       phone,
       isActive: true,
-      passwordResetRequired: true  // Force password change on first login
+      passwordResetRequired: true,  // Force password change on first login
+      // Class teacher & teaching assignments apply to both teachers and admins
+      subjects: subjects || [],
+      classTeacher: classTeacher || null,
+      assignedClasses: assignedClasses || [],
+      teachingAssignments: teachingAssignments || [],
     };
-
-    if (assignedRole === 'teacher') {
-      userData.subjects = subjects || [];
-      userData.classTeacher = classTeacher || null;
-      userData.assignedClasses = assignedClasses || [];
-      userData.teachingAssignments = teachingAssignments || [];
-    }
 
     const teacher = new User(userData);
     await teacher.save(); // pre-save hook derives assignedClasses + subjects from teachingAssignments
