@@ -1,12 +1,34 @@
 const nodemailer = require('nodemailer');
 
 /**
- * Create a reusable Nodemailer transporter using explicit SMTP settings.
- * Using host/port/TLS instead of the `service:'gmail'` shortcut ensures
- * compatibility with hosting environments like Render that may block the
- * implicit port 465 used by the service shortcut.
+ * SMTP Transporter Strategy:
+ *
+ *  On Render (cloud) → Gmail SMTP times out because Google blocks raw TCP
+ *  connections from cloud-provider IP ranges (spam prevention).
+ *
+ *  Fix: Use Brevo (smtp-relay.brevo.com) which is a transactional email
+ *  relay designed for cloud deployments and is NOT blocked by Render.
+ *
+ *  Priority:
+ *    1. Brevo SMTP  — used when BREVO_SMTP_USER + BREVO_SMTP_PASS are set
+ *                     (required for Render / any cloud deployment)
+ *    2. Gmail SMTP  — fallback for local development only
  */
 const createTransporter = () => {
+  if (process.env.BREVO_SMTP_USER && process.env.BREVO_SMTP_PASS) {
+    // ✅ Cloud-safe: Brevo relay (works from Render, AWS, GCP, etc.)
+    return nodemailer.createTransport({
+      host: 'smtp-relay.brevo.com',
+      port: 587,
+      secure: false, // STARTTLS
+      auth: {
+        user: process.env.BREVO_SMTP_USER, // Your Brevo account login email
+        pass: process.env.BREVO_SMTP_PASS, // Brevo SMTP key (from Brevo dashboard)
+      },
+    });
+  }
+
+  // ⚠️  Local dev only — Gmail blocks this from cloud server IPs
   return nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -15,6 +37,7 @@ const createTransporter = () => {
     },
   });
 };
+
 
 const FROM_ADDRESS = () =>
   `"Kamli School - Result Portal" <${process.env.EMAIL_USER || 'no-reply@resultportal.com'}>`;
